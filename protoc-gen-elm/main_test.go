@@ -32,17 +32,15 @@ func runProto(t *testing.T, dir string) {
 	cmd := exec.Command("protoc", "--elm_out=../actual_output", "test.proto")
 	cmd.Dir = filepath.Join(dir, "input")
 	t.Logf("cmd: %v", cmd)
-	err := cmd.Run()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		o, _ := cmd.CombinedOutput()
-		t.Fatalf("Error: %v, %v", err, o)
+		t.Fatalf("Error: %v, %v", err, string(out))
 	}
 }
 
 func runDiff(t *testing.T, dir string) {
 	cmd := exec.Command("diff", "expected_output", "actual_output")
 	cmd.Dir = dir
-	t.Logf("cmd: %v", cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Error: %v, %v", err, string(out))
