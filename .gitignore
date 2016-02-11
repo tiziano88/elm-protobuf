@@ -24,3 +24,5 @@ _testmain.go
 *.prof
 
 **/actual_output/*
+
+**/elm-stuff/*

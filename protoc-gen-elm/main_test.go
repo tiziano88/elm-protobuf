@@ -45,7 +45,7 @@ func runProto(t *testing.T, dir string) {
 }
 
 func runDiff(t *testing.T, dir string) {
-	cmd := exec.Command("diff", "expected_output", "actual_output")
+	cmd := exec.Command("diff", "-y", "expected_output", "actual_output")
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {

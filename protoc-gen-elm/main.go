@@ -27,6 +27,11 @@ func main() {
 		log.Fatalf("Could not unmarshal request: %v", err)
 	}
 
+	// Remove useless source code data.
+	for _, inFile := range req.GetProtoFile() {
+		inFile.SourceCodeInfo = nil
+	}
+
 	log.Printf("Input data: %v", proto.MarshalTextString(req))
 
 	resp := &plugin.CodeGeneratorResponse{}
@@ -52,9 +57,50 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 	outFile.Name = proto.String(strings.TrimSuffix(inFile.GetName(), ".proto") + ".elm")
 
 	fg := NewFileGenerator()
-	for _, inMessage := range inFile.GetMessageType() {
-		fg.ProcessMessage(inMessage)
+
+	fg.GenerateImports()
+
+	fg.P("")
+	fg.P("")
+
+	var err error
+
+	for _, inEnum := range inFile.GetEnumType() {
+		err = fg.GenerateEnum(inEnum)
+		if err != nil {
+			return nil, err
+		}
+
+		fg.P("")
+		fg.P("")
+
+		err = fg.GenerateEnumDecoder(inEnum)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	fg.P("")
+	fg.P("")
+
+	for _, inMessage := range inFile.GetMessageType() {
+		err = fg.GenerateMessage(inMessage)
+		if err != nil {
+			return nil, err
+		}
+
+		fg.P("")
+		fg.P("")
+
+		err = fg.GenerateMessageDecoder(inMessage)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	fg.P("")
+	fg.P("")
+
 	outFile.Content = proto.String(fg.out.String())
 
 	return outFile, nil
@@ -97,40 +143,62 @@ func (fg *FileGenerator) P(format string, a ...interface{}) error {
 	return nil
 }
 
-func (fg *FileGenerator) ProcessMessage(inMessage *descriptor.DescriptorProto) error {
-	var err error
-
-	fg.GenerateImports()
-
-	fg.P("")
-
-	err = fg.GenerateType(inMessage)
-	if err != nil {
-		return err
+func (fg *FileGenerator) GenerateEnum(inEnum *descriptor.EnumDescriptorProto) error {
+	fg.P("type %s", inEnum.GetName())
+	fg.In()
+	first := true
+	for _, enumValue := range inEnum.GetValue() {
+		leading := ""
+		if first {
+			leading = "="
+		} else {
+			leading = "|"
+		}
+		first = false
+		// TODO: Convert names to CamelCase.
+		fg.P("%s %s -- %d", leading, underscoreToCamel(enumValue.GetName()), enumValue.GetNumber())
 	}
+	fg.Out()
+	return nil
+}
 
-	fg.P("")
-
-	err = fg.GenerateDecoder(inMessage)
-	if err != nil {
-		return err
+func (fg *FileGenerator) GenerateEnumDecoder(inEnum *descriptor.EnumDescriptorProto) error {
+	decoderName := strings.ToLower(inEnum.GetName())
+	typeName := inEnum.GetName()
+	fg.P("%s : JD.Decoder %s", decoderName, typeName)
+	fg.P("%s =", decoderName)
+	fg.In()
+	fg.P("let")
+	fg.In()
+	fg.P("lookup s = case s of")
+	fg.In()
+	for _, enumValue := range inEnum.GetValue() {
+		fg.P("%q -> %s", enumValue.GetName(), underscoreToCamel(enumValue.GetName()))
 	}
-
+	fg.P("_ -> %s", underscoreToCamel(inEnum.GetValue()[0].GetName()))
+	fg.Out()
+	fg.Out()
+	fg.P("in")
+	fg.In()
+	fg.P("JD.map lookup JD.string")
+	fg.Out()
+	fg.Out()
+	// TODO: Implement this.
 	return nil
 }
 
 func (fg *FileGenerator) GenerateImports() {
-	fg.P("import Json.Decode")
+	fg.P("import Json.Decode as JD exposing ((:=))")
 }
 
-func (fg *FileGenerator) GenerateDecoder(inMessage *descriptor.DescriptorProto) error {
+func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.DescriptorProto) error {
 	messageName := inMessage.GetName()
 	decoderName := strings.ToLower(messageName)
 	typeName := messageName
-	fg.P("%s : Decoder %s", decoderName, typeName)
+	fg.P("%s : JD.Decoder %s", decoderName, typeName)
 	fg.P("%s =", decoderName)
 	fg.In()
-	fg.P("objectN %s", typeName)
+	fg.P("JD.object%d %s", len(inMessage.GetField()), typeName)
 	fg.In()
 	for _, inField := range inMessage.GetField() {
 		d := ""
@@ -141,26 +209,30 @@ func (fg *FileGenerator) GenerateDecoder(inMessage *descriptor.DescriptorProto) 
 			descriptor.FieldDescriptorProto_TYPE_UINT64,
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
-			d = "int"
+			d = "JD.int"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			d = "bool"
+			d = "JD.bool"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			d = "string"
+			d = "JD.string"
+		case descriptor.FieldDescriptorProto_TYPE_ENUM:
+			// XXX
+			d = strings.ToLower(inField.GetTypeName()[1:])
 		default:
-			d = "----"
+			d = "xxx"
 		}
-		fg.P("(%s := %s)", inField.GetName(), d)
+		fg.P("(%q := %s)", inField.GetName(), d)
 	}
 	fg.Out()
 	fg.Out()
 	return nil
 }
 
-func (fg *FileGenerator) GenerateType(inMessage *descriptor.DescriptorProto) error {
+func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) error {
 	typeName := inMessage.GetName()
-	first := true
 	fg.P("type alias %s =", typeName)
 	fg.In()
+
+	first := true
 	for _, inField := range inMessage.GetField() {
 		t := ""
 		switch inField.GetType() {
@@ -175,8 +247,11 @@ func (fg *FileGenerator) GenerateType(inMessage *descriptor.DescriptorProto) err
 			t = "Bool"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			t = "String"
+		case descriptor.FieldDescriptorProto_TYPE_ENUM:
+			// XXX
+			t = inField.GetTypeName()[1:]
 		default:
-			t = "----"
+			t = "----" + inField.GetType().String()
 		}
 		leading := ""
 		if first {
@@ -190,4 +265,16 @@ func (fg *FileGenerator) GenerateType(inMessage *descriptor.DescriptorProto) err
 	fg.P("}")
 	fg.Out()
 	return nil
+}
+
+func underscoreToCamel(in string) string {
+	out := ""
+	for _, segment := range strings.Split(in, "_") {
+		out += camel(segment)
+	}
+	return out
+}
+
+func camel(in string) string {
+	return strings.ToUpper(string(in[0])) + strings.ToLower(string(in[1:]))
 }
