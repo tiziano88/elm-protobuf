@@ -82,6 +82,14 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 		fg.P("")
 		fg.P("")
+
+		err = fg.GenerateEnumEncoder(inEnum)
+		if err != nil {
+			return nil, err
+		}
+
+		fg.P("")
+		fg.P("")
 	}
 
 	for _, inMessage := range inFile.GetMessageType() {
@@ -94,6 +102,14 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 		fg.P("")
 
 		err = fg.GenerateMessageDecoder(inMessage)
+		if err != nil {
+			return nil, err
+		}
+
+		fg.P("")
+		fg.P("")
+
+		err = fg.GenerateMessageEncoder(inMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +161,8 @@ func (fg *FileGenerator) P(format string, a ...interface{}) error {
 }
 
 func (fg *FileGenerator) GenerateEnum(inEnum *descriptor.EnumDescriptorProto) error {
-	fg.P("type %s", inEnum.GetName())
+	typeName := inEnum.GetName()
+	fg.P("type %s", typeName)
 	fg.In()
 	first := true
 	for _, enumValue := range inEnum.GetValue() {
@@ -164,8 +181,8 @@ func (fg *FileGenerator) GenerateEnum(inEnum *descriptor.EnumDescriptorProto) er
 }
 
 func (fg *FileGenerator) GenerateEnumDecoder(inEnum *descriptor.EnumDescriptorProto) error {
-	decoderName := strings.ToLower(inEnum.GetName())
 	typeName := inEnum.GetName()
+	decoderName := decoderName(typeName)
 	fg.P("%s : JD.Decoder %s", decoderName, typeName)
 	fg.P("%s =", decoderName)
 	fg.In()
@@ -189,8 +206,78 @@ func (fg *FileGenerator) GenerateEnumDecoder(inEnum *descriptor.EnumDescriptorPr
 	return nil
 }
 
+func (fg *FileGenerator) GenerateEnumEncoder(inEnum *descriptor.EnumDescriptorProto) error {
+	typeName := inEnum.GetName()
+	argName := "v"
+	fg.P("%s : %s -> JE.Value", encoderName(typeName), typeName)
+	fg.P("%s %s =", encoderName(typeName), argName)
+	fg.In()
+	fg.P("let")
+	fg.In()
+	fg.P("lookup s = case s of")
+	fg.In()
+	for _, enumValue := range inEnum.GetValue() {
+		fg.P("%s -> %q", elmEnumValueName(enumValue.GetName()), enumValue.GetName())
+	}
+	fg.Out()
+	fg.Out()
+	fg.P("in")
+	fg.In()
+	fg.P("JE.string <| lookup %s", argName)
+	fg.Out()
+	fg.Out()
+	// TODO: Implement this.
+	return nil
+}
+
 func (fg *FileGenerator) GenerateImports() {
 	fg.P("import Json.Decode as JD exposing ((:=))")
+	fg.P("import Json.Encode as JE")
+}
+
+func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) error {
+	typeName := inMessage.GetName()
+	fg.P("type alias %s =", typeName)
+	fg.In()
+
+	first := true
+	for _, inField := range inMessage.GetField() {
+		t := ""
+		switch inField.GetType() {
+		case descriptor.FieldDescriptorProto_TYPE_INT64,
+			descriptor.FieldDescriptorProto_TYPE_INT32,
+			descriptor.FieldDescriptorProto_TYPE_UINT32,
+			descriptor.FieldDescriptorProto_TYPE_UINT64,
+			descriptor.FieldDescriptorProto_TYPE_SINT32,
+			descriptor.FieldDescriptorProto_TYPE_SINT64:
+			t = "Int"
+		case descriptor.FieldDescriptorProto_TYPE_BOOL:
+			t = "Bool"
+		case descriptor.FieldDescriptorProto_TYPE_STRING:
+			t = "String"
+		case descriptor.FieldDescriptorProto_TYPE_ENUM:
+			// XXX
+			t = inField.GetTypeName()[1:]
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			// XXX
+			t = inField.GetTypeName()[1:]
+		default:
+			t = ">>>ERROR" + inField.GetType().String()
+		}
+
+		leading := ""
+		if first {
+			leading = "{"
+		} else {
+			leading = ","
+		}
+
+		fg.P("%s %s : %s", leading, elmFieldName(inField.GetName()), t)
+		first = false
+	}
+	fg.P("}")
+	fg.Out()
+	return nil
 }
 
 func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.DescriptorProto) error {
@@ -223,21 +310,25 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 		default:
 			d = "xxx"
 		}
-		fg.P("(%q := %s)", elmFieldName(inField.GetName()), d)
+		fg.P("(%q := %s)", jsonFieldName(inField.GetName()), d)
 	}
 	fg.Out()
 	fg.Out()
 	return nil
 }
 
-func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) error {
+func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.DescriptorProto) error {
 	typeName := inMessage.GetName()
-	fg.P("type alias %s =", typeName)
+	argName := "v"
+	fg.P("%s : %s -> JE.Value", encoderName(typeName), typeName)
+	fg.P("%s %s =", encoderName(typeName), argName)
+	fg.In()
+	fg.P("JE.object")
 	fg.In()
 
 	first := true
 	for _, inField := range inMessage.GetField() {
-		t := ""
+		d := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
 			descriptor.FieldDescriptorProto_TYPE_INT32,
@@ -245,30 +336,34 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 			descriptor.FieldDescriptorProto_TYPE_UINT64,
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
-			t = "Int"
+			d = "JE.int"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			t = "Bool"
+			d = "JE.bool"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			t = "String"
+			d = "JE.string"
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
-			// XXX
-			t = inField.GetTypeName()[1:]
+			// Remove leading ".".
+			d = encoderName(inField.GetTypeName()[1:])
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			// XXX
-			t = inField.GetTypeName()[1:]
+			// Remove leading ".".
+			d = encoderName(inField.GetTypeName()[1:])
 		default:
-			t = ">>>ERROR" + inField.GetType().String()
+			d = "xxx"
 		}
+
 		leading := ""
 		if first {
-			leading = "{"
+			leading = "["
 		} else {
 			leading = ","
 		}
-		fg.P("%s %s : %s", leading, elmFieldName(inField.GetName()), t)
 		first = false
+
+		val := argName + "." + elmFieldName(inField.GetName())
+		fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
 	}
-	fg.P("}")
+	fg.P("]")
+	fg.Out()
 	fg.Out()
 	return nil
 }
@@ -282,11 +377,16 @@ func elmEnumValueName(in string) string {
 }
 
 func decoderName(typeName string) string {
-	return firstLower(typeName)
+	return firstLower(typeName) + "Decoder"
 }
 
 func encoderName(typeName string) string {
-	return typeName + "ENCODER"
+	return firstLower(typeName) + "Encoder"
+}
+
+func jsonFieldName(fieldName string) string {
+	// TODO: Make sure this is fine.
+	return firstLower(camelCase(fieldName))
 }
 
 func firstLower(in string) string {

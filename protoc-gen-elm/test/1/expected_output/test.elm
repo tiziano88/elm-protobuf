@@ -1,4 +1,5 @@
 import Json.Decode as JD exposing ((:=))
+import Json.Encode as JE
 
 
 type Enum
@@ -8,8 +9,8 @@ type Enum
   | EnumValue123 -- 123
 
 
-enum : JD.Decoder Enum
-enum =
+enumDecoder : JD.Decoder Enum
+enumDecoder =
   let
     lookup s = case s of
       "ENUM_VALUE_DEFAULT" -> EnumValueDefault
@@ -21,15 +22,34 @@ enum =
     JD.map lookup JD.string
 
 
+enumEncoder : Enum -> JE.Value
+enumEncoder v =
+  let
+    lookup s = case s of
+      EnumValueDefault -> "ENUM_VALUE_DEFAULT"
+      EnumValue1 -> "ENUM_VALUE_1"
+      EnumValue2 -> "ENUM_VALUE_2"
+      EnumValue123 -> "ENUM_VALUE_123"
+  in
+    JE.string <| lookup v
+
+
 type alias SubMessage =
   { int32Field : Int
   }
 
 
-subMessage : JD.Decoder SubMessage
-subMessage =
+subMessageDecoder : JD.Decoder SubMessage
+subMessageDecoder =
   JD.object1 SubMessage
     ("int32Field" := JD.int)
+
+
+subMessageEncoder : SubMessage -> JE.Value
+subMessageEncoder v =
+  JE.object
+    [ ("int32Field", JE.int v.int32Field)
+    ]
 
 
 type alias Foo =
@@ -41,13 +61,24 @@ type alias Foo =
   }
 
 
-foo : JD.Decoder Foo
-foo =
+fooDecoder : JD.Decoder Foo
+fooDecoder =
   JD.object5 Foo
     ("int64Field" := JD.int)
     ("boolField" := JD.bool)
     ("stringField" := JD.string)
-    ("enumField" := enum)
-    ("subMessage" := subMessage)
+    ("enumField" := enumDecoder)
+    ("subMessage" := subMessageDecoder)
+
+
+fooEncoder : Foo -> JE.Value
+fooEncoder v =
+  JE.object
+    [ ("int64Field", JE.int v.int64Field)
+    , ("boolField", JE.bool v.boolField)
+    , ("stringField", JE.string v.stringField)
+    , ("enumField", enumEncoder v.enumField)
+    , ("subMessage", subMessageEncoder v.subMessage)
+    ]
 
 
