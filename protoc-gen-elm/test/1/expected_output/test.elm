@@ -21,20 +21,33 @@ enum =
     JD.map lookup JD.string
 
 
+type alias SubMessage =
+  { int32Field : Int
+  }
+
+
+subMessage : JD.Decoder SubMessage
+subMessage =
+  JD.object1 SubMessage
+    ("int32Field" := JD.int)
+
+
 type alias Foo =
-  { int64_field : Int
-  , bool_field : Bool
-  , string_field : String
-  , enum_field : Enum
+  { int64Field : Int
+  , boolField : Bool
+  , stringField : String
+  , enumField : Enum
+  , subMessage : SubMessage
   }
 
 
 foo : JD.Decoder Foo
 foo =
-  JD.object4 Foo
-    ("int64_field" := JD.int)
-    ("bool_field" := JD.bool)
-    ("string_field" := JD.string)
-    ("enum_field" := enum)
+  JD.object5 Foo
+    ("int64Field" := JD.int)
+    ("boolField" := JD.bool)
+    ("stringField" := JD.string)
+    ("enumField" := enum)
+    ("subMessage" := subMessage)
 
 

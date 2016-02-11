@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
@@ -78,10 +79,10 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	fg.P("")
-	fg.P("")
+		fg.P("")
+		fg.P("")
+	}
 
 	for _, inMessage := range inFile.GetMessageType() {
 		err = fg.GenerateMessage(inMessage)
@@ -96,10 +97,10 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	fg.P("")
-	fg.P("")
+		fg.P("")
+		fg.P("")
+	}
 
 	outFile.Content = proto.String(fg.out.String())
 
@@ -156,7 +157,7 @@ func (fg *FileGenerator) GenerateEnum(inEnum *descriptor.EnumDescriptorProto) er
 		}
 		first = false
 		// TODO: Convert names to CamelCase.
-		fg.P("%s %s -- %d", leading, underscoreToCamel(enumValue.GetName()), enumValue.GetNumber())
+		fg.P("%s %s -- %d", leading, elmEnumValueName(enumValue.GetName()), enumValue.GetNumber())
 	}
 	fg.Out()
 	return nil
@@ -173,9 +174,10 @@ func (fg *FileGenerator) GenerateEnumDecoder(inEnum *descriptor.EnumDescriptorPr
 	fg.P("lookup s = case s of")
 	fg.In()
 	for _, enumValue := range inEnum.GetValue() {
-		fg.P("%q -> %s", enumValue.GetName(), underscoreToCamel(enumValue.GetName()))
+		fg.P("%q -> %s", enumValue.GetName(), elmEnumValueName(enumValue.GetName()))
 	}
-	fg.P("_ -> %s", underscoreToCamel(inEnum.GetValue()[0].GetName()))
+	// TODO: This should fail instead.
+	fg.P("_ -> %s", elmEnumValueName(inEnum.GetValue()[0].GetName()))
 	fg.Out()
 	fg.Out()
 	fg.P("in")
@@ -192,11 +194,9 @@ func (fg *FileGenerator) GenerateImports() {
 }
 
 func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.DescriptorProto) error {
-	messageName := inMessage.GetName()
-	decoderName := strings.ToLower(messageName)
-	typeName := messageName
-	fg.P("%s : JD.Decoder %s", decoderName, typeName)
-	fg.P("%s =", decoderName)
+	typeName := inMessage.GetName()
+	fg.P("%s : JD.Decoder %s", decoderName(typeName), typeName)
+	fg.P("%s =", decoderName(typeName))
 	fg.In()
 	fg.P("JD.object%d %s", len(inMessage.GetField()), typeName)
 	fg.In()
@@ -215,12 +215,15 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
 			d = "JD.string"
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
-			// XXX
-			d = strings.ToLower(inField.GetTypeName()[1:])
+			// Remove leading ".".
+			d = decoderName(inField.GetTypeName()[1:])
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			// Remove leading ".".
+			d = decoderName(inField.GetTypeName()[1:])
 		default:
 			d = "xxx"
 		}
-		fg.P("(%q := %s)", inField.GetName(), d)
+		fg.P("(%q := %s)", elmFieldName(inField.GetName()), d)
 	}
 	fg.Out()
 	fg.Out()
@@ -250,8 +253,11 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			// XXX
 			t = inField.GetTypeName()[1:]
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			// XXX
+			t = inField.GetTypeName()[1:]
 		default:
-			t = "----" + inField.GetType().String()
+			t = ">>>ERROR" + inField.GetType().String()
 		}
 		leading := ""
 		if first {
@@ -259,7 +265,7 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 		} else {
 			leading = ","
 		}
-		fg.P("%s %s : %s", leading, inField.GetName(), t)
+		fg.P("%s %s : %s", leading, elmFieldName(inField.GetName()), t)
 		first = false
 	}
 	fg.P("}")
@@ -267,14 +273,27 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 	return nil
 }
 
-func underscoreToCamel(in string) string {
-	out := ""
-	for _, segment := range strings.Split(in, "_") {
-		out += camel(segment)
-	}
-	return out
+func elmFieldName(in string) string {
+	return firstLower(camelCase(in))
 }
 
-func camel(in string) string {
-	return strings.ToUpper(string(in[0])) + strings.ToLower(string(in[1:]))
+func elmEnumValueName(in string) string {
+	return camelCase(strings.ToLower(in))
+}
+
+func decoderName(typeName string) string {
+	return firstLower(typeName)
+}
+
+func encoderName(typeName string) string {
+	return typeName + "ENCODER"
+}
+
+func firstLower(in string) string {
+	return strings.ToLower(string(in[0])) + string(in[1:])
+}
+
+func camelCase(in string) string {
+	// Remove any additional underscores, e.g. convert `foo_1` into `foo1`.
+	return strings.Replace(generator.CamelCase(in), "_", "", -1)
 }
