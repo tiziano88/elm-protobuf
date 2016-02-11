@@ -23,5 +23,7 @@ and use it to generate the output elm code.
 # References
 
 https://developers.google.com/protocol-buffers/
+
 https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb
+
 https://github.com/google/protobuf/wiki/Third-Party-Add-ons
