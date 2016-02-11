@@ -1,3 +1,7 @@
 language: go
 
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y protobuf-compiler
+
 script: go test -v ./protoc-gen-elm
