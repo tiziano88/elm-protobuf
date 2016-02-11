@@ -1,5 +1,9 @@
 # elm-protobuf
 
+[![Build Status]
+(https://travis-ci.org/tiziano88/elm-protobuf.svg?branch=master)]
+(https://travis-ci.org/tiziano88/elm-protobuf)
+
 Experimental protobuf plugin generating elm code from proto definitions.
 
 The plugin itself is written in Go.
