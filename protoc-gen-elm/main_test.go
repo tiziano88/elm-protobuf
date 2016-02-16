@@ -22,8 +22,14 @@ func TestDiff(t *testing.T) {
 		}
 
 		dir := filepath.Join(td, fi.Name())
+		actualOutputDir := filepath.Join(dir, "actual_output")
 
-		err := os.MkdirAll(filepath.Join(dir, "actual_output"), 0777)
+		err := os.RemoveAll(actualOutputDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = os.MkdirAll(actualOutputDir, 0777)
 		if err != nil {
 			t.Fatal(err)
 		}

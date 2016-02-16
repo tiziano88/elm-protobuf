@@ -258,6 +258,7 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 
 	first := true
 	for _, inField := range inMessage.GetField() {
+		optional := false
 		t := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -277,6 +278,7 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// XXX
 			t = inField.GetTypeName()[1:]
+			optional = true
 		default:
 			t = ">>>ERROR" + inField.GetType().String()
 		}
@@ -288,7 +290,11 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 			leading = ","
 		}
 
-		fg.P("%s %s : %s", leading, elmFieldName(inField.GetName()), t)
+		if optional {
+			fg.P("%s %s : Maybe %s", leading, elmFieldName(inField.GetName()), t)
+		} else {
+			fg.P("%s %s : %s", leading, elmFieldName(inField.GetName()), t)
+		}
 		first = false
 	}
 	fg.P("}")
@@ -304,6 +310,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 	fg.P("JD.object%d %s", len(inMessage.GetField()), typeName)
 	fg.In()
 	for _, inField := range inMessage.GetField() {
+		optional := false
 		d := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -312,6 +319,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 			descriptor.FieldDescriptorProto_TYPE_UINT64,
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
+			// TODO: Handle parsing from string (for 64 bit types).
 			d = "JD.int"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			d = "JD.bool"
@@ -321,12 +329,19 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 			// Remove leading ".".
 			d = decoderName(inField.GetTypeName()[1:])
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			optional = true
 			// Remove leading ".".
 			d = decoderName(inField.GetTypeName()[1:])
 		default:
 			d = "xxx"
 		}
-		fg.P("(%q := %s)", jsonFieldName(inField.GetName()), d)
+		if optional {
+			// TODO: Handle this better, see
+			// http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Json-Decode#maybe
+			fg.P("(JD.maybe (%q := %s))", jsonFieldName(inField.GetName()), d)
+		} else {
+			fg.P("(%q := %s)", jsonFieldName(inField.GetName()), d)
+		}
 	}
 	fg.Out()
 	fg.Out()
@@ -344,6 +359,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 
 	first := true
 	for _, inField := range inMessage.GetField() {
+		optional := false
 		d := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -361,6 +377,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 			// Remove leading ".".
 			d = encoderName(inField.GetTypeName()[1:])
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			optional = true
 			// Remove leading ".".
 			d = encoderName(inField.GetTypeName()[1:])
 		default:
@@ -376,7 +393,11 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 		first = false
 
 		val := argName + "." + elmFieldName(inField.GetName())
-		fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+		if optional {
+			// TODO
+		} else {
+			fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+		}
 	}
 	fg.P("]")
 	fg.Out()

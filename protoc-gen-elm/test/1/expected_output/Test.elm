@@ -1,3 +1,6 @@
+module Test where
+
+
 import Json.Decode as JD exposing ((:=))
 import Json.Encode as JE
 
@@ -57,7 +60,7 @@ type alias Foo =
   , boolField : Bool
   , stringField : String
   , enumField : Enum
-  , subMessage : SubMessage
+  , subMessage : Maybe SubMessage
   }
 
 
@@ -68,7 +71,7 @@ fooDecoder =
     ("boolField" := JD.bool)
     ("stringField" := JD.string)
     ("enumField" := enumDecoder)
-    ("subMessage" := subMessageDecoder)
+    (JD.maybe ("subMessage" := subMessageDecoder))
 
 
 fooEncoder : Foo -> JE.Value
@@ -78,7 +81,6 @@ fooEncoder v =
     , ("boolField", JE.bool v.boolField)
     , ("stringField", JE.string v.stringField)
     , ("enumField", enumEncoder v.enumField)
-    , ("subMessage", subMessageEncoder v.subMessage)
     ]
 
 
