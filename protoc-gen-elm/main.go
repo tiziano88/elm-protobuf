@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -55,9 +56,20 @@ func main() {
 
 func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
 	outFile := &plugin.CodeGeneratorResponse_File{}
-	outFile.Name = proto.String(strings.TrimSuffix(inFile.GetName(), ".proto") + ".elm")
+
+	inFileName := inFile.GetName()
+
+	inFileDir, inFileFile := filepath.Split(inFileName)
+	moduleName := firstUpper(strings.TrimSuffix(inFileFile, ".proto"))
+	outFileName := filepath.Join(inFileDir, moduleName+".elm")
+	outFile.Name = proto.String(outFileName)
 
 	fg := NewFileGenerator()
+
+	fg.GenerateModule(moduleName)
+
+	fg.P("")
+	fg.P("")
 
 	fg.GenerateImports()
 
@@ -230,6 +242,10 @@ func (fg *FileGenerator) GenerateEnumEncoder(inEnum *descriptor.EnumDescriptorPr
 	return nil
 }
 
+func (fg *FileGenerator) GenerateModule(moduleName string) {
+	fg.P("module %s where", moduleName)
+}
+
 func (fg *FileGenerator) GenerateImports() {
 	fg.P("import Json.Decode as JD exposing ((:=))")
 	fg.P("import Json.Encode as JE")
@@ -391,6 +407,10 @@ func jsonFieldName(fieldName string) string {
 
 func firstLower(in string) string {
 	return strings.ToLower(string(in[0])) + string(in[1:])
+}
+
+func firstUpper(in string) string {
+	return strings.ToUpper(string(in[0])) + string(in[1:])
 }
 
 func camelCase(in string) string {
