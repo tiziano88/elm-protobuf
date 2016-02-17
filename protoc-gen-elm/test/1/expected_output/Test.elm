@@ -5,6 +5,47 @@ import Json.Decode as JD exposing ((:=))
 import Json.Encode as JE
 
 
+optional : JD.Decoder a -> JD.Decoder (Maybe a)
+optional decoder =
+  JD.oneOf
+    [ JD.map Just decoder
+    , JD.succeed Nothing
+    ]
+
+
+withDefault : a -> JD.Decoder a -> JD.Decoder a
+withDefault default decoder =
+  JD.oneOf
+    [ decoder
+    , JD.succeed default
+    ]
+
+
+intField : String -> JD.Decoder Int
+intField name =
+  withDefault 0 (name := JD.int)
+
+
+boolField : String -> JD.Decoder Bool
+boolField name =
+  withDefault False (name := JD.bool)
+
+
+stringField : String -> JD.Decoder String
+stringField name =
+  withDefault "" (name := JD.string)
+
+
+messageField : JD.Decoder a -> String -> JD.Decoder (Maybe a)
+messageField decoder name =
+  optional (name := decoder)
+
+
+enumField : JD.Decoder a -> String -> JD.Decoder a
+enumField decoder name =
+  (name := decoder)
+
+
 type Enum
   = EnumValueDefault -- 0
   | EnumValue1 -- 1
@@ -45,7 +86,7 @@ type alias SubMessage =
 subMessageDecoder : JD.Decoder SubMessage
 subMessageDecoder =
   JD.object1 SubMessage
-    ("int32Field" := JD.int)
+    (intField "int32Field")
 
 
 subMessageEncoder : SubMessage -> JE.Value
@@ -67,11 +108,11 @@ type alias Foo =
 fooDecoder : JD.Decoder Foo
 fooDecoder =
   JD.object5 Foo
-    ("int64Field" := JD.int)
-    ("boolField" := JD.bool)
-    ("stringField" := JD.string)
-    ("enumField" := enumDecoder)
-    (JD.maybe ("subMessage" := subMessageDecoder))
+    (intField "int64Field")
+    (boolField "boolField")
+    (stringField "stringField")
+    (enumField enumDecoder "enumField")
+    (messageField subMessageDecoder "subMessage")
 
 
 fooEncoder : Foo -> JE.Value
