@@ -76,6 +76,11 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 	fg.P("")
 	fg.P("")
 
+	fg.GenerateRuntime()
+
+	fg.P("")
+	fg.P("")
+
 	var err error
 
 	for _, inEnum := range inFile.GetEnumType() {
@@ -251,6 +256,78 @@ func (fg *FileGenerator) GenerateImports() {
 	fg.P("import Json.Encode as JE")
 }
 
+func (fg *FileGenerator) GenerateRuntime() {
+	fg.P("optional : JD.Decoder a -> JD.Decoder (Maybe a)")
+	fg.P("optional decoder =")
+	fg.In()
+	fg.P("JD.oneOf")
+	fg.In()
+	fg.P("[ JD.map Just decoder")
+	fg.P(", JD.succeed Nothing")
+	fg.P("]")
+	fg.Out()
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("withDefault : a -> JD.Decoder a -> JD.Decoder a")
+	fg.P("withDefault default decoder =")
+	fg.In()
+	fg.P("JD.oneOf")
+	fg.In()
+	fg.P("[ decoder")
+	fg.P(", JD.succeed default")
+	fg.P("]")
+	fg.Out()
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("intField : String -> JD.Decoder Int")
+	fg.P("intField name =")
+	fg.In()
+	fg.P("withDefault 0 (name := JD.int)")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("boolField : String -> JD.Decoder Bool")
+	fg.P("boolField name =")
+	fg.In()
+	fg.P("withDefault False (name := JD.bool)")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("stringField : String -> JD.Decoder String")
+	fg.P("stringField name =")
+	fg.In()
+	fg.P("withDefault \"\" (name := JD.string)")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("messageField : JD.Decoder a -> String -> JD.Decoder (Maybe a)")
+	fg.P("messageField decoder name =")
+	fg.In()
+	fg.P("optional (name := decoder)")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("enumField : JD.Decoder a -> String -> JD.Decoder a")
+	fg.P("enumField decoder name =")
+	fg.In()
+	fg.P("(name := decoder)")
+	fg.Out()
+}
+
 func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) error {
 	typeName := inMessage.GetName()
 	fg.P("type alias %s =", typeName)
@@ -310,7 +387,6 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 	fg.P("JD.object%d %s", len(inMessage.GetField()), typeName)
 	fg.In()
 	for _, inField := range inMessage.GetField() {
-		optional := false
 		d := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -320,28 +396,22 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
 			// TODO: Handle parsing from string (for 64 bit types).
-			d = "JD.int"
+			d = "intField"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			d = "JD.bool"
+			d = "boolField"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			d = "JD.string"
+			d = "stringField"
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
+			// TODO: Default enum value.
 			// Remove leading ".".
-			d = decoderName(inField.GetTypeName()[1:])
+			d = "enumField " + decoderName(inField.GetTypeName()[1:])
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			optional = true
 			// Remove leading ".".
-			d = decoderName(inField.GetTypeName()[1:])
+			d = "messageField " + decoderName(inField.GetTypeName()[1:])
 		default:
 			d = "xxx"
 		}
-		if optional {
-			// TODO: Handle this better, see
-			// http://package.elm-lang.org/packages/elm-lang/core/3.0.0/Json-Decode#maybe
-			fg.P("(JD.maybe (%q := %s))", jsonFieldName(inField.GetName()), d)
-		} else {
-			fg.P("(%q := %s)", jsonFieldName(inField.GetName()), d)
-		}
+		fg.P("(%s %q)", d, jsonFieldName(inField.GetName()))
 	}
 	fg.Out()
 	fg.Out()
