@@ -294,6 +294,15 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
+	fg.P("floatField : String -> JD.Decoder Float")
+	fg.P("floatField name =")
+	fg.In()
+	fg.P("withDefault 0.0 (name := JD.float)")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
 	fg.P("boolField : String -> JD.Decoder Bool")
 	fg.P("boolField name =")
 	fg.In()
@@ -326,6 +335,26 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.In()
 	fg.P("(name := decoder)")
 	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value")
+	fg.P("optionalEncoder encoder v =")
+	fg.In()
+	fg.P("case v of")
+	fg.In()
+	fg.P("Just x ->")
+	fg.In()
+	fg.P("encoder x")
+	fg.Out()
+	fg.P("")
+	fg.P("Nothing ->")
+	fg.In()
+	fg.P("JE.null")
+	fg.Out()
+	fg.Out()
+	fg.Out()
 }
 
 func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) error {
@@ -345,6 +374,8 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
 			t = "Int"
+		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+			t = "Float"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			t = "Bool"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
@@ -397,6 +428,8 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
 			// TODO: Handle parsing from string (for 64 bit types).
 			d = "intField"
+		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+			d = "floatField"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			d = "boolField"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
@@ -439,6 +472,8 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
 			d = "JE.int"
+		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+			d = "JE.float"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			d = "JE.bool"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
@@ -464,7 +499,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 
 		val := argName + "." + elmFieldName(inField.GetName())
 		if optional {
-			// TODO
+			fg.P("%s (%q, optionalEncoder %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
 		} else {
 			fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
 		}
