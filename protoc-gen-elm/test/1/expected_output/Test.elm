@@ -5,12 +5,22 @@ import Json.Decode as JD exposing ((:=))
 import Json.Encode as JE
 
 
-optional : JD.Decoder a -> JD.Decoder (Maybe a)
-optional decoder =
+optionalDecoder : JD.Decoder a -> JD.Decoder (Maybe a)
+optionalDecoder decoder =
   JD.oneOf
     [ JD.map Just decoder
     , JD.succeed Nothing
     ]
+
+
+optionalFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)
+optionalFieldDecoder decoder name =
+  optionalDecoder (name := decoder)
+
+
+repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)
+repeatedFieldDecoder decoder name =
+  JD.list (name := decoder)
 
 
 withDefault : a -> JD.Decoder a -> JD.Decoder a
@@ -21,29 +31,44 @@ withDefault default decoder =
     ]
 
 
-intField : String -> JD.Decoder Int
-intField name =
+intFieldDecoder : String -> JD.Decoder Int
+intFieldDecoder name =
   withDefault 0 (name := JD.int)
 
 
-boolField : String -> JD.Decoder Bool
-boolField name =
+floatFieldDecoder : String -> JD.Decoder Float
+floatFieldDecoder name =
+  withDefault 0.0 (name := JD.float)
+
+
+boolFieldDecoder : String -> JD.Decoder Bool
+boolFieldDecoder name =
   withDefault False (name := JD.bool)
 
 
-stringField : String -> JD.Decoder String
-stringField name =
+stringFieldDecoder : String -> JD.Decoder String
+stringFieldDecoder name =
   withDefault "" (name := JD.string)
 
 
-messageField : JD.Decoder a -> String -> JD.Decoder (Maybe a)
-messageField decoder name =
-  optional (name := decoder)
-
-
-enumField : JD.Decoder a -> String -> JD.Decoder a
-enumField decoder name =
+enumFieldDecoder : JD.Decoder a -> String -> JD.Decoder a
+enumFieldDecoder decoder name =
   (name := decoder)
+
+
+optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
+optionalEncoder encoder v =
+  case v of
+    Just x ->
+      encoder x
+    
+    Nothing ->
+      JE.null
+
+
+repeatedFieldEncoder : (a -> JE.Value) -> List a -> JE.Value
+repeatedFieldEncoder encoder v =
+  JE.list <| List.map encoder v
 
 
 type Enum
@@ -79,14 +104,14 @@ enumEncoder v =
 
 
 type alias SubMessage =
-  { int32Field : Int
+  { int32Field : Int -- 1
   }
 
 
 subMessageDecoder : JD.Decoder SubMessage
 subMessageDecoder =
   JD.object1 SubMessage
-    (intField "int32Field")
+    (intFieldDecoder "int32Field")
 
 
 subMessageEncoder : SubMessage -> JE.Value
@@ -97,22 +122,26 @@ subMessageEncoder v =
 
 
 type alias Foo =
-  { int64Field : Int
-  , boolField : Bool
-  , stringField : String
-  , enumField : Enum
-  , subMessage : Maybe SubMessage
+  { int64Field : Int -- 1
+  , boolField : Bool -- 2
+  , stringField : String -- 3
+  , enumField : Enum -- 4
+  , subMessage : Maybe SubMessage -- 5
+  , repeatedInt64Field : List Int -- 6
+  , repeatedEnumField : List Enum -- 7
   }
 
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
-  JD.object5 Foo
-    (intField "int64Field")
-    (boolField "boolField")
-    (stringField "stringField")
-    (enumField enumDecoder "enumField")
-    (messageField subMessageDecoder "subMessage")
+  JD.object7 Foo
+    (intFieldDecoder "int64Field")
+    (boolFieldDecoder "boolField")
+    (stringFieldDecoder "stringField")
+    ((enumFieldDecoder enumDecoder) "enumField")
+    (optionalFieldDecoder subMessageDecoder "subMessage")
+    (repeatedFieldDecoder intFieldDecoder "repeatedInt64Field")
+    (repeatedFieldDecoder (enumFieldDecoder enumDecoder) "repeatedEnumField")
 
 
 fooEncoder : Foo -> JE.Value
@@ -122,6 +151,9 @@ fooEncoder v =
     , ("boolField", JE.bool v.boolField)
     , ("stringField", JE.string v.stringField)
     , ("enumField", enumEncoder v.enumField)
+    , ("subMessage", optionalEncoder subMessageEncoder v.subMessage)
+    , ("repeatedInt64Field", repeatedFieldEncoder JE.int v.repeatedInt64Field)
+    , ("repeatedEnumField", repeatedFieldEncoder enumEncoder v.repeatedEnumField)
     ]
 
 
