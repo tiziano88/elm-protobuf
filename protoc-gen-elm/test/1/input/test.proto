@@ -21,4 +21,7 @@ message Foo {
   optional Enum enum_field = 4;
 
   optional SubMessage sub_message = 5;
+
+  repeated int64 repeated_int64_field = 6;
+  repeated Enum repeated_enum_field = 7;
 }

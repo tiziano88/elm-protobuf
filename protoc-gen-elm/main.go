@@ -68,19 +68,8 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 	fg := NewFileGenerator()
 
 	fg.GenerateModule(fullModuleName)
-
-	fg.P("")
-	fg.P("")
-
 	fg.GenerateImports()
-
-	fg.P("")
-	fg.P("")
-
 	fg.GenerateRuntime()
-
-	fg.P("")
-	fg.P("")
 
 	var err error
 
@@ -250,11 +239,17 @@ func (fg *FileGenerator) GenerateEnumEncoder(inEnum *descriptor.EnumDescriptorPr
 
 func (fg *FileGenerator) GenerateModule(moduleName string) {
 	fg.P("module %s where", moduleName)
+
+	fg.P("")
+	fg.P("")
 }
 
 func (fg *FileGenerator) GenerateImports() {
 	fg.P("import Json.Decode as JD exposing ((:=))")
 	fg.P("import Json.Encode as JE")
+
+	fg.P("")
+	fg.P("")
 }
 
 func (fg *FileGenerator) GenerateRuntime() {
@@ -322,10 +317,19 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("messageField : JD.Decoder a -> String -> JD.Decoder (Maybe a)")
-	fg.P("messageField decoder name =")
+	fg.P("messageFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)")
+	fg.P("messageFieldDecoder decoder name =")
 	fg.In()
 	fg.P("optional (name := decoder)")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)")
+	fg.P("repeatedFieldDecoder decoder name =")
+	fg.In()
+	fg.P("JD.list (name := decoder)")
 	fg.Out()
 
 	fg.P("")
@@ -356,6 +360,18 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.Out()
 	fg.Out()
 	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("repeatedFieldEncoder : (a -> JE.Value) -> List a -> JE.Value")
+	fg.P("repeatedFieldEncoder encoder v =")
+	fg.In()
+	fg.P("JE.list <| List.map encoder v")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
 }
 
 func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) error {
@@ -365,7 +381,10 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 
 	first := true
 	for _, inField := range inMessage.GetField() {
-		optional := false
+		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
+			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
+
 		t := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -387,9 +406,8 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// XXX
 			t = inField.GetTypeName()[1:]
-			optional = true
 		default:
-			t = ">>>ERROR" + inField.GetType().String()
+			t = ">>>ERROR: " + inField.GetType().String()
 		}
 
 		leading := ""
@@ -399,11 +417,16 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 			leading = ","
 		}
 
-		if optional {
-			fg.P("%s %s : Maybe %s", leading, elmFieldName(inField.GetName()), t)
+		if repeated {
+			fg.P("%s %s : List %s", leading, elmFieldName(inField.GetName()), t)
 		} else {
-			fg.P("%s %s : %s", leading, elmFieldName(inField.GetName()), t)
+			if optional {
+				fg.P("%s %s : Maybe %s", leading, elmFieldName(inField.GetName()), t)
+			} else {
+				fg.P("%s %s : %s", leading, elmFieldName(inField.GetName()), t)
+			}
 		}
+
 		first = false
 	}
 	fg.P("}")
@@ -419,6 +442,9 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 	fg.P("JD.object%d %s", len(inMessage.GetField()), typeName)
 	fg.In()
 	for _, inField := range inMessage.GetField() {
+		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
+			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 		d := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -438,14 +464,23 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			// TODO: Default enum value.
 			// Remove leading ".".
-			d = "enumField " + decoderName(inField.GetTypeName()[1:])
+			d = "(enumField " + decoderName(inField.GetTypeName()[1:]) + ")"
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// Remove leading ".".
-			d = "messageField " + decoderName(inField.GetTypeName()[1:])
+			d = decoderName(inField.GetTypeName()[1:])
 		default:
-			d = "xxx"
+			d = ">>>ERROR: " + inField.GetType().String()
 		}
-		fg.P("(%s %q)", d, jsonFieldName(inField.GetName()))
+
+		if repeated {
+			fg.P("(repeatedFieldDecoder %s %q)", d, jsonFieldName(inField.GetName()))
+		} else {
+			if optional {
+				fg.P("(messageFieldDecoder %s %q)", d, jsonFieldName(inField.GetName()))
+			} else {
+				fg.P("(%s %q)", d, jsonFieldName(inField.GetName()))
+			}
+		}
 	}
 	fg.Out()
 	fg.Out()
@@ -463,7 +498,9 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 
 	first := true
 	for _, inField := range inMessage.GetField() {
-		optional := false
+		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
+			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 		d := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -483,11 +520,10 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 			// Remove leading ".".
 			d = encoderName(inField.GetTypeName()[1:])
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			optional = true
 			// Remove leading ".".
 			d = encoderName(inField.GetTypeName()[1:])
 		default:
-			d = "xxx"
+			d = ">>>ERROR: " + inField.GetType().String()
 		}
 
 		leading := ""
@@ -499,10 +535,14 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 		first = false
 
 		val := argName + "." + elmFieldName(inField.GetName())
-		if optional {
-			fg.P("%s (%q, optionalEncoder %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+		if repeated {
+			fg.P("%s (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
 		} else {
-			fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+			if optional {
+				fg.P("%s (%q, optionalEncoder %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+			} else {
+				fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+			}
 		}
 	}
 	fg.P("]")
