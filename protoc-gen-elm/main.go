@@ -253,8 +253,8 @@ func (fg *FileGenerator) GenerateImports() {
 }
 
 func (fg *FileGenerator) GenerateRuntime() {
-	fg.P("optional : JD.Decoder a -> JD.Decoder (Maybe a)")
-	fg.P("optional decoder =")
+	fg.P("optionalDecoder : JD.Decoder a -> JD.Decoder (Maybe a)")
+	fg.P("optionalDecoder decoder =")
 	fg.In()
 	fg.P("JD.oneOf")
 	fg.In()
@@ -262,6 +262,24 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P(", JD.succeed Nothing")
 	fg.P("]")
 	fg.Out()
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("messageFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)")
+	fg.P("messageFieldDecoder decoder name =")
+	fg.In()
+	fg.P("optionalDecoder (name := decoder)")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)")
+	fg.P("repeatedFieldDecoder decoder name =")
+	fg.In()
+	fg.P("JD.list (name := decoder)")
 	fg.Out()
 
 	fg.P("")
@@ -281,8 +299,8 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("intField : String -> JD.Decoder Int")
-	fg.P("intField name =")
+	fg.P("intFieldDecoder : String -> JD.Decoder Int")
+	fg.P("intFieldDecoder name =")
 	fg.In()
 	fg.P("withDefault 0 (name := JD.int)")
 	fg.Out()
@@ -290,8 +308,8 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("floatField : String -> JD.Decoder Float")
-	fg.P("floatField name =")
+	fg.P("floatFieldDecoder : String -> JD.Decoder Float")
+	fg.P("floatFieldDecoder name =")
 	fg.In()
 	fg.P("withDefault 0.0 (name := JD.float)")
 	fg.Out()
@@ -299,8 +317,8 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("boolField : String -> JD.Decoder Bool")
-	fg.P("boolField name =")
+	fg.P("boolFieldDecoder : String -> JD.Decoder Bool")
+	fg.P("boolFieldDecoder name =")
 	fg.In()
 	fg.P("withDefault False (name := JD.bool)")
 	fg.Out()
@@ -308,8 +326,8 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("stringField : String -> JD.Decoder String")
-	fg.P("stringField name =")
+	fg.P("stringFieldDecoder : String -> JD.Decoder String")
+	fg.P("stringFieldDecoder name =")
 	fg.In()
 	fg.P("withDefault \"\" (name := JD.string)")
 	fg.Out()
@@ -317,26 +335,8 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("messageFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)")
-	fg.P("messageFieldDecoder decoder name =")
-	fg.In()
-	fg.P("optional (name := decoder)")
-	fg.Out()
-
-	fg.P("")
-	fg.P("")
-
-	fg.P("repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)")
-	fg.P("repeatedFieldDecoder decoder name =")
-	fg.In()
-	fg.P("JD.list (name := decoder)")
-	fg.Out()
-
-	fg.P("")
-	fg.P("")
-
-	fg.P("enumField : JD.Decoder a -> String -> JD.Decoder a")
-	fg.P("enumField decoder name =")
+	fg.P("enumFieldDecoder : JD.Decoder a -> String -> JD.Decoder a")
+	fg.P("enumFieldDecoder decoder name =")
 	fg.In()
 	fg.P("(name := decoder)")
 	fg.Out()
@@ -454,17 +454,17 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
 			// TODO: Handle parsing from string (for 64 bit types).
-			d = "intField"
+			d = "intFieldDecoder"
 		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
-			d = "floatField"
+			d = "floatFieldDecoder"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			d = "boolField"
+			d = "boolFieldDecoder"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			d = "stringField"
+			d = "stringFieldDecoder"
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			// TODO: Default enum value.
 			// Remove leading ".".
-			d = "(enumField " + decoderName(inField.GetTypeName()[1:]) + ")"
+			d = "(enumFieldDecoder " + decoderName(inField.GetTypeName()[1:]) + ")"
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// Remove leading ".".
 			d = decoderName(inField.GetTypeName()[1:])
