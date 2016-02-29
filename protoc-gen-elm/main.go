@@ -267,8 +267,8 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("messageFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)")
-	fg.P("messageFieldDecoder decoder name =")
+	fg.P("optionalFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)")
+	fg.P("optionalFieldDecoder decoder name =")
 	fg.In()
 	fg.P("optionalDecoder (name := decoder)")
 	fg.Out()
@@ -476,7 +476,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 			fg.P("(repeatedFieldDecoder %s %q)", d, jsonFieldName(inField.GetName()))
 		} else {
 			if optional {
-				fg.P("(messageFieldDecoder %s %q)", d, jsonFieldName(inField.GetName()))
+				fg.P("(optionalFieldDecoder %s %q)", d, jsonFieldName(inField.GetName()))
 			} else {
 				fg.P("(%s %q)", d, jsonFieldName(inField.GetName()))
 			}
