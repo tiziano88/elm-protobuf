@@ -385,7 +385,7 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 
-		t := ""
+		fType := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
 			descriptor.FieldDescriptorProto_TYPE_INT32,
@@ -393,21 +393,21 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 			descriptor.FieldDescriptorProto_TYPE_UINT64,
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT64:
-			t = "Int"
+			fType = "Int"
 		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
-			t = "Float"
+			fType = "Float"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			t = "Bool"
+			fType = "Bool"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			t = "String"
+			fType = "String"
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			// XXX
-			t = inField.GetTypeName()[1:]
+			fType = inField.GetTypeName()[1:]
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// XXX
-			t = inField.GetTypeName()[1:]
+			fType = inField.GetTypeName()[1:]
 		default:
-			t = ">>>ERROR: " + inField.GetType().String()
+			return fmt.Errorf("Error generating type for field %s", inField.GetType())
 		}
 
 		leading := ""
@@ -417,13 +417,16 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 			leading = ","
 		}
 
+		fName := elmFieldName(inField.GetName())
+		fNumber := inField.GetNumber()
+
 		if repeated {
-			fg.P("%s %s : List %s", leading, elmFieldName(inField.GetName()), t)
+			fg.P("%s %s : List %s -- %d", leading, fName, fType, fNumber)
 		} else {
 			if optional {
-				fg.P("%s %s : Maybe %s", leading, elmFieldName(inField.GetName()), t)
+				fg.P("%s %s : Maybe %s -- %d", leading, fName, fType, fNumber)
 			} else {
-				fg.P("%s %s : %s", leading, elmFieldName(inField.GetName()), t)
+				fg.P("%s %s : %s -- %d", leading, fName, fType, fNumber)
 			}
 		}
 
@@ -469,7 +472,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 			// Remove leading ".".
 			d = decoderName(inField.GetTypeName()[1:])
 		default:
-			d = ">>>ERROR: " + inField.GetType().String()
+			return fmt.Errorf("Error generating decoder for field %s", inField.GetType())
 		}
 
 		if repeated {
@@ -523,7 +526,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 			// Remove leading ".".
 			d = encoderName(inField.GetTypeName()[1:])
 		default:
-			d = ">>>ERROR: " + inField.GetType().String()
+			return fmt.Errorf("Error generating encoder for field %s", inField.GetType())
 		}
 
 		leading := ""
