@@ -60,13 +60,14 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 	inFileName := inFile.GetName()
 
 	inFileDir, inFileFile := filepath.Split(inFileName)
-	moduleName := firstUpper(strings.TrimSuffix(inFileFile, ".proto"))
-	outFileName := filepath.Join(inFileDir, moduleName+".elm")
+	shortModuleName := firstUpper(strings.TrimSuffix(inFileFile, ".proto"))
+	fullModuleName := strings.Replace(inFileDir, "/", ".", -1) + shortModuleName
+	outFileName := filepath.Join(inFileDir, shortModuleName+".elm")
 	outFile.Name = proto.String(outFileName)
 
 	fg := NewFileGenerator()
 
-	fg.GenerateModule(moduleName)
+	fg.GenerateModule(fullModuleName)
 
 	fg.P("")
 	fg.P("")
