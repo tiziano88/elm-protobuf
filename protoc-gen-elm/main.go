@@ -253,6 +253,28 @@ func (fg *FileGenerator) GenerateImports() {
 }
 
 func (fg *FileGenerator) GenerateRuntime() {
+	// Applicative-style decoders. This is fine as long as this is the only Applicative in the
+	// package, otherwise operator will clash, since Elm does not have support to generalise
+	// them via HKTs.
+
+	fg.P("(<$>) : (a -> b) -> JD.Decoder a -> JD.Decoder b")
+	fg.P("(<$>) =")
+	fg.In()
+	fg.P("JD.map")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("(<*>) : JD.Decoder (a -> b) -> JD.Decoder a -> JD.Decoder b")
+	fg.P("(<*>) f v =")
+	fg.In()
+	fg.P("f `JD.andThen` \\x -> x <$> v")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
 	fg.P("optionalDecoder : JD.Decoder a -> JD.Decoder (Maybe a)")
 	fg.P("optionalDecoder decoder =")
 	fg.In()
@@ -442,8 +464,10 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 	fg.P("%s : JD.Decoder %s", decoderName(typeName), typeName)
 	fg.P("%s =", decoderName(typeName))
 	fg.In()
-	fg.P("JD.object%d %s", len(inMessage.GetField()), typeName)
+	fg.P("%s", typeName)
 	fg.In()
+
+	first := true
 	for _, inField := range inMessage.GetField() {
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
@@ -475,15 +499,24 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 			return fmt.Errorf("Error generating decoder for field %s", inField.GetType())
 		}
 
+		leading := ""
+		if first {
+			leading = "<$>"
+		} else {
+			leading = "<*>"
+		}
+
 		if repeated {
-			fg.P("(repeatedFieldDecoder %s %q)", d, jsonFieldName(inField.GetName()))
+			fg.P("%s (repeatedFieldDecoder %s %q)", leading, d, jsonFieldName(inField.GetName()))
 		} else {
 			if optional {
-				fg.P("(optionalFieldDecoder %s %q)", d, jsonFieldName(inField.GetName()))
+				fg.P("%s (optionalFieldDecoder %s %q)", leading, d, jsonFieldName(inField.GetName()))
 			} else {
-				fg.P("(%s %q)", d, jsonFieldName(inField.GetName()))
+				fg.P("%s (%s %q)", leading, d, jsonFieldName(inField.GetName()))
 			}
 		}
+
+		first = false
 	}
 	fg.Out()
 	fg.Out()

@@ -5,6 +5,16 @@ import Json.Decode as JD exposing ((:=))
 import Json.Encode as JE
 
 
+(<$>) : (a -> b) -> JD.Decoder a -> JD.Decoder b
+(<$>) =
+  JD.map
+
+
+(<*>) : JD.Decoder (a -> b) -> JD.Decoder a -> JD.Decoder b
+(<*>) f v =
+  f `JD.andThen` \x -> x <$> v
+
+
 optionalDecoder : JD.Decoder a -> JD.Decoder (Maybe a)
 optionalDecoder decoder =
   JD.oneOf
@@ -110,8 +120,8 @@ type alias SubMessage =
 
 subMessageDecoder : JD.Decoder SubMessage
 subMessageDecoder =
-  JD.object1 SubMessage
-    (intFieldDecoder "int32Field")
+  SubMessage
+    <$> (intFieldDecoder "int32Field")
 
 
 subMessageEncoder : SubMessage -> JE.Value
@@ -134,14 +144,14 @@ type alias Foo =
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
-  JD.object7 Foo
-    (intFieldDecoder "int64Field")
-    (boolFieldDecoder "boolField")
-    (stringFieldDecoder "stringField")
-    ((enumFieldDecoder enumDecoder) "enumField")
-    (optionalFieldDecoder subMessageDecoder "subMessage")
-    (repeatedFieldDecoder intFieldDecoder "repeatedInt64Field")
-    (repeatedFieldDecoder (enumFieldDecoder enumDecoder) "repeatedEnumField")
+  Foo
+    <$> (intFieldDecoder "int64Field")
+    <*> (boolFieldDecoder "boolField")
+    <*> (stringFieldDecoder "stringField")
+    <*> ((enumFieldDecoder enumDecoder) "enumField")
+    <*> (optionalFieldDecoder subMessageDecoder "subMessage")
+    <*> (repeatedFieldDecoder intFieldDecoder "repeatedInt64Field")
+    <*> (repeatedFieldDecoder (enumFieldDecoder enumDecoder) "repeatedEnumField")
 
 
 fooEncoder : Foo -> JE.Value
