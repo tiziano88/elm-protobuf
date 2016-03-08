@@ -42,7 +42,8 @@ https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/test/1/expe
 ## How to install
 
 -   Make sure that you have a Go environment correctly set up, and that
-    `$GOPATH/bin` is included in your `$PATH`.
+    `$GOPATH/bin` is included in your `$PATH`. See
+    https://golang.org/doc/install for info.
 
 -   Install a recent `protoc` compiler version from
     https://github.com/google/protobuf (it must have support for `proto3`
