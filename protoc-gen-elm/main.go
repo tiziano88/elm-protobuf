@@ -627,8 +627,7 @@ func encoderName(typeName string) string {
 }
 
 func jsonFieldName(field *descriptor.FieldDescriptorProto) string {
-	// TODO: Make sure this is fine.
-	return firstLower(camelCase(field.GetName()))
+	return field.GetJsonName()
 }
 
 func firstLower(in string) string {
