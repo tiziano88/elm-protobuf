@@ -28,9 +28,9 @@ optionalFieldDecoder decoder name =
   optionalDecoder (name := decoder)
 
 
-repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)
-repeatedFieldDecoder decoder name =
-  JD.list (name := decoder)
+repeatedFieldDecoder : JD.Decoder a -> JD.Decoder (List a)
+repeatedFieldDecoder decoder =
+  withDefault [] (JD.list decoder)
 
 
 withDefault : a -> JD.Decoder a -> JD.Decoder a
@@ -174,8 +174,8 @@ fooDecoder =
     <*> (stringFieldDecoder "stringField")
     <*> ((enumFieldDecoder enumDecoder) "enumField")
     <*> (optionalFieldDecoder subMessageDecoder "subMessage")
-    <*> (repeatedFieldDecoder intFieldDecoder "repeatedInt64Field")
-    <*> (repeatedFieldDecoder (enumFieldDecoder enumDecoder) "repeatedEnumField")
+    <*> (repeatedFieldDecoder (intFieldDecoder "repeatedInt64Field"))
+    <*> (repeatedFieldDecoder ((enumFieldDecoder enumDecoder) "repeatedEnumField"))
     <*> (optionalFieldDecoder foo_NestedMessageDecoder "nestedMessageField")
     <*> ((enumFieldDecoder foo_NestedEnumDecoder) "nestedEnumField")
 
@@ -207,15 +207,15 @@ fooEncoder v =
 
 
 type Foo_NestedEnum
-  = EnumValueDefault -- 0
+  = Foo_EnumValueDefault -- 0
 
 
 foo_NestedEnumDecoder : JD.Decoder Foo_NestedEnum
 foo_NestedEnumDecoder =
   let
     lookup s = case s of
-      "ENUM_VALUE_DEFAULT" -> EnumValueDefault
-      _ -> EnumValueDefault
+      "ENUM_VALUE_DEFAULT" -> Foo_EnumValueDefault
+      _ -> Foo_EnumValueDefault
   in
     JD.map lookup JD.string
 
@@ -224,7 +224,7 @@ foo_NestedEnumEncoder : Foo_NestedEnum -> JE.Value
 foo_NestedEnumEncoder v =
   let
     lookup s = case s of
-      EnumValueDefault -> "ENUM_VALUE_DEFAULT"
+      Foo_EnumValueDefault -> "ENUM_VALUE_DEFAULT"
   in
     JE.string <| lookup v
 
