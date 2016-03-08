@@ -132,20 +132,42 @@ subMessageEncoder v =
 
 
 type alias Foo =
-  { int64Field : Int -- 1
-  , boolField : Bool -- 2
-  , stringField : String -- 3
-  , enumField : Enum -- 4
-  , subMessage : Maybe SubMessage -- 5
-  , repeatedInt64Field : List Int -- 6
-  , repeatedEnumField : List Enum -- 7
+  { doubleField : Float -- 1
+  , floatField : Float -- 2
+  , int32Field : Int -- 3
+  , int64Field : Int -- 4
+  , uint32Field : Int -- 5
+  , uint64Field : Int -- 6
+  , sint32Field : Int -- 7
+  , sint64Field : Int -- 8
+  , fixed32Field : Int -- 9
+  , fixed64Field : Int -- 10
+  , sfixed32Field : Int -- 11
+  , sfixed64Field : Int -- 12
+  , boolField : Bool -- 13
+  , stringField : String -- 14
+  , enumField : Enum -- 15
+  , subMessage : Maybe SubMessage -- 16
+  , repeatedInt64Field : List Int -- 17
+  , repeatedEnumField : List Enum -- 18
   }
 
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
   Foo
-    <$> (intFieldDecoder "int64Field")
+    <$> (floatFieldDecoder "doubleField")
+    <*> (floatFieldDecoder "floatField")
+    <*> (intFieldDecoder "int32Field")
+    <*> (intFieldDecoder "int64Field")
+    <*> (intFieldDecoder "uint32Field")
+    <*> (intFieldDecoder "uint64Field")
+    <*> (intFieldDecoder "sint32Field")
+    <*> (intFieldDecoder "sint64Field")
+    <*> (intFieldDecoder "fixed32Field")
+    <*> (intFieldDecoder "fixed64Field")
+    <*> (intFieldDecoder "sfixed32Field")
+    <*> (intFieldDecoder "sfixed64Field")
     <*> (boolFieldDecoder "boolField")
     <*> (stringFieldDecoder "stringField")
     <*> ((enumFieldDecoder enumDecoder) "enumField")
@@ -157,7 +179,18 @@ fooDecoder =
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
   JE.object
-    [ ("int64Field", JE.int v.int64Field)
+    [ ("doubleField", JE.float v.doubleField)
+    , ("floatField", JE.float v.floatField)
+    , ("int32Field", JE.int v.int32Field)
+    , ("int64Field", JE.int v.int64Field)
+    , ("uint32Field", JE.int v.uint32Field)
+    , ("uint64Field", JE.int v.uint64Field)
+    , ("sint32Field", JE.int v.sint32Field)
+    , ("sint64Field", JE.int v.sint64Field)
+    , ("fixed32Field", JE.int v.fixed32Field)
+    , ("fixed64Field", JE.int v.fixed64Field)
+    , ("sfixed32Field", JE.int v.sfixed32Field)
+    , ("sfixed64Field", JE.int v.sfixed64Field)
     , ("boolField", JE.bool v.boolField)
     , ("stringField", JE.string v.stringField)
     , ("enumField", enumEncoder v.enumField)

@@ -39,13 +39,17 @@ func main() {
 	resp := &plugin.CodeGeneratorResponse{}
 
 	for _, inFile := range req.GetProtoFile() {
-		outFile, _ := processFile(inFile)
+		log.Printf("Processing file %s", inFile.GetName())
+		outFile, err := processFile(inFile)
+		if err != nil {
+			log.Fatalf("Could not process file: %v", err)
+		}
 		resp.File = append(resp.File, outFile)
 	}
 
 	data, err = proto.Marshal(resp)
 	if err != nil {
-		log.Fatalf("Could not marshal response: %v", err)
+		log.Fatalf("Could not marshal response: %v [%v]", err, resp)
 	}
 
 	_, err = os.Stdout.Write(data)
@@ -409,14 +413,19 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 
 		fType := ""
 		switch inField.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_INT64,
-			descriptor.FieldDescriptorProto_TYPE_INT32,
+		case descriptor.FieldDescriptorProto_TYPE_INT32,
+			descriptor.FieldDescriptorProto_TYPE_INT64,
 			descriptor.FieldDescriptorProto_TYPE_UINT32,
 			descriptor.FieldDescriptorProto_TYPE_UINT64,
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
-			descriptor.FieldDescriptorProto_TYPE_SINT64:
+			descriptor.FieldDescriptorProto_TYPE_SINT64,
+			descriptor.FieldDescriptorProto_TYPE_FIXED32,
+			descriptor.FieldDescriptorProto_TYPE_FIXED64,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			fType = "Int"
-		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			fType = "Float"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			fType = "Bool"
@@ -474,15 +483,20 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 		d := ""
 		switch inField.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_INT64,
-			descriptor.FieldDescriptorProto_TYPE_INT32,
+		case descriptor.FieldDescriptorProto_TYPE_INT32,
+			descriptor.FieldDescriptorProto_TYPE_INT64,
 			descriptor.FieldDescriptorProto_TYPE_UINT32,
 			descriptor.FieldDescriptorProto_TYPE_UINT64,
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
-			descriptor.FieldDescriptorProto_TYPE_SINT64:
+			descriptor.FieldDescriptorProto_TYPE_SINT64,
+			descriptor.FieldDescriptorProto_TYPE_FIXED32,
+			descriptor.FieldDescriptorProto_TYPE_FIXED64,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			// TODO: Handle parsing from string (for 64 bit types).
 			d = "intFieldDecoder"
-		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			d = "floatFieldDecoder"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			d = "boolFieldDecoder"
@@ -539,14 +553,19 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 		d := ""
 		switch inField.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_INT64,
-			descriptor.FieldDescriptorProto_TYPE_INT32,
+		case descriptor.FieldDescriptorProto_TYPE_INT32,
+			descriptor.FieldDescriptorProto_TYPE_INT64,
 			descriptor.FieldDescriptorProto_TYPE_UINT32,
 			descriptor.FieldDescriptorProto_TYPE_UINT64,
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
-			descriptor.FieldDescriptorProto_TYPE_SINT64:
+			descriptor.FieldDescriptorProto_TYPE_SINT64,
+			descriptor.FieldDescriptorProto_TYPE_FIXED32,
+			descriptor.FieldDescriptorProto_TYPE_FIXED64,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			d = "JE.int"
-		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 			d = "JE.float"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
 			d = "JE.bool"
