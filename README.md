@@ -24,7 +24,7 @@ https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/test/1/expe
 -   [x] message fields
 -   [x] enum fields
 -   [ ] imports
--   [ ] nested types
+-   [x] nested types
 -   [ ] `Any` type
 -   [ ] `Timestamp` type
 -   [ ] `Duration` type

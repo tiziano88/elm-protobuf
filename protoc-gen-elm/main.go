@@ -81,56 +81,20 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	var err error
 
+	// Top-level enums.
 	for _, inEnum := range inFile.GetEnumType() {
-		err = fg.GenerateEnum(inEnum)
+		err = fg.GenerateEnumThings("", inEnum)
 		if err != nil {
 			return nil, err
 		}
-
-		fg.P("")
-		fg.P("")
-
-		err = fg.GenerateEnumDecoder(inEnum)
-		if err != nil {
-			return nil, err
-		}
-
-		fg.P("")
-		fg.P("")
-
-		err = fg.GenerateEnumEncoder(inEnum)
-		if err != nil {
-			return nil, err
-		}
-
-		fg.P("")
-		fg.P("")
 	}
 
+	// Top-level messages.
 	for _, inMessage := range inFile.GetMessageType() {
-		err = fg.GenerateMessage(inMessage)
+		err = fg.GenerateEverything("", inMessage)
 		if err != nil {
 			return nil, err
 		}
-
-		fg.P("")
-		fg.P("")
-
-		err = fg.GenerateMessageDecoder(inMessage)
-		if err != nil {
-			return nil, err
-		}
-
-		fg.P("")
-		fg.P("")
-
-		err = fg.GenerateMessageEncoder(inMessage)
-		if err != nil {
-			return nil, err
-		}
-
-		fg.P("")
-		fg.P("")
 	}
 
 	outFile.Content = proto.String(fg.out.String())
@@ -175,8 +139,8 @@ func (fg *FileGenerator) P(format string, a ...interface{}) error {
 	return nil
 }
 
-func (fg *FileGenerator) GenerateEnum(inEnum *descriptor.EnumDescriptorProto) error {
-	typeName := inEnum.GetName()
+func (fg *FileGenerator) GenerateEnum(prefix string, inEnum *descriptor.EnumDescriptorProto) error {
+	typeName := prefix + inEnum.GetName()
 	fg.P("type %s", typeName)
 	fg.In()
 	first := true
@@ -195,8 +159,8 @@ func (fg *FileGenerator) GenerateEnum(inEnum *descriptor.EnumDescriptorProto) er
 	return nil
 }
 
-func (fg *FileGenerator) GenerateEnumDecoder(inEnum *descriptor.EnumDescriptorProto) error {
-	typeName := inEnum.GetName()
+func (fg *FileGenerator) GenerateEnumDecoder(prefix string, inEnum *descriptor.EnumDescriptorProto) error {
+	typeName := prefix + inEnum.GetName()
 	decoderName := decoderName(typeName)
 	fg.P("%s : JD.Decoder %s", decoderName, typeName)
 	fg.P("%s =", decoderName)
@@ -221,8 +185,8 @@ func (fg *FileGenerator) GenerateEnumDecoder(inEnum *descriptor.EnumDescriptorPr
 	return nil
 }
 
-func (fg *FileGenerator) GenerateEnumEncoder(inEnum *descriptor.EnumDescriptorProto) error {
-	typeName := inEnum.GetName()
+func (fg *FileGenerator) GenerateEnumEncoder(prefix string, inEnum *descriptor.EnumDescriptorProto) error {
+	typeName := prefix + inEnum.GetName()
 	argName := "v"
 	fg.P("%s : %s -> JE.Value", encoderName(typeName), typeName)
 	fg.P("%s %s =", encoderName(typeName), argName)
@@ -404,8 +368,83 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 }
 
-func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) error {
-	typeName := inMessage.GetName()
+func (fg *FileGenerator) GenerateEnumThings(prefix string, inEnum *descriptor.EnumDescriptorProto) error {
+	var err error
+
+	err = fg.GenerateEnum(prefix, inEnum)
+	if err != nil {
+		return err
+	}
+
+	fg.P("")
+	fg.P("")
+
+	err = fg.GenerateEnumDecoder(prefix, inEnum)
+	if err != nil {
+		return err
+	}
+
+	fg.P("")
+	fg.P("")
+
+	err = fg.GenerateEnumEncoder(prefix, inEnum)
+	if err != nil {
+		return err
+	}
+
+	fg.P("")
+	fg.P("")
+
+	return nil
+}
+
+func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor.DescriptorProto) error {
+	var err error
+
+	err = fg.GenerateMessage(prefix, inMessage)
+	if err != nil {
+		return err
+	}
+
+	fg.P("")
+	fg.P("")
+
+	err = fg.GenerateMessageDecoder(prefix, inMessage)
+	if err != nil {
+		return err
+	}
+
+	fg.P("")
+	fg.P("")
+
+	err = fg.GenerateMessageEncoder(prefix, inMessage)
+	if err != nil {
+		return err
+	}
+
+	fg.P("")
+	fg.P("")
+
+	newPrefix := prefix + inMessage.GetName() + "_"
+
+	// Nested enums.
+	for _, inEnum := range inMessage.GetEnumType() {
+		err = fg.GenerateEnumThings(newPrefix, inEnum)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Nested messages.
+	for _, nested := range inMessage.GetNestedType() {
+		fg.GenerateEverything(newPrefix, nested)
+	}
+
+	return nil
+}
+
+func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.DescriptorProto) error {
+	typeName := prefix + inMessage.GetName()
 	fg.P("type alias %s =", typeName)
 	fg.In()
 
@@ -437,10 +476,10 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 			fType = "String"
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			// XXX
-			fType = inField.GetTypeName()[1:]
+			fType = elmFieldType(inField)
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// XXX
-			fType = inField.GetTypeName()[1:]
+			fType = elmFieldType(inField)
 		default:
 			return fmt.Errorf("Error generating type for field %s", inField.GetType())
 		}
@@ -472,8 +511,8 @@ func (fg *FileGenerator) GenerateMessage(inMessage *descriptor.DescriptorProto) 
 	return nil
 }
 
-func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.DescriptorProto) error {
-	typeName := inMessage.GetName()
+func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descriptor.DescriptorProto) error {
+	typeName := prefix + inMessage.GetName()
 	fg.P("%s : JD.Decoder %s", decoderName(typeName), typeName)
 	fg.P("%s =", decoderName(typeName))
 	fg.In()
@@ -509,10 +548,10 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			// TODO: Default enum value.
 			// Remove leading ".".
-			d = "(enumFieldDecoder " + decoderName(inField.GetTypeName()[1:]) + ")"
+			d = "(enumFieldDecoder " + decoderName(elmFieldType(inField)) + ")"
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// Remove leading ".".
-			d = decoderName(inField.GetTypeName()[1:])
+			d = decoderName(elmFieldType(inField))
 		default:
 			return fmt.Errorf("Error generating decoder for field %s", inField.GetType())
 		}
@@ -541,8 +580,8 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 	return nil
 }
 
-func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.DescriptorProto) error {
-	typeName := inMessage.GetName()
+func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descriptor.DescriptorProto) error {
+	typeName := prefix + inMessage.GetName()
 	argName := "v"
 	fg.P("%s : %s -> JE.Value", encoderName(typeName), typeName)
 	fg.P("%s %s =", encoderName(typeName), argName)
@@ -577,10 +616,10 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 			d = "JE.string"
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			// Remove leading ".".
-			d = encoderName(inField.GetTypeName()[1:])
+			d = encoderName(elmFieldType(inField))
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// Remove leading ".".
-			d = encoderName(inField.GetTypeName()[1:])
+			d = encoderName(elmFieldType(inField))
 		default:
 			return fmt.Errorf("Error generating encoder for field %s", inField.GetType())
 		}
@@ -624,6 +663,10 @@ func decoderName(typeName string) string {
 
 func encoderName(typeName string) string {
 	return firstLower(typeName) + "Encoder"
+}
+
+func elmFieldType(field *descriptor.FieldDescriptorProto) string {
+	return strings.Replace(field.GetTypeName(), ".", "_", -1)[1:]
 }
 
 func jsonFieldName(field *descriptor.FieldDescriptorProto) string {

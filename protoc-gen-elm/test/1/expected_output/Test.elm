@@ -150,6 +150,8 @@ type alias Foo =
   , subMessage : Maybe SubMessage -- 16
   , repeatedInt64Field : List Int -- 17
   , repeatedEnumField : List Enum -- 18
+  , nestedMessageField : Maybe Foo_NestedMessage -- 19
+  , nestedEnumField : Foo_NestedEnum -- 20
   }
 
 
@@ -174,6 +176,8 @@ fooDecoder =
     <*> (optionalFieldDecoder subMessageDecoder "subMessage")
     <*> (repeatedFieldDecoder intFieldDecoder "repeatedInt64Field")
     <*> (repeatedFieldDecoder (enumFieldDecoder enumDecoder) "repeatedEnumField")
+    <*> (optionalFieldDecoder foo_NestedMessageDecoder "nestedMessageField")
+    <*> ((enumFieldDecoder foo_NestedEnumDecoder) "nestedEnumField")
 
 
 fooEncoder : Foo -> JE.Value
@@ -197,6 +201,67 @@ fooEncoder v =
     , ("subMessage", optionalEncoder subMessageEncoder v.subMessage)
     , ("repeatedInt64Field", repeatedFieldEncoder JE.int v.repeatedInt64Field)
     , ("repeatedEnumField", repeatedFieldEncoder enumEncoder v.repeatedEnumField)
+    , ("nestedMessageField", optionalEncoder foo_NestedMessageEncoder v.nestedMessageField)
+    , ("nestedEnumField", foo_NestedEnumEncoder v.nestedEnumField)
+    ]
+
+
+type Foo_NestedEnum
+  = EnumValueDefault -- 0
+
+
+foo_NestedEnumDecoder : JD.Decoder Foo_NestedEnum
+foo_NestedEnumDecoder =
+  let
+    lookup s = case s of
+      "ENUM_VALUE_DEFAULT" -> EnumValueDefault
+      _ -> EnumValueDefault
+  in
+    JD.map lookup JD.string
+
+
+foo_NestedEnumEncoder : Foo_NestedEnum -> JE.Value
+foo_NestedEnumEncoder v =
+  let
+    lookup s = case s of
+      EnumValueDefault -> "ENUM_VALUE_DEFAULT"
+  in
+    JE.string <| lookup v
+
+
+type alias Foo_NestedMessage =
+  { int32Field : Int -- 1
+  }
+
+
+foo_NestedMessageDecoder : JD.Decoder Foo_NestedMessage
+foo_NestedMessageDecoder =
+  Foo_NestedMessage
+    <$> (intFieldDecoder "int32Field")
+
+
+foo_NestedMessageEncoder : Foo_NestedMessage -> JE.Value
+foo_NestedMessageEncoder v =
+  JE.object
+    [ ("int32Field", JE.int v.int32Field)
+    ]
+
+
+type alias Foo_NestedMessage_NestedNestedMessage =
+  { int32Field : Int -- 1
+  }
+
+
+foo_NestedMessage_NestedNestedMessageDecoder : JD.Decoder Foo_NestedMessage_NestedNestedMessage
+foo_NestedMessage_NestedNestedMessageDecoder =
+  Foo_NestedMessage_NestedNestedMessage
+    <$> (intFieldDecoder "int32Field")
+
+
+foo_NestedMessage_NestedNestedMessageEncoder : Foo_NestedMessage_NestedNestedMessage -> JE.Value
+foo_NestedMessage_NestedNestedMessageEncoder v =
+  JE.object
+    [ ("int32Field", JE.int v.int32Field)
     ]
 
 

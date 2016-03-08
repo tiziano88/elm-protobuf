@@ -37,4 +37,18 @@ message Foo {
 
   repeated int64 repeated_int64_field = 17;
   repeated Enum repeated_enum_field = 18;
+
+  message NestedMessage {
+    int32 int32_field = 1;
+
+    message NestedNestedMessage {
+      int32 int32_field = 1;
+    }
+  }
+  NestedMessage nested_message_field = 19;
+
+  enum NestedEnum {
+    ENUM_VALUE_DEFAULT = 0;
+  }
+  NestedEnum nested_enum_field = 20;
 }
