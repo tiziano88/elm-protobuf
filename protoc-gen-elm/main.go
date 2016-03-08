@@ -525,12 +525,12 @@ func (fg *FileGenerator) GenerateMessageDecoder(inMessage *descriptor.Descriptor
 		}
 
 		if repeated {
-			fg.P("%s (repeatedFieldDecoder %s %q)", leading, d, jsonFieldName(inField.GetName()))
+			fg.P("%s (repeatedFieldDecoder %s %q)", leading, d, jsonFieldName(inField))
 		} else {
 			if optional {
-				fg.P("%s (optionalFieldDecoder %s %q)", leading, d, jsonFieldName(inField.GetName()))
+				fg.P("%s (optionalFieldDecoder %s %q)", leading, d, jsonFieldName(inField))
 			} else {
-				fg.P("%s (%s %q)", leading, d, jsonFieldName(inField.GetName()))
+				fg.P("%s (%s %q)", leading, d, jsonFieldName(inField))
 			}
 		}
 
@@ -595,12 +595,12 @@ func (fg *FileGenerator) GenerateMessageEncoder(inMessage *descriptor.Descriptor
 
 		val := argName + "." + elmFieldName(inField.GetName())
 		if repeated {
-			fg.P("%s (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+			fg.P("%s (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField), d, val)
 		} else {
 			if optional {
-				fg.P("%s (%q, optionalEncoder %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+				fg.P("%s (%q, optionalEncoder %s %s)", leading, jsonFieldName(inField), d, val)
 			} else {
-				fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField.GetName()), d, val)
+				fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField), d, val)
 			}
 		}
 	}
@@ -626,9 +626,9 @@ func encoderName(typeName string) string {
 	return firstLower(typeName) + "Encoder"
 }
 
-func jsonFieldName(fieldName string) string {
+func jsonFieldName(field *descriptor.FieldDescriptorProto) string {
 	// TODO: Make sure this is fine.
-	return firstLower(camelCase(fieldName))
+	return firstLower(camelCase(field.GetName()))
 }
 
 func firstLower(in string) string {
