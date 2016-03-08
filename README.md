@@ -20,24 +20,24 @@ https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/test/1/expe
     fields
 -   [x] `bool` fields
 -   [x] `string` fields
--   [] `bytes` fields
+-   [ ] `bytes` fields
 -   [x] message fields
 -   [x] enum fields
--   [] imports
--   [] nested types
--   [] `Any` type
--   [] `Timestamp` type
--   [] `Duration` type
--   [] `Struct` type
--   [] wrapper types
--   [] `FieldMask` type
--   [] `ListValue` type
--   [] `Value` type
--   [] `NullValue` type
--   [] `oneof`
--   [] `map`
--   [] packages
--   [] options
+-   [ ] imports
+-   [ ] nested types
+-   [ ] `Any` type
+-   [ ] `Timestamp` type
+-   [ ] `Duration` type
+-   [ ] `Struct` type
+-   [ ] wrapper types
+-   [ ] `FieldMask` type
+-   [ ] `ListValue` type
+-   [ ] `Value` type
+-   [ ] `NullValue` type
+-   [ ] `oneof`
+-   [ ] `map`
+-   [ ] packages
+-   [ ] options
 
 ## How to install
 
