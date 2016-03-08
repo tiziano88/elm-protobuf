@@ -153,7 +153,7 @@ func (fg *FileGenerator) GenerateEnum(prefix string, inEnum *descriptor.EnumDesc
 		}
 		first = false
 		// TODO: Convert names to CamelCase.
-		fg.P("%s %s -- %d", leading, elmEnumValueName(enumValue.GetName()), enumValue.GetNumber())
+		fg.P("%s %s -- %d", leading, prefix+elmEnumValueName(enumValue.GetName()), enumValue.GetNumber())
 	}
 	fg.Out()
 	return nil
@@ -170,10 +170,10 @@ func (fg *FileGenerator) GenerateEnumDecoder(prefix string, inEnum *descriptor.E
 	fg.P("lookup s = case s of")
 	fg.In()
 	for _, enumValue := range inEnum.GetValue() {
-		fg.P("%q -> %s", enumValue.GetName(), elmEnumValueName(enumValue.GetName()))
+		fg.P("%q -> %s", enumValue.GetName(), prefix+elmEnumValueName(enumValue.GetName()))
 	}
 	// TODO: This should fail instead.
-	fg.P("_ -> %s", elmEnumValueName(inEnum.GetValue()[0].GetName()))
+	fg.P("_ -> %s", prefix+elmEnumValueName(inEnum.GetValue()[0].GetName()))
 	fg.Out()
 	fg.Out()
 	fg.P("in")
@@ -196,7 +196,7 @@ func (fg *FileGenerator) GenerateEnumEncoder(prefix string, inEnum *descriptor.E
 	fg.P("lookup s = case s of")
 	fg.In()
 	for _, enumValue := range inEnum.GetValue() {
-		fg.P("%s -> %q", elmEnumValueName(enumValue.GetName()), enumValue.GetName())
+		fg.P("%s -> %q", prefix+elmEnumValueName(enumValue.GetName()), enumValue.GetName())
 	}
 	fg.Out()
 	fg.Out()
@@ -270,10 +270,10 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)")
-	fg.P("repeatedFieldDecoder decoder name =")
+	fg.P("repeatedFieldDecoder : JD.Decoder a -> JD.Decoder (List a)")
+	fg.P("repeatedFieldDecoder decoder =")
 	fg.In()
-	fg.P("JD.list (name := decoder)")
+	fg.P("withDefault [] (JD.list decoder)")
 	fg.Out()
 
 	fg.P("")
@@ -564,7 +564,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 		}
 
 		if repeated {
-			fg.P("%s (repeatedFieldDecoder %s %q)", leading, d, jsonFieldName(inField))
+			fg.P("%s (repeatedFieldDecoder (%s %q))", leading, d, jsonFieldName(inField))
 		} else {
 			if optional {
 				fg.P("%s (optionalFieldDecoder %s %q)", leading, d, jsonFieldName(inField))
