@@ -6,28 +6,37 @@
 
 Experimental protobuf plugin generating elm code from proto definitions.
 
-The plugin itself is written in Go.
+The plugin itself is written in Go, and it requires the base `protoc` protobuf
+compiler to be installed on the system.
 
 For a sample generated output file, see
 https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/test/1/expected_output/Test.elm
 
-# How to install
+## How to install
 
-First obtain the binary using `go get`:
+-   Make sure that you have a Go environment correctly set up, and that
+    `$GOPATH/bin` is included in your `$PATH`.
 
-`go get github.com/tiziano88/elm-protobuf/protoc-gen-elm`
+-   Install a recent `protoc` compiler version from
+    https://github.com/google/protobuf (it must have support for `proto3`
+    format).
 
-This assumes that you have a Go environment correctly set up, and `$GOPATH/bin`
-is included in your `$PATH`.
+-   Obtain the `protoc-gen-elm` binary using `go get`:
 
-Then run the proto compiler specifying the `--elm-out` flag:
+    ```
+    go get github.com/tiziano88/elm-protobuf/protoc-gen-elm
+    ```
+
+## How to run
+
+Run the `protoc` compiler specifying the `--elm-out` flag:
 
 `protoc --elm-out=. *.proto`
 
 `protoc` will automatically detect the `protoc-gen-elm` binary from your `$PATH`
 and use it to generate the output elm code.
 
-# References
+## References
 
 https://developers.google.com/protocol-buffers/
 
