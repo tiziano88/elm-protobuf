@@ -45,8 +45,9 @@ func runProto(t *testing.T, dir string) {
 	cmd.Dir = filepath.Join(dir, "input")
 	t.Logf("cmd: %v", cmd)
 	out, err := cmd.CombinedOutput()
+	t.Logf("Output: %s", out)
 	if err != nil {
-		t.Fatalf("Error: %v, %v", err, string(out))
+		t.Fatalf("Error: %v", err)
 	}
 }
 
