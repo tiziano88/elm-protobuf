@@ -12,6 +12,33 @@ compiler to be installed on the system.
 For a sample generated output file, see
 https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/test/1/expected_output/Test.elm
 
+## Supported features
+
+-   [x] `double`/`float` fields
+-   [x]
+    `int32`/`int64`/`uint32`/`uint64`/`sint32`/`sint64`/`fixed32`/`fixed64`/`sfixed32`/`sfixed64`
+    fields
+-   [x] `bool` fields
+-   [x] `string` fields
+-   [] `bytes` fields
+-   [x] message fields
+-   [x] enum fields
+-   [] imports
+-   [] nested types
+-   [] `Any` type
+-   [] `Timestamp` type
+-   [] `Duration` type
+-   [] `Struct` type
+-   [] wrapper types
+-   [] `FieldMask` type
+-   [] `ListValue` type
+-   [] `Value` type
+-   [] `NullValue` type
+-   [] `oneof`
+-   [] `map`
+-   [] packages
+-   [] options
+
 ## How to install
 
 -   Make sure that you have a Go environment correctly set up, and that
