@@ -52,3 +52,28 @@ message Foo {
   }
   NestedEnum nested_enum_field = 20;
 }
+
+message FooRepeated {
+  repeated double double_field = 1;
+  repeated float float_field = 2;
+
+  repeated int32 int32_field = 3;
+  repeated int64 int64_field = 4;
+  repeated uint32 uint32_field = 5;
+  repeated uint64 uint64_field = 6;
+  repeated sint32 sint32_field = 7;
+  repeated sint64 sint64_field = 8;
+  repeated fixed32 fixed32_field = 9;
+  repeated fixed64 fixed64_field = 10;
+  repeated sfixed32 sfixed32_field = 11;
+  repeated sfixed64 sfixed64_field = 12;
+
+  repeated bool bool_field = 13;
+  repeated string string_field = 14;
+
+  repeated Enum enum_field = 15;
+
+  // TODO: Fix
+  // repeated SubMessage sub_message = 16;
+}
+

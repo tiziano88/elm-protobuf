@@ -265,3 +265,63 @@ foo_NestedMessage_NestedNestedMessageEncoder v =
     ]
 
 
+type alias FooRepeated =
+  { doubleField : List Float -- 1
+  , floatField : List Float -- 2
+  , int32Field : List Int -- 3
+  , int64Field : List Int -- 4
+  , uint32Field : List Int -- 5
+  , uint64Field : List Int -- 6
+  , sint32Field : List Int -- 7
+  , sint64Field : List Int -- 8
+  , fixed32Field : List Int -- 9
+  , fixed64Field : List Int -- 10
+  , sfixed32Field : List Int -- 11
+  , sfixed64Field : List Int -- 12
+  , boolField : List Bool -- 13
+  , stringField : List String -- 14
+  , enumField : List Enum -- 15
+  }
+
+
+fooRepeatedDecoder : JD.Decoder FooRepeated
+fooRepeatedDecoder =
+  FooRepeated
+    <$> (repeatedFieldDecoder (floatFieldDecoder "doubleField"))
+    <*> (repeatedFieldDecoder (floatFieldDecoder "floatField"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "int32Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "int64Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "uint32Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "uint64Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "sint32Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "sint64Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "fixed32Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "fixed64Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "sfixed32Field"))
+    <*> (repeatedFieldDecoder (intFieldDecoder "sfixed64Field"))
+    <*> (repeatedFieldDecoder (boolFieldDecoder "boolField"))
+    <*> (repeatedFieldDecoder (stringFieldDecoder "stringField"))
+    <*> (repeatedFieldDecoder ((enumFieldDecoder enumDecoder) "enumField"))
+
+
+fooRepeatedEncoder : FooRepeated -> JE.Value
+fooRepeatedEncoder v =
+  JE.object
+    [ ("doubleField", repeatedFieldEncoder JE.float v.doubleField)
+    , ("floatField", repeatedFieldEncoder JE.float v.floatField)
+    , ("int32Field", repeatedFieldEncoder JE.int v.int32Field)
+    , ("int64Field", repeatedFieldEncoder JE.int v.int64Field)
+    , ("uint32Field", repeatedFieldEncoder JE.int v.uint32Field)
+    , ("uint64Field", repeatedFieldEncoder JE.int v.uint64Field)
+    , ("sint32Field", repeatedFieldEncoder JE.int v.sint32Field)
+    , ("sint64Field", repeatedFieldEncoder JE.int v.sint64Field)
+    , ("fixed32Field", repeatedFieldEncoder JE.int v.fixed32Field)
+    , ("fixed64Field", repeatedFieldEncoder JE.int v.fixed64Field)
+    , ("sfixed32Field", repeatedFieldEncoder JE.int v.sfixed32Field)
+    , ("sfixed64Field", repeatedFieldEncoder JE.int v.sfixed64Field)
+    , ("boolField", repeatedFieldEncoder JE.bool v.boolField)
+    , ("stringField", repeatedFieldEncoder JE.string v.stringField)
+    , ("enumField", repeatedFieldEncoder enumEncoder v.enumField)
+    ]
+
+
