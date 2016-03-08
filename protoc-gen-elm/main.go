@@ -59,6 +59,10 @@ func main() {
 }
 
 func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
+	if inFile.GetSyntax() != "proto3" {
+		return nil, fmt.Errorf("Only proto3 syntax is supported")
+	}
+
 	outFile := &plugin.CodeGeneratorResponse_File{}
 
 	inFileName := inFile.GetName()
