@@ -10,7 +10,7 @@ The plugin itself is written in Go, and it requires the base `protoc` protobuf
 compiler to be installed on the system.
 
 For a sample generated output file, see
-https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/test/1/expected_output/Test.elm
+https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/Test/1/Expected/Repeated.elm
 
 ## Supported features
 
