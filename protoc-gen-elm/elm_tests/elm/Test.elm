@@ -7,17 +7,17 @@ import Task
 import Console
 import ElmTest exposing (..)
 
-import Repeated as T
+import Simple as T
 
 
 tests : Test
 tests =
     suite "A Test Suite"
-        [ test "JSON encode" (assertEqual (JE.encode 2 (T.subMessageEncoder msg)) msgJson)
-        , test "JSON decode" (assertEqual (JD.decodeString T.subMessageDecoder msgJson) (Result.Ok msg))
+        [ test "JSON encode" (assertEqual (JE.encode 2 (T.simpleEncoder msg)) msgJson)
+        , test "JSON decode" (assertEqual (JD.decodeString T.simpleDecoder msgJson) (Result.Ok msg))
         ]
 
-msg : T.SubMessage
+msg : T.Simple
 msg =
   { int32Field = 123
   }

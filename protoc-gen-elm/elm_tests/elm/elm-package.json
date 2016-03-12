@@ -5,7 +5,7 @@
     "license": "BSD3",
     "source-directories": [
         ".",
-        "./Test/1/Actual"
+        "./proto"
     ],
     "exposed-modules": [],
     "dependencies": {

@@ -57,9 +57,9 @@ https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/Test/1/Expe
 
 ## How to run
 
-Run the `protoc` compiler specifying the `--elm-out` flag:
+Run the `protoc` compiler specifying the `--elm_out` flag:
 
-`protoc --elm-out=. *.proto`
+`protoc --elm_out=. *.proto`
 
 `protoc` will automatically detect the `protoc-gen-elm` binary from your `$PATH`
 and use it to generate the output elm code.
