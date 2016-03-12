@@ -1,4 +1,4 @@
-module Test where
+module Repeated where
 
 
 import Json.Decode as JD exposing ((:=))
