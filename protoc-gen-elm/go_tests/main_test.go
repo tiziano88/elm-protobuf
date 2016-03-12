@@ -41,8 +41,19 @@ func TestDiff(t *testing.T) {
 }
 
 func runProto(t *testing.T, dir string) {
-	cmd := exec.Command("protoc", "--elm_out=../actual_output", "repeated.proto")
-	cmd.Dir = filepath.Join(dir, "input")
+	inputDir := filepath.Join(dir, "input")
+
+	args := []string{"--elm_out=../actual_output"}
+	files, err := ioutil.ReadDir(inputDir)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+	for _, file := range files {
+		args = append(args, file.Name())
+	}
+
+	cmd := exec.Command("protoc", args...)
+	cmd.Dir = inputDir
 	t.Logf("cmd: %v", cmd)
 	out, err := cmd.CombinedOutput()
 	t.Logf("Output: %s", out)
