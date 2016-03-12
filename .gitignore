@@ -23,7 +23,7 @@ _testmain.go
 *.test
 *.prof
 
-**/Actual/*
+**/actual_output/*
 
 **/elm-stuff/*
 
