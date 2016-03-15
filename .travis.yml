@@ -6,4 +6,7 @@ before_install:
 install:
   - go get -t -v ./protoc-gen-elm
 
+before_script:
+  - export PATH=$PATH:$PWD/protoc
+
 script: ./protoc-gen-elm/go_tests/run_go_tests
