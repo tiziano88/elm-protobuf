@@ -3,4 +3,4 @@
 set -ex
 
 git clone https://github.com/google/protobuf.git
-cd protobuf && ./configure && make && sudo make install
+cd protobuf && ./autogen.sh && ./configure && make && sudo make install
