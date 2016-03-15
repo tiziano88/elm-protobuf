@@ -2,8 +2,14 @@ language: go
 
 sudo: false
 
+addons:
+  apt:
+    packages:
+      - nodejs
+
 before_install:
   - ./install_protobuf
+  - npm install -g elm
   - export PATH=$PATH:$PWD/protoc
 
 install:
