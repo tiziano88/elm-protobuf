@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -ex
+
+readonly ROOT="$(dirname "$0")"
+
+cd "$ROOT"
+
+./protoc-gen-elm/go_tests/run_go_tests
+./protoc-gen-elm/elm_tests/run_elm_tests

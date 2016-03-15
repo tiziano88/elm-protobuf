@@ -15,4 +15,4 @@ before_install:
 install:
   - go get -t -v ./protoc-gen-elm
 
-script: ./protoc-gen-elm/go_tests/run_go_tests
+script: ./run_tests

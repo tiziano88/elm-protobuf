@@ -3,6 +3,6 @@
 set -ex
 
 readonly ROOT="$(dirname "$0")"
+cd "$ROOT"
 
-cd $ROOT
 go test -v
