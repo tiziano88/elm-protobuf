@@ -2,11 +2,9 @@ language: go
 
 before_install:
   - ./install_protobuf
+  - export PATH=$PATH:$PWD/protoc
 
 install:
   - go get -t -v ./protoc-gen-elm
-
-before_script:
-  - export PATH=$PATH:$PWD/protoc
 
 script: ./protoc-gen-elm/go_tests/run_go_tests
