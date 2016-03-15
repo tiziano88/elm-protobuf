@@ -1,9 +1,8 @@
 #!/bin/sh
-set -x
+
+set -ex
 
 readonly ROOT="$(dirname "$0")"
-
-set -e
 
 (
   cd $ROOT/proto

@@ -3,4 +3,4 @@ language: go
 before_install:
   - ./install_protobuf
 
-script: cd ./protoc-gen-elm/go_tests && go test -v ./protoc-gen-elm
+script: cd ./protoc-gen-elm/go_tests && ./run_go_tests
