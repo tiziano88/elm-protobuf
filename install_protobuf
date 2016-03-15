@@ -2,5 +2,8 @@
 
 set -ex
 
-git clone https://github.com/google/protobuf.git
-cd protobuf && ./autogen.sh && ./configure && make && sudo make install
+#git clone https://github.com/google/protobuf.git
+#cd protobuf && ./autogen.sh && ./configure && make && sudo make install
+
+wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protoc-3.0.0-beta-2-linux-x86_64.zip
+unzip protoc*.zip -d protoc

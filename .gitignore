@@ -27,5 +27,8 @@ _testmain.go
 
 **/elm-stuff/*
 
+/protoc/
+/protoc*.zip
+
 raw-test.js
 test.js
