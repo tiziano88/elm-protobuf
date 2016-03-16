@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/golang/protobuf/proto"
 
@@ -143,15 +145,13 @@ func (fg *FileGenerator) GenerateEnum(prefix string, inEnum *descriptor.EnumDesc
 	typeName := prefix + inEnum.GetName()
 	fg.P("type %s", typeName)
 	fg.In()
-	first := true
-	for _, enumValue := range inEnum.GetValue() {
+	for i, enumValue := range inEnum.GetValue() {
 		leading := ""
-		if first {
+		if i == 0 {
 			leading = "="
 		} else {
 			leading = "|"
 		}
-		first = false
 		// TODO: Convert names to CamelCase.
 		fg.P("%s %s -- %d", leading, prefix+elmEnumValueName(enumValue.GetName()), enumValue.GetNumber())
 	}
@@ -448,8 +448,7 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 	fg.P("type alias %s =", typeName)
 	fg.In()
 
-	first := true
-	for _, inField := range inMessage.GetField() {
+	for i, inField := range inMessage.GetField() {
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
@@ -480,12 +479,15 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// XXX
 			fType = elmFieldType(inField)
+		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+			// XXX
+			fType = "Bytes"
 		default:
-			return fmt.Errorf("Error generating type for field %s", inField.GetType())
+			return fmt.Errorf("Error generating type for field %q %s", inField.GetName(), inField.GetType())
 		}
 
 		leading := ""
-		if first {
+		if i == 0 {
 			leading = "{"
 		} else {
 			leading = ","
@@ -503,8 +505,6 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 				fg.P("%s %s : %s -- %d", leading, fName, fType, fNumber)
 			}
 		}
-
-		first = false
 	}
 	fg.P("}")
 	fg.Out()
@@ -519,8 +519,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 	fg.P("%s", typeName)
 	fg.In()
 
-	first := true
-	for _, inField := range inMessage.GetField() {
+	for i, inField := range inMessage.GetField() {
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
@@ -552,12 +551,14 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// Remove leading ".".
 			d = decoderName(elmFieldType(inField))
+		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+			d = "bytesFieldDecoder"
 		default:
 			return fmt.Errorf("Error generating decoder for field %s", inField.GetType())
 		}
 
 		leading := ""
-		if first {
+		if i == 0 {
 			leading = "<$>"
 		} else {
 			leading = "<*>"
@@ -572,8 +573,6 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 				fg.P("%s (%s %q)", leading, d, jsonFieldName(inField))
 			}
 		}
-
-		first = false
 	}
 	fg.Out()
 	fg.Out()
@@ -589,8 +588,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 	fg.P("JE.object")
 	fg.In()
 
-	first := true
-	for _, inField := range inMessage.GetField() {
+	for i, inField := range inMessage.GetField() {
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
@@ -620,17 +618,18 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// Remove leading ".".
 			d = encoderName(elmFieldType(inField))
+		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+			d = "bytesFieldEncoder"
 		default:
 			return fmt.Errorf("Error generating encoder for field %s", inField.GetType())
 		}
 
 		leading := ""
-		if first {
+		if i == 0 {
 			leading = "["
 		} else {
 			leading = ","
 		}
-		first = false
 
 		val := argName + "." + elmFieldName(inField.GetName())
 		if repeated {
@@ -658,15 +657,54 @@ func elmEnumValueName(in string) string {
 }
 
 func decoderName(typeName string) string {
-	return firstLower(typeName) + "Decoder"
+	packageName, messageName := convert(typeName)
+
+	if packageName == "" {
+		return firstLower(messageName) + "Decoder"
+	} else {
+		return packageName + "." + firstLower(messageName) + "Decoder"
+	}
 }
 
 func encoderName(typeName string) string {
-	return firstLower(typeName) + "Encoder"
+	packageName, messageName := convert(typeName)
+
+	if packageName == "" {
+		return firstLower(messageName) + "Encoder"
+	} else {
+		return packageName + "." + firstLower(messageName) + "Encoder"
+	}
 }
 
 func elmFieldType(field *descriptor.FieldDescriptorProto) string {
-	return strings.Replace(field.GetTypeName(), ".", "_", -1)[1:]
+	inFieldName := field.GetTypeName()
+	packageName, messageName := convert(inFieldName)
+
+	if packageName == "" {
+		return messageName
+	} else {
+		return packageName + "." + messageName
+	}
+}
+
+func convert(inType string) (string, string) {
+	segments := strings.Split(inType, ".")
+	outPackageSegments := []string{}
+	outMessageSegments := []string{}
+	for _, s := range segments {
+		if s == "" {
+			continue
+		}
+		r, _ := utf8.DecodeRuneInString(s)
+		if unicode.IsLower(r) {
+			// Package name.
+			outPackageSegments = append(outPackageSegments, firstUpper(s))
+		} else {
+			// Message name.
+			outMessageSegments = append(outMessageSegments, firstUpper(s))
+		}
+	}
+	return strings.Join(outPackageSegments, "."), strings.Join(outMessageSegments, "_")
 }
 
 func jsonFieldName(field *descriptor.FieldDescriptorProto) string {
@@ -674,10 +712,22 @@ func jsonFieldName(field *descriptor.FieldDescriptorProto) string {
 }
 
 func firstLower(in string) string {
+	if in == "" {
+		return ""
+	}
+	if len(in) == 1 {
+		return strings.ToLower(in)
+	}
 	return strings.ToLower(string(in[0])) + string(in[1:])
 }
 
 func firstUpper(in string) string {
+	if in == "" {
+		return ""
+	}
+	if len(in) == 1 {
+		return strings.ToUpper(in)
+	}
 	return strings.ToUpper(string(in[0])) + string(in[1:])
 }
 
