@@ -4,6 +4,8 @@
 (https://travis-ci.org/tiziano88/elm-protobuf.svg?branch=master)]
 (https://travis-ci.org/tiziano88/elm-protobuf)
 
+[Join #elm-protobuf on Slack](https://elmlang.slack.com/messages/elm-protobuf/details/)
+
 Experimental protobuf plugin generating elm code from proto definitions.
 
 The plugin itself is written in Go, and it requires the base `protoc` protobuf
