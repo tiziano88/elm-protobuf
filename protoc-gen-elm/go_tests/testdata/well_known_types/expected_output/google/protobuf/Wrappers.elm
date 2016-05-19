@@ -1,4 +1,4 @@
-module google.protobuf.Wrappers where
+module google.protobuf.Wrappers exposing (..)
 
 
 import Json.Decode as JD exposing ((:=))

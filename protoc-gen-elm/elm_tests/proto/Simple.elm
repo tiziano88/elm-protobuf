@@ -1,5 +1,4 @@
-module proto.Simple where
-
+module proto.Simple exposing (..)
 
 import Json.Decode as JD exposing ((:=))
 import Json.Encode as JE

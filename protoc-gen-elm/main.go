@@ -210,7 +210,7 @@ func (fg *FileGenerator) GenerateEnumEncoder(prefix string, inEnum *descriptor.E
 }
 
 func (fg *FileGenerator) GenerateModule(moduleName string) {
-	fg.P("module %s where", moduleName)
+	fg.P("module %s exposing (..)", moduleName)
 
 	fg.P("")
 	fg.P("")

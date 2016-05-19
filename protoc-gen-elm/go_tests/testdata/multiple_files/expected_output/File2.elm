@@ -1,4 +1,4 @@
-module File2 where
+module File2 exposing (..)
 
 
 import Json.Decode as JD exposing ((:=))

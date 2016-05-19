@@ -1,4 +1,4 @@
-module Repeated where
+module Repeated exposing (..)
 
 
 import Json.Decode as JD exposing ((:=))

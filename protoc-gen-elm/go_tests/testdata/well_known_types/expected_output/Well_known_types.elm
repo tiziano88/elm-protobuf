@@ -1,4 +1,4 @@
-module Well_known_types where
+module Well_known_types exposing (..)
 
 
 import Json.Decode as JD exposing ((:=))

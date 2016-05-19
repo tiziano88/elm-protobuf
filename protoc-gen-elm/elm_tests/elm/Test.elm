@@ -4,7 +4,6 @@ import Result
 import String
 import Task
 
-import Console
 import ElmTest exposing (..)
 
 import Simple as T
@@ -60,8 +59,3 @@ msgEmptyJson = String.trim """
 {
 }
 """
-
-
-port runner : Signal (Task.Task x ())
-port runner =
-  Console.run (consoleRunner tests)

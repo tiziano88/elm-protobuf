@@ -1,4 +1,4 @@
-module Simple where
+module Simple exposing (..)
 
 
 import Json.Decode as JD exposing ((:=))
