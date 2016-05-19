@@ -9,6 +9,10 @@ import ElmTest exposing (..)
 import Simple as T
 
 
+main =
+  runSuiteHtml tests
+
+
 tests : Test
 tests =
   suite "A Test Suite"
