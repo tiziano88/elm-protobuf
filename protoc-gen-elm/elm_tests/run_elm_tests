@@ -14,6 +14,6 @@ readonly ROOT="$(dirname "$0")"
   cd $ROOT/elm
 
   elm-package install -y
-  elm-make --yes --output raw-test.js ./Test.elm
-  elm-test TestRunner.elm
+  elm-make --yes --output tests.js ./Test.elm
+  node tests.js
 )

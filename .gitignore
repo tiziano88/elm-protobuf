@@ -30,5 +30,4 @@ _testmain.go
 /protoc/
 /protoc*.zip
 
-raw-test.js
-test.js
+tests.js

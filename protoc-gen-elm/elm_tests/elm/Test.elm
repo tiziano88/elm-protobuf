@@ -10,7 +10,7 @@ import Simple as T
 
 
 main =
-  runSuiteHtml tests
+  runSuite tests
 
 
 tests : Test
