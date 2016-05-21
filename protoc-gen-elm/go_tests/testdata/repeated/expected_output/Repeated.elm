@@ -28,9 +28,9 @@ optionalFieldDecoder decoder name =
   optionalDecoder (name := decoder)
 
 
-repeatedFieldDecoder : JD.Decoder a -> JD.Decoder (List a)
-repeatedFieldDecoder decoder =
-  withDefault [] (JD.list decoder)
+repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)
+repeatedFieldDecoder decoder name =
+  withDefault [] (name := (JD.list decoder))
 
 
 withDefault : a -> JD.Decoder a -> JD.Decoder a
@@ -174,8 +174,8 @@ fooDecoder =
     <*> (stringFieldDecoder "stringField")
     <*> ((enumFieldDecoder enumDecoder) "enumField")
     <*> (optionalFieldDecoder subMessageDecoder "subMessage")
-    <*> (repeatedFieldDecoder (intFieldDecoder "repeatedInt64Field"))
-    <*> (repeatedFieldDecoder ((enumFieldDecoder enumDecoder) "repeatedEnumField"))
+    <*> (repeatedFieldDecoder intFieldDecoder "repeatedInt64Field")
+    <*> (repeatedFieldDecoder (enumFieldDecoder enumDecoder) "repeatedEnumField")
     <*> (optionalFieldDecoder foo_NestedMessageDecoder "nestedMessageField")
     <*> ((enumFieldDecoder foo_NestedEnumDecoder) "nestedEnumField")
 
@@ -281,27 +281,29 @@ type alias FooRepeated =
   , boolField : List Bool -- 13
   , stringField : List String -- 14
   , enumField : List Enum -- 15
+  , subMessage : List SubMessage -- 16
   }
 
 
 fooRepeatedDecoder : JD.Decoder FooRepeated
 fooRepeatedDecoder =
   FooRepeated
-    <$> (repeatedFieldDecoder (floatFieldDecoder "doubleField"))
-    <*> (repeatedFieldDecoder (floatFieldDecoder "floatField"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "int32Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "int64Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "uint32Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "uint64Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "sint32Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "sint64Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "fixed32Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "fixed64Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "sfixed32Field"))
-    <*> (repeatedFieldDecoder (intFieldDecoder "sfixed64Field"))
-    <*> (repeatedFieldDecoder (boolFieldDecoder "boolField"))
-    <*> (repeatedFieldDecoder (stringFieldDecoder "stringField"))
-    <*> (repeatedFieldDecoder ((enumFieldDecoder enumDecoder) "enumField"))
+    <$> (repeatedFieldDecoder floatFieldDecoder "doubleField")
+    <*> (repeatedFieldDecoder floatFieldDecoder "floatField")
+    <*> (repeatedFieldDecoder intFieldDecoder "int32Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "int64Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "uint32Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "uint64Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "sint32Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "sint64Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "fixed32Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "fixed64Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "sfixed32Field")
+    <*> (repeatedFieldDecoder intFieldDecoder "sfixed64Field")
+    <*> (repeatedFieldDecoder boolFieldDecoder "boolField")
+    <*> (repeatedFieldDecoder stringFieldDecoder "stringField")
+    <*> (repeatedFieldDecoder (enumFieldDecoder enumDecoder) "enumField")
+    <*> (repeatedFieldDecoder subMessageDecoder "subMessage")
 
 
 fooRepeatedEncoder : FooRepeated -> JE.Value
@@ -322,6 +324,7 @@ fooRepeatedEncoder v =
     , ("boolField", repeatedFieldEncoder JE.bool v.boolField)
     , ("stringField", repeatedFieldEncoder JE.string v.stringField)
     , ("enumField", repeatedFieldEncoder enumEncoder v.enumField)
+    , ("subMessage", repeatedFieldEncoder subMessageEncoder v.subMessage)
     ]
 
 

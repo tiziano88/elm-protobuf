@@ -20,6 +20,7 @@ tests =
     , test "JSON decode" <| assertDecode T.simpleDecoder msgJson msg
     , test "JSON decode extra field" <| assertDecode T.simpleDecoder msgExtraFieldJson msg
     , test "JSON decode empty message" <| assertDecode T.simpleDecoder msgEmptyJson msgDefault
+    , test "JSON encode message with repeated field" <| assertEqual (JE.encode 2 (T.fooEncoder foo)) fooJson
     ]
 
 
@@ -61,5 +62,38 @@ msgExtraFieldJson = String.trim """
 
 msgEmptyJson = String.trim """
 {
+}
+"""
+
+
+foo : T.Foo
+foo =
+  { s =
+    Just
+      { int32Field = 11
+      }
+  , ss =
+      [ { int32Field = 111
+        }
+      , { int32Field = 222
+        }
+      ]
+  }
+
+
+fooJson : String
+fooJson = String.trim """
+{
+  "s": {
+    "int32Field": 11
+  },
+  "ss": [
+    {
+      "int32Field": 111
+    },
+    {
+      "int32Field": 222
+    }
+  ]
 }
 """

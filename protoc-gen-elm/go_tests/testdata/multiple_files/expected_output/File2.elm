@@ -28,9 +28,9 @@ optionalFieldDecoder decoder name =
   optionalDecoder (name := decoder)
 
 
-repeatedFieldDecoder : JD.Decoder a -> JD.Decoder (List a)
-repeatedFieldDecoder decoder =
-  withDefault [] (JD.list decoder)
+repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)
+repeatedFieldDecoder decoder name =
+  withDefault [] (name := (JD.list decoder))
 
 
 withDefault : a -> JD.Decoder a -> JD.Decoder a

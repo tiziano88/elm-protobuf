@@ -241,11 +241,7 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("(<*>) : JD.Decoder (a -> b) -> JD.Decoder a -> JD.Decoder b")
 	fg.P("(<*>) f v =")
 	fg.In()
-	fg.P("f")
-	fg.In()
-	fg.P("`JD.andThen` \\x -> x <$> v")
-	fg.P("`JD.andThen` \\x -> x <$> v")
-	fg.Out()
+	fg.P("f `JD.andThen` \\x -> x <$> v")
 	fg.Out()
 
 	fg.P("")
@@ -274,10 +270,10 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("repeatedFieldDecoder : JD.Decoder a -> JD.Decoder (List a)")
-	fg.P("repeatedFieldDecoder decoder =")
+	fg.P("repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)")
+	fg.P("repeatedFieldDecoder decoder name =")
 	fg.In()
-	fg.P("withDefault [] (JD.list decoder)")
+	fg.P("withDefault [] (name := (JD.list decoder))")
 	fg.Out()
 
 	fg.P("")
@@ -569,7 +565,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 		}
 
 		if repeated {
-			fg.P("%s (repeatedFieldDecoder (%s %q))", leading, d, jsonFieldName(inField))
+			fg.P("%s (repeatedFieldDecoder %s %q)", leading, d, jsonFieldName(inField))
 		} else {
 			if optional {
 				fg.P("%s (optionalFieldDecoder %s %q)", leading, d, jsonFieldName(inField))
