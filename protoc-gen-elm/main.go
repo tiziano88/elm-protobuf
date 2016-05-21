@@ -241,7 +241,11 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("(<*>) : JD.Decoder (a -> b) -> JD.Decoder a -> JD.Decoder b")
 	fg.P("(<*>) f v =")
 	fg.In()
-	fg.P("f `JD.andThen` \\x -> x <$> v")
+	fg.P("f")
+	fg.In()
+	fg.P("`JD.andThen` \\x -> x <$> v")
+	fg.P("`JD.andThen` \\x -> x <$> v")
+	fg.Out()
 	fg.Out()
 
 	fg.P("")

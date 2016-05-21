@@ -99,3 +99,24 @@ simpleEncoder v =
     ]
 
 
+type alias Foo =
+  { s : Maybe Simple -- 1
+  , ss : List Simple -- 2
+  }
+
+
+fooDecoder : JD.Decoder Foo
+fooDecoder =
+  Foo
+    <$> (optionalFieldDecoder simpleDecoder "s")
+    <*> (repeatedFieldDecoder (simpleDecoder "ss"))
+
+
+fooEncoder : Foo -> JE.Value
+fooEncoder v =
+  JE.object
+    [ ("s", optionalEncoder simpleEncoder v.s)
+    , ("ss", repeatedFieldEncoder simpleEncoder v.ss)
+    ]
+
+

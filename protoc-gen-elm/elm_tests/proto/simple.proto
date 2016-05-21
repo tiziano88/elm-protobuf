@@ -3,3 +3,8 @@ syntax = "proto3";
 message Simple {
   int32 int32_field = 1;
 }
+
+message Foo {
+  Simple s = 1;
+  repeated Simple ss = 2;
+}

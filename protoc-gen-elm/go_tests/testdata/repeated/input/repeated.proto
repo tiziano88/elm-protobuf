@@ -73,7 +73,6 @@ message FooRepeated {
 
   repeated Enum enum_field = 15;
 
-  // TODO: Fix
-  // repeated SubMessage sub_message = 16;
+  repeated SubMessage sub_message = 16;
 }
 
