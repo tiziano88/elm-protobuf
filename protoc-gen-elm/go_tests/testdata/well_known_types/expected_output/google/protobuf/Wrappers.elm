@@ -23,14 +23,19 @@ optionalDecoder decoder =
     ]
 
 
-optionalFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)
-optionalFieldDecoder decoder name =
+requiredFieldDecoder : String -> a -> JD.Decoder a -> JD.Decoder a
+requiredFieldDecoder name default decoder =
+  withDefault default (name := decoder)
+
+
+optionalFieldDecoder : String -> JD.Decoder a -> JD.Decoder (Maybe a)
+optionalFieldDecoder name decoder =
   optionalDecoder (name := decoder)
 
 
-repeatedFieldDecoder : JD.Decoder a -> JD.Decoder (List a)
-repeatedFieldDecoder decoder =
-  withDefault [] (JD.list decoder)
+repeatedFieldDecoder : String -> JD.Decoder a -> JD.Decoder (List a)
+repeatedFieldDecoder name decoder =
+  withDefault [] (name := (JD.list decoder))
 
 
 withDefault : a -> JD.Decoder a -> JD.Decoder a
@@ -39,31 +44,6 @@ withDefault default decoder =
     [ decoder
     , JD.succeed default
     ]
-
-
-intFieldDecoder : String -> JD.Decoder Int
-intFieldDecoder name =
-  withDefault 0 (name := JD.int)
-
-
-floatFieldDecoder : String -> JD.Decoder Float
-floatFieldDecoder name =
-  withDefault 0.0 (name := JD.float)
-
-
-boolFieldDecoder : String -> JD.Decoder Bool
-boolFieldDecoder name =
-  withDefault False (name := JD.bool)
-
-
-stringFieldDecoder : String -> JD.Decoder String
-stringFieldDecoder name =
-  withDefault "" (name := JD.string)
-
-
-enumFieldDecoder : JD.Decoder a -> String -> JD.Decoder a
-enumFieldDecoder decoder name =
-  (name := decoder)
 
 
 optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
@@ -89,7 +69,7 @@ type alias DoubleValue =
 doubleValueDecoder : JD.Decoder DoubleValue
 doubleValueDecoder =
   DoubleValue
-    <$> (floatFieldDecoder "value")
+    <$> (requiredFieldDecoder "value" 0.0 JD.float)
 
 
 doubleValueEncoder : DoubleValue -> JE.Value
@@ -107,7 +87,7 @@ type alias FloatValue =
 floatValueDecoder : JD.Decoder FloatValue
 floatValueDecoder =
   FloatValue
-    <$> (floatFieldDecoder "value")
+    <$> (requiredFieldDecoder "value" 0.0 JD.float)
 
 
 floatValueEncoder : FloatValue -> JE.Value
@@ -125,7 +105,7 @@ type alias Int64Value =
 int64ValueDecoder : JD.Decoder Int64Value
 int64ValueDecoder =
   Int64Value
-    <$> (intFieldDecoder "value")
+    <$> (requiredFieldDecoder "value" 0 JD.int)
 
 
 int64ValueEncoder : Int64Value -> JE.Value
@@ -143,7 +123,7 @@ type alias UInt64Value =
 uInt64ValueDecoder : JD.Decoder UInt64Value
 uInt64ValueDecoder =
   UInt64Value
-    <$> (intFieldDecoder "value")
+    <$> (requiredFieldDecoder "value" 0 JD.int)
 
 
 uInt64ValueEncoder : UInt64Value -> JE.Value
@@ -161,7 +141,7 @@ type alias Int32Value =
 int32ValueDecoder : JD.Decoder Int32Value
 int32ValueDecoder =
   Int32Value
-    <$> (intFieldDecoder "value")
+    <$> (requiredFieldDecoder "value" 0 JD.int)
 
 
 int32ValueEncoder : Int32Value -> JE.Value
@@ -179,7 +159,7 @@ type alias UInt32Value =
 uInt32ValueDecoder : JD.Decoder UInt32Value
 uInt32ValueDecoder =
   UInt32Value
-    <$> (intFieldDecoder "value")
+    <$> (requiredFieldDecoder "value" 0 JD.int)
 
 
 uInt32ValueEncoder : UInt32Value -> JE.Value
@@ -197,7 +177,7 @@ type alias BoolValue =
 boolValueDecoder : JD.Decoder BoolValue
 boolValueDecoder =
   BoolValue
-    <$> (boolFieldDecoder "value")
+    <$> (requiredFieldDecoder "value" False JD.bool)
 
 
 boolValueEncoder : BoolValue -> JE.Value
@@ -215,7 +195,7 @@ type alias StringValue =
 stringValueDecoder : JD.Decoder StringValue
 stringValueDecoder =
   StringValue
-    <$> (stringFieldDecoder "value")
+    <$> (requiredFieldDecoder "value" "" JD.string)
 
 
 stringValueEncoder : StringValue -> JE.Value
@@ -233,7 +213,7 @@ type alias BytesValue =
 bytesValueDecoder : JD.Decoder BytesValue
 bytesValueDecoder =
   BytesValue
-    <$> (bytesFieldDecoder "value")
+    <$> (requiredFieldDecoder "value"  bytesFieldDecoder)
 
 
 bytesValueEncoder : BytesValue -> JE.Value

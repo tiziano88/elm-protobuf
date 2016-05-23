@@ -181,7 +181,13 @@ func (fg *FileGenerator) GenerateEnumDecoder(prefix string, inEnum *descriptor.E
 	fg.P("JD.map lookup JD.string")
 	fg.Out()
 	fg.Out()
-	// TODO: Implement this.
+
+	fg.P("")
+	fg.P("")
+
+	defaultName := defaultEnumValue(typeName)
+	fg.P("%s : %s", defaultName, typeName)
+	fg.P("%s = %s", defaultName, prefix+elmEnumValueName(inEnum.GetValue()[0].GetName()))
 	return nil
 }
 
@@ -205,7 +211,6 @@ func (fg *FileGenerator) GenerateEnumEncoder(prefix string, inEnum *descriptor.E
 	fg.P("JE.string <| lookup %s", argName)
 	fg.Out()
 	fg.Out()
-	// TODO: Implement this.
 	return nil
 }
 
@@ -261,8 +266,17 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("optionalFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)")
-	fg.P("optionalFieldDecoder decoder name =")
+	fg.P("requiredFieldDecoder : String -> a -> JD.Decoder a -> JD.Decoder a")
+	fg.P("requiredFieldDecoder name default decoder =")
+	fg.In()
+	fg.P("withDefault default (name := decoder)")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("optionalFieldDecoder : String -> JD.Decoder a -> JD.Decoder (Maybe a)")
+	fg.P("optionalFieldDecoder name decoder =")
 	fg.In()
 	fg.P("optionalDecoder (name := decoder)")
 	fg.Out()
@@ -270,8 +284,8 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)")
-	fg.P("repeatedFieldDecoder decoder name =")
+	fg.P("repeatedFieldDecoder : String -> JD.Decoder a -> JD.Decoder (List a)")
+	fg.P("repeatedFieldDecoder name decoder =")
 	fg.In()
 	fg.P("withDefault [] (name := (JD.list decoder))")
 	fg.Out()
@@ -288,51 +302,6 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P(", JD.succeed default")
 	fg.P("]")
 	fg.Out()
-	fg.Out()
-
-	fg.P("")
-	fg.P("")
-
-	fg.P("intFieldDecoder : String -> JD.Decoder Int")
-	fg.P("intFieldDecoder name =")
-	fg.In()
-	fg.P("withDefault 0 (name := JD.int)")
-	fg.Out()
-
-	fg.P("")
-	fg.P("")
-
-	fg.P("floatFieldDecoder : String -> JD.Decoder Float")
-	fg.P("floatFieldDecoder name =")
-	fg.In()
-	fg.P("withDefault 0.0 (name := JD.float)")
-	fg.Out()
-
-	fg.P("")
-	fg.P("")
-
-	fg.P("boolFieldDecoder : String -> JD.Decoder Bool")
-	fg.P("boolFieldDecoder name =")
-	fg.In()
-	fg.P("withDefault False (name := JD.bool)")
-	fg.Out()
-
-	fg.P("")
-	fg.P("")
-
-	fg.P("stringFieldDecoder : String -> JD.Decoder String")
-	fg.P("stringFieldDecoder name =")
-	fg.In()
-	fg.P("withDefault \"\" (name := JD.string)")
-	fg.Out()
-
-	fg.P("")
-	fg.P("")
-
-	fg.P("enumFieldDecoder : JD.Decoder a -> String -> JD.Decoder a")
-	fg.P("enumFieldDecoder decoder name =")
-	fg.In()
-	fg.P("(name := decoder)")
 	fg.Out()
 
 	fg.P("")
@@ -524,6 +493,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 		d := ""
+		def := ""
 		switch inField.GetType() {
 		case descriptor.FieldDescriptorProto_TYPE_INT32,
 			descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -536,18 +506,23 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
 			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
 			// TODO: Handle parsing from string (for 64 bit types).
-			d = "intFieldDecoder"
+			d = "JD.int"
+			def = "0"
 		case descriptor.FieldDescriptorProto_TYPE_FLOAT,
 			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-			d = "floatFieldDecoder"
+			d = "JD.float"
+			def = "0.0"
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			d = "boolFieldDecoder"
+			d = "JD.bool"
+			def = "False"
 		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			d = "stringFieldDecoder"
+			d = "JD.string"
+			def = "\"\""
 		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			// TODO: Default enum value.
 			// Remove leading ".".
-			d = "(enumFieldDecoder " + decoderName(elmFieldType(inField)) + ")"
+			d = decoderName(elmFieldType(inField))
+			def = defaultEnumValue(elmFieldType(inField))
 		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 			// Remove leading ".".
 			d = decoderName(elmFieldType(inField))
@@ -565,12 +540,12 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 		}
 
 		if repeated {
-			fg.P("%s (repeatedFieldDecoder %s %q)", leading, d, jsonFieldName(inField))
+			fg.P("%s (repeatedFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
 		} else {
 			if optional {
-				fg.P("%s (optionalFieldDecoder %s %q)", leading, d, jsonFieldName(inField))
+				fg.P("%s (optionalFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
 			} else {
-				fg.P("%s (%s %q)", leading, d, jsonFieldName(inField))
+				fg.P("%s (requiredFieldDecoder %q %s %s)", leading, jsonFieldName(inField), def, d)
 			}
 		}
 	}
@@ -663,6 +638,16 @@ func decoderName(typeName string) string {
 		return firstLower(messageName) + "Decoder"
 	} else {
 		return packageName + "." + firstLower(messageName) + "Decoder"
+	}
+}
+
+func defaultEnumValue(typeName string) string {
+	packageName, messageName := convert(typeName)
+
+	if packageName == "" {
+		return firstLower(messageName) + "Default"
+	} else {
+		return packageName + "." + firstLower(messageName) + "Default"
 	}
 }
 

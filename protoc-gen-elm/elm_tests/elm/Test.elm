@@ -78,6 +78,17 @@ foo =
       , { int32Field = 222
         }
       ]
+  , colour = T.Red
+  , colours =
+    [ T.Red
+    , T.Red
+    ]
+  , singleIntField = 123
+  , repeatedIntField =
+    [ 111
+    , 222
+    , 333
+    ]
   }
 
 
@@ -94,6 +105,17 @@ fooJson = String.trim """
     {
       "int32Field": 222
     }
+  ],
+  "colour": "RED",
+  "colours": [
+    "RED",
+    "RED"
+  ],
+  "singleIntField": 123,
+  "repeatedIntField": [
+    111,
+    222,
+    333
   ]
 }
 """

@@ -4,7 +4,20 @@ message Simple {
   int32 int32_field = 1;
 }
 
+enum Colour {
+  COLOUR_UNSPECIFIED = 0;
+  RED = 1;
+  GREEN = 2;
+  BLUE = 3;
+}
+
 message Foo {
   Simple s = 1;
   repeated Simple ss = 2;
+
+  Colour colour = 3;
+  repeated Colour colours = 4;
+
+  int32 single_int_field = 5;
+  repeated int32 repeated_int_field = 6;
 }

@@ -23,13 +23,18 @@ optionalDecoder decoder =
     ]
 
 
-optionalFieldDecoder : JD.Decoder a -> String -> JD.Decoder (Maybe a)
-optionalFieldDecoder decoder name =
+requiredFieldDecoder : String -> a -> JD.Decoder a -> JD.Decoder a
+requiredFieldDecoder name default decoder =
+  withDefault default (name := decoder)
+
+
+optionalFieldDecoder : String -> JD.Decoder a -> JD.Decoder (Maybe a)
+optionalFieldDecoder name decoder =
   optionalDecoder (name := decoder)
 
 
-repeatedFieldDecoder : JD.Decoder a -> String -> JD.Decoder (List a)
-repeatedFieldDecoder decoder name =
+repeatedFieldDecoder : String -> JD.Decoder a -> JD.Decoder (List a)
+repeatedFieldDecoder name decoder =
   withDefault [] (name := (JD.list decoder))
 
 
@@ -39,31 +44,6 @@ withDefault default decoder =
     [ decoder
     , JD.succeed default
     ]
-
-
-intFieldDecoder : String -> JD.Decoder Int
-intFieldDecoder name =
-  withDefault 0 (name := JD.int)
-
-
-floatFieldDecoder : String -> JD.Decoder Float
-floatFieldDecoder name =
-  withDefault 0.0 (name := JD.float)
-
-
-boolFieldDecoder : String -> JD.Decoder Bool
-boolFieldDecoder name =
-  withDefault False (name := JD.bool)
-
-
-stringFieldDecoder : String -> JD.Decoder String
-stringFieldDecoder name =
-  withDefault "" (name := JD.string)
-
-
-enumFieldDecoder : JD.Decoder a -> String -> JD.Decoder a
-enumFieldDecoder decoder name =
-  (name := decoder)
 
 
 optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
@@ -81,6 +61,42 @@ repeatedFieldEncoder encoder v =
   JE.list <| List.map encoder v
 
 
+type Colour
+  = ColourUnspecified -- 0
+  | Red -- 1
+  | Green -- 2
+  | Blue -- 3
+
+
+colourDecoder : JD.Decoder Colour
+colourDecoder =
+  let
+    lookup s = case s of
+      "COLOUR_UNSPECIFIED" -> ColourUnspecified
+      "RED" -> Red
+      "GREEN" -> Green
+      "BLUE" -> Blue
+      _ -> ColourUnspecified
+  in
+    JD.map lookup JD.string
+
+
+colourDefault : Colour
+colourDefault = ColourUnspecified
+
+
+colourEncoder : Colour -> JE.Value
+colourEncoder v =
+  let
+    lookup s = case s of
+      ColourUnspecified -> "COLOUR_UNSPECIFIED"
+      Red -> "RED"
+      Green -> "GREEN"
+      Blue -> "BLUE"
+  in
+    JE.string <| lookup v
+
+
 type alias Simple =
   { int32Field : Int -- 1
   }
@@ -89,7 +105,7 @@ type alias Simple =
 simpleDecoder : JD.Decoder Simple
 simpleDecoder =
   Simple
-    <$> (intFieldDecoder "int32Field")
+    <$> (requiredFieldDecoder "int32Field" 0 JD.int)
 
 
 simpleEncoder : Simple -> JE.Value
@@ -102,14 +118,22 @@ simpleEncoder v =
 type alias Foo =
   { s : Maybe Simple -- 1
   , ss : List Simple -- 2
+  , colour : Colour -- 3
+  , colours : List Colour -- 4
+  , singleIntField : Int -- 5
+  , repeatedIntField : List Int -- 6
   }
 
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
   Foo
-    <$> (optionalFieldDecoder simpleDecoder "s")
-    <*> (repeatedFieldDecoder simpleDecoder "ss")
+    <$> (optionalFieldDecoder "s" simpleDecoder)
+    <*> (repeatedFieldDecoder "ss" simpleDecoder)
+    <*> (requiredFieldDecoder "colour" colourDefault colourDecoder)
+    <*> (repeatedFieldDecoder "colours" colourDecoder)
+    <*> (requiredFieldDecoder "singleIntField" 0 JD.int)
+    <*> (repeatedFieldDecoder "repeatedIntField" JD.int)
 
 
 fooEncoder : Foo -> JE.Value
@@ -117,6 +141,10 @@ fooEncoder v =
   JE.object
     [ ("s", optionalEncoder simpleEncoder v.s)
     , ("ss", repeatedFieldEncoder simpleEncoder v.ss)
+    , ("colour", colourEncoder v.colour)
+    , ("colours", repeatedFieldEncoder colourEncoder v.colours)
+    , ("singleIntField", JE.int v.singleIntField)
+    , ("repeatedIntField", repeatedFieldEncoder JE.int v.repeatedIntField)
     ]
 
 
