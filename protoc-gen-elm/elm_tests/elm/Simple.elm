@@ -131,8 +131,16 @@ type alias Foo =
   }
 
 type Oo
-  = Oo1
-  | Oo2
+  = Oo1 Int
+  | Oo2 Bool
+
+ooDecoder : JD.Decoder Oo
+ooDecoder =
+  JD.oneOf
+    [ JD.map Oo1 ("oo1" := JD.int)
+    , JD.map Oo2 ("oo2" := JD.bool)
+    ]
+
 
 
 fooDecoder : JD.Decoder Foo
@@ -146,6 +154,7 @@ fooDecoder =
     <*> (repeatedFieldDecoder "repeatedIntField" JD.int)
     <*> (requiredFieldDecoder "oo1" 0 JD.int)
     <*> (requiredFieldDecoder "oo2" False JD.bool)
+    <*> ooDecoder
 
 
 fooEncoder : Foo -> JE.Value

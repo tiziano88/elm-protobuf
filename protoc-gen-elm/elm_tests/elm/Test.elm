@@ -91,6 +91,7 @@ foo =
     ]
   , oo1 = 1
   , oo2 = False
+  , oo = T.Oo1 1
   }
 
 

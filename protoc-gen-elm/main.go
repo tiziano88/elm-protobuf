@@ -145,15 +145,11 @@ func (fg *FileGenerator) GenerateEnum(prefix string, inEnum *descriptor.EnumDesc
 	typeName := prefix + inEnum.GetName()
 	fg.P("type %s", typeName)
 	fg.In()
-	for i, enumValue := range inEnum.GetValue() {
-		leading := ""
-		if i == 0 {
-			leading = "="
-		} else {
-			leading = "|"
-		}
+	leading := "="
+	for _, enumValue := range inEnum.GetValue() {
 		// TODO: Convert names to CamelCase.
 		fg.P("%s %s -- %d", leading, prefix+elmEnumValueName(enumValue.GetName()), enumValue.GetNumber())
+		leading = "|"
 	}
 	fg.Out()
 	return nil
@@ -412,56 +408,53 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 	return nil
 }
 
+func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
+	switch inField.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		return "Int"
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return "Float"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "Bool"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return "String"
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		// XXX
+		return elmFieldType(inField)
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		// XXX
+		return elmFieldType(inField)
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		// XXX
+		return "Bytes"
+	default:
+		// TODO: Return error.
+		return fmt.Sprintf("Error generating type for field %q %s", inField.GetName(), inField.GetType())
+	}
+}
+
 func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.DescriptorProto) error {
 	typeName := prefix + inMessage.GetName()
 	fg.P("type alias %s =", typeName)
 	fg.In()
 
-	first := true
+	leading := "{"
 	for _, inField := range inMessage.GetField() {
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 
-		fType := ""
-		switch inField.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_INT32,
-			descriptor.FieldDescriptorProto_TYPE_INT64,
-			descriptor.FieldDescriptorProto_TYPE_UINT32,
-			descriptor.FieldDescriptorProto_TYPE_UINT64,
-			descriptor.FieldDescriptorProto_TYPE_SINT32,
-			descriptor.FieldDescriptorProto_TYPE_SINT64,
-			descriptor.FieldDescriptorProto_TYPE_FIXED32,
-			descriptor.FieldDescriptorProto_TYPE_FIXED64,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-			fType = "Int"
-		case descriptor.FieldDescriptorProto_TYPE_FLOAT,
-			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-			fType = "Float"
-		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			fType = "Bool"
-		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			fType = "String"
-		case descriptor.FieldDescriptorProto_TYPE_ENUM:
-			// XXX
-			fType = elmFieldType(inField)
-		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			// XXX
-			fType = elmFieldType(inField)
-		case descriptor.FieldDescriptorProto_TYPE_BYTES:
-			// XXX
-			fType = "Bytes"
-		default:
-			return fmt.Errorf("Error generating type for field %q %s", inField.GetName(), inField.GetType())
-		}
-
-		leading := ""
-		if first {
-			leading = "{"
-		} else {
-			leading = ","
-		}
+		fType := fieldElmType(inField)
 
 		fName := elmFieldName(inField.GetName())
 		fNumber := inField.GetNumber()
@@ -476,26 +469,20 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 			}
 		}
 
-		first = false
+		leading = ","
 	}
 
 	fg.P("")
 
+	leading = "{"
 	for _, inOneof := range inMessage.GetOneofDecl() {
-
-		leading := ""
-		if first {
-			leading = "{"
-		} else {
-			leading = ","
-		}
 
 		oneofName := elmFieldName(inOneof.GetName())
 		// TODO: Prefix with message name to avoid collisions.
 		oneofTypeName := elmTypeName(inOneof.GetName())
 		fg.P("%s %s : %s", leading, oneofName, oneofTypeName)
 
-		first = false
+		leading = ","
 	}
 
 	fg.P("}")
@@ -503,35 +490,151 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 
 	fg.P("")
 
-	for i, inOneof := range inMessage.GetOneofDecl() {
-		// TODO: Prefix with message name to avoid collisions.
-		oneofTypeName := elmTypeName(inOneof.GetName())
-		fg.P("type %s", oneofTypeName)
-
-		fg.In()
-
-		first := true
-		for _, inField := range inMessage.GetField() {
-			if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(i) {
-
-				leading := ""
-				if first {
-					leading = "="
-				} else {
-					leading = "|"
-				}
-
-				oneofVariantName := elmTypeName(inField.GetName())
-				fg.P("%s %s", leading, oneofVariantName)
-
-				first = false
-			}
-		}
-		fg.Out()
-		fg.P("")
+	for i, _ := range inMessage.GetOneofDecl() {
+		fg.GenerateOneofDefinition(prefix, inMessage, i)
+		fg.GenerateOneofDecoder(prefix, inMessage, i)
+		fg.GenerateOneofEncoder(prefix, inMessage, i)
 	}
 
 	return nil
+}
+
+func elmOneofDecoderName(inOneof *descriptor.OneofDescriptorProto) string {
+	typeName := elmTypeName(inOneof.GetName())
+	return decoderName(typeName)
+}
+
+func elmOneofTypeName(inOneof *descriptor.OneofDescriptorProto) string {
+	return elmTypeName(inOneof.GetName())
+}
+
+func (fg *FileGenerator) GenerateOneofDefinition(prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
+	inOneof := inMessage.GetOneofDecl()[oneofIndex]
+
+	// TODO: Prefix with message name to avoid collisions.
+	oneofTypeName := elmOneofTypeName(inOneof)
+	fg.P("type %s", oneofTypeName)
+
+	fg.In()
+
+	leading := "="
+	for _, inField := range inMessage.GetField() {
+		if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
+
+			oneofVariantName := elmTypeName(inField.GetName())
+			oneofArgumentType := fieldElmType(inField)
+			fg.P("%s %s %s", leading, oneofVariantName, oneofArgumentType)
+
+			leading = "|"
+		}
+	}
+	fg.Out()
+	fg.P("")
+
+	return nil
+}
+
+func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
+	inOneof := inMessage.GetOneofDecl()[oneofIndex]
+
+	// TODO: Prefix with message name to avoid collisions.
+	typeName := elmOneofTypeName(inOneof)
+	decoderName := elmOneofDecoderName(inOneof)
+
+	fg.P("%s : JD.Decoder %s", decoderName, typeName)
+	fg.P("%s =", decoderName)
+
+	fg.In()
+
+	fg.P("JD.oneOf")
+	fg.In()
+
+	leading := "["
+	for _, inField := range inMessage.GetField() {
+		if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
+			oneofVariantName := elmTypeName(inField.GetName())
+			decoderName := fieldElmDecoderName(inField)
+			fg.P("%s JD.map %s (%q := %s)", leading, oneofVariantName, inField.GetJsonName(), decoderName)
+			leading = ","
+		}
+	}
+	fg.P("]")
+	fg.Out()
+	fg.Out()
+	fg.P("")
+
+	return nil
+}
+
+func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
+	return nil
+}
+
+func fieldElmDefaultValue(inField *descriptor.FieldDescriptorProto) string {
+	switch inField.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		return "0"
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return "0.0"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "False"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return "\"\""
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		// TODO: Default enum value.
+		return defaultEnumValue(elmFieldType(inField))
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		return "xxx"
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		return "xxx"
+	default:
+		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
+	}
+}
+
+func fieldElmDecoderName(inField *descriptor.FieldDescriptorProto) string {
+	switch inField.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		// TODO: Handle parsing from string (for 64 bit types).
+		return "JD.int"
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return "JD.float"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "JD.bool"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return "JD.string"
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		// TODO: Default enum value.
+		// Remove leading ".".
+		return decoderName(elmFieldType(inField))
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		// Remove leading ".".
+		return decoderName(elmFieldType(inField))
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		return "bytesFieldDecoder"
+	default:
+		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
+	}
 }
 
 func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descriptor.DescriptorProto) error {
@@ -542,56 +645,13 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 	fg.P("%s", typeName)
 	fg.In()
 
-	for i, inField := range inMessage.GetField() {
+	leading := "<$>"
+	for _, inField := range inMessage.GetField() {
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		d := ""
-		def := ""
-		switch inField.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_INT32,
-			descriptor.FieldDescriptorProto_TYPE_INT64,
-			descriptor.FieldDescriptorProto_TYPE_UINT32,
-			descriptor.FieldDescriptorProto_TYPE_UINT64,
-			descriptor.FieldDescriptorProto_TYPE_SINT32,
-			descriptor.FieldDescriptorProto_TYPE_SINT64,
-			descriptor.FieldDescriptorProto_TYPE_FIXED32,
-			descriptor.FieldDescriptorProto_TYPE_FIXED64,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-			// TODO: Handle parsing from string (for 64 bit types).
-			d = "JD.int"
-			def = "0"
-		case descriptor.FieldDescriptorProto_TYPE_FLOAT,
-			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-			d = "JD.float"
-			def = "0.0"
-		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			d = "JD.bool"
-			def = "False"
-		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			d = "JD.string"
-			def = "\"\""
-		case descriptor.FieldDescriptorProto_TYPE_ENUM:
-			// TODO: Default enum value.
-			// Remove leading ".".
-			d = decoderName(elmFieldType(inField))
-			def = defaultEnumValue(elmFieldType(inField))
-		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			// Remove leading ".".
-			d = decoderName(elmFieldType(inField))
-		case descriptor.FieldDescriptorProto_TYPE_BYTES:
-			d = "bytesFieldDecoder"
-		default:
-			return fmt.Errorf("Error generating decoder for field %s", inField.GetType())
-		}
-
-		leading := ""
-		if i == 0 {
-			leading = "<$>"
-		} else {
-			leading = "<*>"
-		}
+		d := fieldElmDecoderName(inField)
+		def := fieldElmDefaultValue(inField)
 
 		if repeated {
 			fg.P("%s (repeatedFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
@@ -602,7 +662,17 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 				fg.P("%s (requiredFieldDecoder %q %s %s)", leading, jsonFieldName(inField), def, d)
 			}
 		}
+
+		leading = "<*>"
 	}
+
+	for _, inOneof := range inMessage.GetOneofDecl() {
+		oneofDecoderName := elmOneofDecoderName(inOneof)
+		fg.P("%s %s", leading, oneofDecoderName)
+
+		leading = "<*>"
+	}
+
 	fg.Out()
 	fg.Out()
 	return nil
@@ -617,7 +687,8 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 	fg.P("JE.object")
 	fg.In()
 
-	for i, inField := range inMessage.GetField() {
+	leading := "["
+	for _, inField := range inMessage.GetField() {
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
@@ -653,13 +724,6 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 			return fmt.Errorf("Error generating encoder for field %s", inField.GetType())
 		}
 
-		leading := ""
-		if i == 0 {
-			leading = "["
-		} else {
-			leading = ","
-		}
-
 		val := argName + "." + elmFieldName(inField.GetName())
 		if repeated {
 			fg.P("%s (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField), d, val)
@@ -670,6 +734,8 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 				fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField), d, val)
 			}
 		}
+
+		leading = ","
 	}
 	fg.P("]")
 	fg.Out()
