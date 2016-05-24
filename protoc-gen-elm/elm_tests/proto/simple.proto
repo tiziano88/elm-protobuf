@@ -20,4 +20,9 @@ message Foo {
 
   int32 single_int_field = 5;
   repeated int32 repeated_int_field = 6;
+
+  oneof oo {
+    int32 oo1 = 7;
+    bool oo2 = 8;
+  }
 }

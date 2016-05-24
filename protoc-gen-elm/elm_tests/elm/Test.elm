@@ -89,6 +89,8 @@ foo =
     , 222
     , 333
     ]
+  , oo1 = 1
+  , oo2 = False
   }
 
 
@@ -116,6 +118,8 @@ fooJson = String.trim """
     111,
     222,
     333
-  ]
+  ],
+  "oo1": 1,
+  "oo2": false
 }
 """

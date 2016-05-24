@@ -122,6 +122,8 @@ type alias Foo =
   , colours : List Colour -- 4
   , singleIntField : Int -- 5
   , repeatedIntField : List Int -- 6
+  , oo1 : Int -- 7
+  , oo2 : Bool -- 8
   }
 
 
@@ -134,6 +136,8 @@ fooDecoder =
     <*> (repeatedFieldDecoder "colours" colourDecoder)
     <*> (requiredFieldDecoder "singleIntField" 0 JD.int)
     <*> (repeatedFieldDecoder "repeatedIntField" JD.int)
+    <*> (requiredFieldDecoder "oo1" 0 JD.int)
+    <*> (requiredFieldDecoder "oo2" False JD.bool)
 
 
 fooEncoder : Foo -> JE.Value
@@ -145,6 +149,8 @@ fooEncoder v =
     , ("colours", repeatedFieldEncoder colourEncoder v.colours)
     , ("singleIntField", JE.int v.singleIntField)
     , ("repeatedIntField", repeatedFieldEncoder JE.int v.repeatedIntField)
+    , ("oo1", JE.int v.oo1)
+    , ("oo2", JE.bool v.oo2)
     ]
 
 
