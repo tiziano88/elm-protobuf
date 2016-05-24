@@ -472,9 +472,6 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 		leading = ","
 	}
 
-	fg.P("")
-
-	leading = "{"
 	for _, inOneof := range inMessage.GetOneofDecl() {
 
 		oneofName := elmFieldName(inOneof.GetName())
@@ -488,9 +485,8 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 	fg.P("}")
 	fg.Out()
 
-	fg.P("")
-
 	for i, _ := range inMessage.GetOneofDecl() {
+		fg.P("")
 		fg.GenerateOneofDefinition(prefix, inMessage, i)
 		fg.GenerateOneofDecoder(prefix, inMessage, i)
 		fg.GenerateOneofEncoder(prefix, inMessage, i)

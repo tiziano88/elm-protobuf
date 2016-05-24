@@ -66,7 +66,33 @@ type alias Foo =
   , intField : Int -- 2
   , boolField : Bool -- 3
   , otherStringField : String -- 4
+  , firstOneof : FirstOneof
+  , secondOneof : SecondOneof
   }
+
+type FirstOneof
+  = StringField String
+  | IntField Int
+
+firstOneofDecoder : JD.Decoder FirstOneof
+firstOneofDecoder =
+  JD.oneOf
+    [ JD.map StringField ("stringField" := JD.string)
+    , JD.map IntField ("intField" := JD.int)
+    ]
+
+
+type SecondOneof
+  = BoolField Bool
+  | OtherStringField String
+
+secondOneofDecoder : JD.Decoder SecondOneof
+secondOneofDecoder =
+  JD.oneOf
+    [ JD.map BoolField ("boolField" := JD.bool)
+    , JD.map OtherStringField ("otherStringField" := JD.string)
+    ]
+
 
 
 fooDecoder : JD.Decoder Foo
@@ -76,6 +102,8 @@ fooDecoder =
     <*> (requiredFieldDecoder "intField" 0 JD.int)
     <*> (requiredFieldDecoder "boolField" False JD.bool)
     <*> (requiredFieldDecoder "otherStringField" "" JD.string)
+    <*> firstOneofDecoder
+    <*> secondOneofDecoder
 
 
 fooEncoder : Foo -> JE.Value
