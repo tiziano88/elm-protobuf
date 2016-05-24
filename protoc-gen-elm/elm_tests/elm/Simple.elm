@@ -99,7 +99,9 @@ colourEncoder v =
 
 type alias Simple =
   { int32Field : Int -- 1
+  
   }
+
 
 
 simpleDecoder : JD.Decoder Simple
@@ -124,7 +126,13 @@ type alias Foo =
   , repeatedIntField : List Int -- 6
   , oo1 : Int -- 7
   , oo2 : Bool -- 8
+  
+  , oo : Oo
   }
+
+type Oo
+  = Oo1
+  | Oo2
 
 
 fooDecoder : JD.Decoder Foo

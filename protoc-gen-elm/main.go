@@ -417,7 +417,8 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 	fg.P("type alias %s =", typeName)
 	fg.In()
 
-	for i, inField := range inMessage.GetField() {
+	first := true
+	for _, inField := range inMessage.GetField() {
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
@@ -456,7 +457,7 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 		}
 
 		leading := ""
-		if i == 0 {
+		if first {
 			leading = "{"
 		} else {
 			leading = ","
@@ -474,9 +475,62 @@ func (fg *FileGenerator) GenerateMessage(prefix string, inMessage *descriptor.De
 				fg.P("%s %s : %s -- %d", leading, fName, fType, fNumber)
 			}
 		}
+
+		first = false
 	}
+
+	fg.P("")
+
+	for _, inOneof := range inMessage.GetOneofDecl() {
+
+		leading := ""
+		if first {
+			leading = "{"
+		} else {
+			leading = ","
+		}
+
+		oneofName := elmFieldName(inOneof.GetName())
+		// TODO: Prefix with message name to avoid collisions.
+		oneofTypeName := elmTypeName(inOneof.GetName())
+		fg.P("%s %s : %s", leading, oneofName, oneofTypeName)
+
+		first = false
+	}
+
 	fg.P("}")
 	fg.Out()
+
+	fg.P("")
+
+	for i, inOneof := range inMessage.GetOneofDecl() {
+		// TODO: Prefix with message name to avoid collisions.
+		oneofTypeName := elmTypeName(inOneof.GetName())
+		fg.P("type %s", oneofTypeName)
+
+		fg.In()
+
+		first := true
+		for _, inField := range inMessage.GetField() {
+			if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(i) {
+
+				leading := ""
+				if first {
+					leading = "="
+				} else {
+					leading = "|"
+				}
+
+				oneofVariantName := elmTypeName(inField.GetName())
+				fg.P("%s %s", leading, oneofVariantName)
+
+				first = false
+			}
+		}
+		fg.Out()
+		fg.P("")
+	}
+
 	return nil
 }
 
@@ -621,6 +675,10 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 	fg.Out()
 	fg.Out()
 	return nil
+}
+
+func elmTypeName(in string) string {
+	return camelCase(in)
 }
 
 func elmFieldName(in string) string {
