@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cd ./protoc-gen-elm
-go install
+go install *.go
