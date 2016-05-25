@@ -15,20 +15,25 @@ main =
 
 tests : Test
 tests =
-  suite "A Test Suite"
-    [ test "JSON encode" (assertEqual (JE.encode 2 (T.simpleEncoder msg)) msgJson)
+  suite "JSON"
+    [ test "JSON encode" <| assertEqual msgJson (JE.encode 2 (T.simpleEncoder msg))
     , test "JSON decode" <| assertDecode T.simpleDecoder msgJson msg
     , test "JSON decode extra field" <| assertDecode T.simpleDecoder msgExtraFieldJson msg
     , test "JSON decode empty message" <| assertDecode T.simpleDecoder msgEmptyJson msgDefault
     , test "JSON encode message with repeated field" <| assertEqual (JE.encode 2 (T.fooEncoder foo)) fooJson
+    , suite "oneof"
+      [ test "encode" <| assertEqual fooJson (JE.encode 2 (T.fooEncoder foo))
+      , test "decode oo1" <| assertDecode T.fooDecoder oo1SetJson oo1Set
+      , test "decode oo2" <| assertDecode T.fooDecoder oo2SetJson oo2Set
+      ]
     ]
 
 
 assertDecode : JD.Decoder a -> String -> a -> Assertion
 assertDecode decoder json msg =
   assertEqual
-    (Result.Ok msg)
     (JD.decodeString decoder json)
+    (Result.Ok msg)
 
 
 msg : T.Simple
@@ -89,8 +94,6 @@ foo =
     , 222
     , 333
     ]
-  , oo1 = 1
-  , oo2 = False
   , oo = T.Oo1 1
   }
 
@@ -120,7 +123,45 @@ fooJson = String.trim """
     222,
     333
   ],
-  "oo1": 1,
-  "oo2": false
+  "oo1": 1
+}
+"""
+
+
+oo1Set : T.Foo
+oo1Set =
+  { s = Nothing
+  , ss = []
+  , colour = T.ColourUnspecified
+  , colours = []
+  , singleIntField = 0
+  , repeatedIntField = []
+  , oo = T.Oo1 123
+  }
+
+
+oo1SetJson : String
+oo1SetJson = String.trim """
+{
+  "oo1": 123
+}
+"""
+
+
+oo2Set : T.Foo
+oo2Set =
+  { s = Nothing
+  , ss = []
+  , colour = T.ColourUnspecified
+  , colours = []
+  , singleIntField = 0
+  , repeatedIntField = []
+  , oo = T.Oo2 True
+  }
+
+oo2SetJson : String
+oo2SetJson = String.trim """
+{
+  "oo2": true
 }
 """

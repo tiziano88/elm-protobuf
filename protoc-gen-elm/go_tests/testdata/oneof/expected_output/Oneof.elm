@@ -62,11 +62,7 @@ repeatedFieldEncoder encoder v =
 
 
 type alias Foo =
-  { stringField : String -- 1
-  , intField : Int -- 2
-  , boolField : Bool -- 3
-  , otherStringField : String -- 4
-  , firstOneof : FirstOneof
+  { firstOneof : FirstOneof
   , secondOneof : SecondOneof
   }
 
@@ -84,15 +80,11 @@ firstOneofDecoder =
     ]
 
 
-firstOneofEncoder : FirstOneof -> JE.Value
+firstOneofEncoder : FirstOneof -> (String, JE.Value)
 firstOneofEncoder v =
-  let
-    f =
-      case v of
-        StringField x -> ("stringField", JE.string x)
-        IntField x -> ("intField", JE.int x)
-  in
-    JE.object [f]
+  case v of
+    StringField x -> ("stringField", JE.string x)
+    IntField x -> ("intField", JE.int x)
 
 
 type SecondOneof
@@ -108,33 +100,23 @@ secondOneofDecoder =
     ]
 
 
-secondOneofEncoder : SecondOneof -> JE.Value
+secondOneofEncoder : SecondOneof -> (String, JE.Value)
 secondOneofEncoder v =
-  let
-    f =
-      case v of
-        BoolField x -> ("boolField", JE.bool x)
-        OtherStringField x -> ("otherStringField", JE.string x)
-  in
-    JE.object [f]
+  case v of
+    BoolField x -> ("boolField", JE.bool x)
+    OtherStringField x -> ("otherStringField", JE.string x)
 
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
   Foo
-    <$> (requiredFieldDecoder "stringField" "" JD.string)
-    <*> (requiredFieldDecoder "intField" 0 JD.int)
-    <*> (requiredFieldDecoder "boolField" False JD.bool)
-    <*> (requiredFieldDecoder "otherStringField" "" JD.string)
-    <*> firstOneofDecoder
+    <$> firstOneofDecoder
     <*> secondOneofDecoder
 
 
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
   JE.object
-    [ ("stringField", JE.string v.stringField)
-    , ("intField", JE.int v.intField)
-    , ("boolField", JE.bool v.boolField)
-    , ("otherStringField", JE.string v.otherStringField)
+    [ firstOneofEncoder v.firstOneof
+    , secondOneofEncoder v.secondOneof
     ]

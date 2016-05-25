@@ -73,14 +73,9 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 
 	fg.P("")
 	fg.P("")
-	fg.P("%s : %s -> JE.Value", encoderName, oneofType)
+	fg.P("%s : %s -> (String, JE.Value)", encoderName, oneofType)
 	fg.P("%s %s =", encoderName, argName)
 
-	fg.In()
-
-	fg.P("let")
-	fg.In()
-	fg.P("f =")
 	fg.In()
 	fg.P("case %s of", argName)
 	fg.In()
@@ -93,12 +88,6 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 			fg.P("%s %s -> (%q, %s %s)", oneofVariantName, valueName, inField.GetJsonName(), e, valueName)
 		}
 	}
-	fg.Out()
-	fg.Out()
-	fg.Out()
-	fg.P("in")
-	fg.In()
-	fg.P("JE.object [f]")
 	fg.Out()
 	fg.Out()
 

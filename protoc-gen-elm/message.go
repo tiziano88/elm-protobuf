@@ -16,6 +16,11 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 
 	leading := "{"
 	for _, inField := range inMessage.GetField() {
+		if inField.OneofIndex != nil {
+			// Handled in the oneof only.
+			continue
+		}
+
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
@@ -39,7 +44,6 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 	}
 
 	for _, inOneof := range inMessage.GetOneofDecl() {
-
 		oneofName := elmFieldName(inOneof.GetName())
 		// TODO: Prefix with message name to avoid collisions.
 		oneofTypeName := elmTypeName(inOneof.GetName())
@@ -73,6 +77,11 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 
 	leading := "<$>"
 	for _, inField := range inMessage.GetField() {
+		if inField.OneofIndex != nil {
+			// Handled in the oneof only.
+			continue
+		}
+
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
@@ -118,6 +127,11 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 
 	leading := "["
 	for _, inField := range inMessage.GetField() {
+		if inField.OneofIndex != nil {
+			// Handled in the oneof only.
+			continue
+		}
+
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
@@ -135,6 +149,15 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 
 		leading = ","
 	}
+
+	for _, inOneof := range inMessage.GetOneofDecl() {
+		val := argName + "." + elmFieldName(inOneof.GetName())
+		oneofEncoderName := oneofEncoderName(inOneof)
+		fg.P("%s %s %s", leading, oneofEncoderName, val)
+
+		leading = ","
+	}
+
 	fg.P("]")
 	fg.Out()
 	fg.Out()
