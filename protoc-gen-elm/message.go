@@ -113,38 +113,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		d := ""
-		switch inField.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_INT32,
-			descriptor.FieldDescriptorProto_TYPE_INT64,
-			descriptor.FieldDescriptorProto_TYPE_UINT32,
-			descriptor.FieldDescriptorProto_TYPE_UINT64,
-			descriptor.FieldDescriptorProto_TYPE_SINT32,
-			descriptor.FieldDescriptorProto_TYPE_SINT64,
-			descriptor.FieldDescriptorProto_TYPE_FIXED32,
-			descriptor.FieldDescriptorProto_TYPE_FIXED64,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-			d = "JE.int"
-		case descriptor.FieldDescriptorProto_TYPE_FLOAT,
-			descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-			d = "JE.float"
-		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			d = "JE.bool"
-		case descriptor.FieldDescriptorProto_TYPE_STRING:
-			d = "JE.string"
-		case descriptor.FieldDescriptorProto_TYPE_ENUM:
-			// Remove leading ".".
-			d = encoderName(elmFieldType(inField))
-		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			// Remove leading ".".
-			d = encoderName(elmFieldType(inField))
-		case descriptor.FieldDescriptorProto_TYPE_BYTES:
-			d = "bytesFieldEncoder"
-		default:
-			return fmt.Errorf("Error generating encoder for field %s", inField.GetType())
-		}
-
+		d := fieldElmDecoderName(inField)
 		val := argName + "." + elmFieldName(inField.GetName())
 		if repeated {
 			fg.P("%s (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField), d, val)
@@ -162,4 +131,106 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 	fg.Out()
 	fg.Out()
 	return nil
+}
+
+func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
+	switch inField.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		return "Int"
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return "Float"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "Bool"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return "String"
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		// XXX
+		return elmFieldType(inField)
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		// XXX
+		return elmFieldType(inField)
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		// XXX
+		return "Bytes"
+	default:
+		// TODO: Return error.
+		return fmt.Sprintf("Error generating type for field %q %s", inField.GetName(), inField.GetType())
+	}
+}
+
+func fieldElmDecoderName(inField *descriptor.FieldDescriptorProto) string {
+	switch inField.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		// TODO: Handle parsing from string (for 64 bit types).
+		return "JD.int"
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return "JD.float"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "JD.bool"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return "JD.string"
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		// TODO: Default enum value.
+		// Remove leading ".".
+		return decoderName(elmFieldType(inField))
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		// Remove leading ".".
+		return decoderName(elmFieldType(inField))
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		return "bytesFieldDecoder"
+	default:
+		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
+	}
+}
+
+func fieldElmDefaultValue(inField *descriptor.FieldDescriptorProto) string {
+	switch inField.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		return "0"
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return "0.0"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "False"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return "\"\""
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		// TODO: Default enum value.
+		return defaultEnumValue(elmFieldType(inField))
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		return "xxx"
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		return "xxx"
+	default:
+		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
+	}
 }
