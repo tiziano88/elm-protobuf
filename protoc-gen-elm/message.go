@@ -71,8 +71,8 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		d := fieldElmDecoderName(inField)
-		def := fieldElmDefaultValue(inField)
+		d := fieldDecoderName(inField)
+		def := fieldDefaultValue(inField)
 
 		if repeated {
 			fg.P("%s (repeatedFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
@@ -88,7 +88,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 	}
 
 	for _, inOneof := range inMessage.GetOneofDecl() {
-		oneofDecoderName := elmOneofDecoderName(inOneof)
+		oneofDecoderName := oneofDecoderName(inOneof)
 		fg.P("%s %s", leading, oneofDecoderName)
 
 		leading = "<*>"
@@ -113,7 +113,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		d := fieldElmEncoderName(inField)
+		d := fieldEncoderName(inField)
 		val := argName + "." + elmFieldName(inField.GetName())
 		if repeated {
 			fg.P("%s (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField), d, val)
@@ -168,7 +168,7 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
 	}
 }
 
-func fieldElmEncoderName(inField *descriptor.FieldDescriptorProto) string {
+func fieldEncoderName(inField *descriptor.FieldDescriptorProto) string {
 	switch inField.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_INT32,
 		descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -203,7 +203,7 @@ func fieldElmEncoderName(inField *descriptor.FieldDescriptorProto) string {
 	}
 }
 
-func fieldElmDecoderName(inField *descriptor.FieldDescriptorProto) string {
+func fieldDecoderName(inField *descriptor.FieldDescriptorProto) string {
 	switch inField.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_INT32,
 		descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -238,7 +238,7 @@ func fieldElmDecoderName(inField *descriptor.FieldDescriptorProto) string {
 	}
 }
 
-func fieldElmDefaultValue(inField *descriptor.FieldDescriptorProto) string {
+func fieldDefaultValue(inField *descriptor.FieldDescriptorProto) string {
 	switch inField.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_INT32,
 		descriptor.FieldDescriptorProto_TYPE_INT64,

@@ -6,8 +6,8 @@ func (fg *FileGenerator) GenerateOneofDefinition(prefix string, inMessage *descr
 	inOneof := inMessage.GetOneofDecl()[oneofIndex]
 
 	// TODO: Prefix with message name to avoid collisions.
-	oneofTypeName := elmOneofTypeName(inOneof)
-	fg.P("type %s", oneofTypeName)
+	oneofType := oneofType(inOneof)
+	fg.P("type %s", oneofType)
 
 	fg.In()
 
@@ -32,10 +32,10 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	inOneof := inMessage.GetOneofDecl()[oneofIndex]
 
 	// TODO: Prefix with message name to avoid collisions.
-	typeName := elmOneofTypeName(inOneof)
-	decoderName := elmOneofDecoderName(inOneof)
+	oneofType := oneofType(inOneof)
+	decoderName := oneofDecoderName(inOneof)
 
-	fg.P("%s : JD.Decoder %s", decoderName, typeName)
+	fg.P("%s : JD.Decoder %s", decoderName, oneofType)
 	fg.P("%s =", decoderName)
 
 	fg.In()
@@ -47,7 +47,7 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	for _, inField := range inMessage.GetField() {
 		if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 			oneofVariantName := elmTypeName(inField.GetName())
-			decoderName := fieldElmDecoderName(inField)
+			decoderName := fieldDecoderName(inField)
 			fg.P("%s JD.map %s (%q := %s)", leading, oneofVariantName, inField.GetJsonName(), decoderName)
 			leading = ","
 		}
@@ -62,4 +62,18 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 
 func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
 	return nil
+}
+
+func oneofDecoderName(inOneof *descriptor.OneofDescriptorProto) string {
+	typeName := elmTypeName(inOneof.GetName())
+	return decoderName(typeName)
+}
+
+func oneofEncoderName(inOneof *descriptor.OneofDescriptorProto) string {
+	typeName := elmTypeName(inOneof.GetName())
+	return encoderName(typeName)
+}
+
+func oneofType(inOneof *descriptor.OneofDescriptorProto) string {
+	return elmTypeName(inOneof.GetName())
 }

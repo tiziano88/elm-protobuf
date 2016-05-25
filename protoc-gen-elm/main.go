@@ -163,15 +163,6 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 	return nil
 }
 
-func elmOneofDecoderName(inOneof *descriptor.OneofDescriptorProto) string {
-	typeName := elmTypeName(inOneof.GetName())
-	return decoderName(typeName)
-}
-
-func elmOneofTypeName(inOneof *descriptor.OneofDescriptorProto) string {
-	return elmTypeName(inOneof.GetName())
-}
-
 func elmTypeName(in string) string {
 	return camelCase(in)
 }
