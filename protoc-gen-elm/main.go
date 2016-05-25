@@ -84,7 +84,17 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	// Top-level enums.
 	for _, inEnum := range inFile.GetEnumType() {
-		err = fg.GenerateEnumThings("", inEnum)
+		err = fg.GenerateEnumDefinition("", inEnum)
+		if err != nil {
+			return nil, err
+		}
+
+		err = fg.GenerateEnumDecoder("", inEnum)
+		if err != nil {
+			return nil, err
+		}
+
+		err = fg.GenerateEnumEncoder("", inEnum)
 		if err != nil {
 			return nil, err
 		}
@@ -105,20 +115,17 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 func (fg *FileGenerator) GenerateModule(moduleName string) {
 	fg.P("module %s exposing (..)", moduleName)
-
-	fg.P("")
-	fg.P("")
 }
 
 func (fg *FileGenerator) GenerateImports() {
+	fg.P("")
+	fg.P("")
 	fg.P("import Json.Decode as JD exposing ((:=))")
 	fg.P("import Json.Encode as JE")
-
-	fg.P("")
-	fg.P("")
 }
 
 func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor.DescriptorProto) error {
+	newPrefix := prefix + inMessage.GetName() + "_"
 	var err error
 
 	err = fg.GenerateMessageDefinition(prefix, inMessage)
@@ -126,30 +133,32 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 		return err
 	}
 
-	fg.P("")
-	fg.P("")
+	for _, inEnum := range inMessage.GetEnumType() {
+		err = fg.GenerateEnumDefinition(newPrefix, inEnum)
+		if err != nil {
+			return err
+		}
+	}
 
 	err = fg.GenerateMessageDecoder(prefix, inMessage)
 	if err != nil {
 		return err
 	}
 
-	fg.P("")
-	fg.P("")
+	for _, inEnum := range inMessage.GetEnumType() {
+		err = fg.GenerateEnumDecoder(newPrefix, inEnum)
+		if err != nil {
+			return err
+		}
+	}
 
 	err = fg.GenerateMessageEncoder(prefix, inMessage)
 	if err != nil {
 		return err
 	}
 
-	fg.P("")
-	fg.P("")
-
-	newPrefix := prefix + inMessage.GetName() + "_"
-
-	// Nested enums.
 	for _, inEnum := range inMessage.GetEnumType() {
-		err = fg.GenerateEnumThings(newPrefix, inEnum)
+		err = fg.GenerateEnumEncoder(newPrefix, inEnum)
 		if err != nil {
 			return err
 		}

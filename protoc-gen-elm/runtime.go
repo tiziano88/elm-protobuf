@@ -5,6 +5,9 @@ func (fg *FileGenerator) GenerateRuntime() {
 	// package, otherwise operator will clash, since Elm does not have support to generalise
 	// them via HKTs.
 
+	fg.P("")
+	fg.P("")
+
 	fg.P("(<$>) : (a -> b) -> JD.Decoder a -> JD.Decoder b")
 	fg.P("(<$>) =")
 	fg.In()
@@ -103,7 +106,4 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.In()
 	fg.P("JE.list <| List.map encoder v")
 	fg.Out()
-
-	fg.P("")
-	fg.P("")
 }

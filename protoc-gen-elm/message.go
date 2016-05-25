@@ -8,6 +8,9 @@ import (
 
 func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *descriptor.DescriptorProto) error {
 	typeName := prefix + inMessage.GetName()
+
+	fg.P("")
+	fg.P("")
 	fg.P("type alias %s =", typeName)
 	fg.In()
 
@@ -49,7 +52,6 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 	fg.Out()
 
 	for i, _ := range inMessage.GetOneofDecl() {
-		fg.P("")
 		fg.GenerateOneofDefinition(prefix, inMessage, i)
 		fg.GenerateOneofDecoder(prefix, inMessage, i)
 		fg.GenerateOneofEncoder(prefix, inMessage, i)
@@ -60,6 +62,9 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 
 func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descriptor.DescriptorProto) error {
 	typeName := prefix + inMessage.GetName()
+
+	fg.P("")
+	fg.P("")
 	fg.P("%s : JD.Decoder %s", decoderName(typeName), typeName)
 	fg.P("%s =", decoderName(typeName))
 	fg.In()
@@ -102,6 +107,9 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descriptor.DescriptorProto) error {
 	typeName := prefix + inMessage.GetName()
 	argName := "v"
+
+	fg.P("")
+	fg.P("")
 	fg.P("%s : %s -> JE.Value", encoderName(typeName), typeName)
 	fg.P("%s %s =", encoderName(typeName), argName)
 	fg.In()

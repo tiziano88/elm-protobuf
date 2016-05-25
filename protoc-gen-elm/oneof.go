@@ -7,6 +7,9 @@ func (fg *FileGenerator) GenerateOneofDefinition(prefix string, inMessage *descr
 
 	// TODO: Prefix with message name to avoid collisions.
 	oneofType := oneofType(inOneof)
+
+	fg.P("")
+	fg.P("")
 	fg.P("type %s", oneofType)
 
 	fg.In()
@@ -23,7 +26,6 @@ func (fg *FileGenerator) GenerateOneofDefinition(prefix string, inMessage *descr
 		}
 	}
 	fg.Out()
-	fg.P("")
 
 	return nil
 }
@@ -35,6 +37,8 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	oneofType := oneofType(inOneof)
 	decoderName := oneofDecoderName(inOneof)
 
+	fg.P("")
+	fg.P("")
 	fg.P("%s : JD.Decoder %s", decoderName, oneofType)
 	fg.P("%s =", decoderName)
 
@@ -55,12 +59,49 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	fg.P("]")
 	fg.Out()
 	fg.Out()
-	fg.P("")
 
 	return nil
 }
 
 func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
+	inOneof := inMessage.GetOneofDecl()[oneofIndex]
+
+	// TODO: Prefix with message name to avoid collisions.
+	oneofType := oneofType(inOneof)
+	encoderName := oneofEncoderName(inOneof)
+	argName := "v"
+
+	fg.P("")
+	fg.P("")
+	fg.P("%s : %s -> JE.Value", encoderName, oneofType)
+	fg.P("%s %s =", encoderName, argName)
+
+	fg.In()
+
+	fg.P("let")
+	fg.In()
+	fg.P("f =")
+	fg.In()
+	fg.P("case %s of", argName)
+	fg.In()
+
+	valueName := "x"
+	for _, inField := range inMessage.GetField() {
+		if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
+			oneofVariantName := elmTypeName(inField.GetName())
+			e := fieldEncoderName(inField)
+			fg.P("%s %s -> (%q, %s %s)", oneofVariantName, valueName, inField.GetJsonName(), e, valueName)
+		}
+	}
+	fg.Out()
+	fg.Out()
+	fg.Out()
+	fg.P("in")
+	fg.In()
+	fg.P("JE.object [f]")
+	fg.Out()
+	fg.Out()
+
 	return nil
 }
 

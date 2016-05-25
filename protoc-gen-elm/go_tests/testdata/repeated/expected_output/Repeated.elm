@@ -139,6 +139,10 @@ type alias Foo =
   }
 
 
+type Foo_NestedEnum
+  = Foo_EnumValueDefault -- 0
+
+
 fooDecoder : JD.Decoder Foo
 fooDecoder =
   Foo
@@ -162,6 +166,20 @@ fooDecoder =
     <*> (repeatedFieldDecoder "repeatedEnumField" enumDecoder)
     <*> (optionalFieldDecoder "nestedMessageField" foo_NestedMessageDecoder)
     <*> (requiredFieldDecoder "nestedEnumField" foo_NestedEnumDefault foo_NestedEnumDecoder)
+
+
+foo_NestedEnumDecoder : JD.Decoder Foo_NestedEnum
+foo_NestedEnumDecoder =
+  let
+    lookup s = case s of
+      "ENUM_VALUE_DEFAULT" -> Foo_EnumValueDefault
+      _ -> Foo_EnumValueDefault
+  in
+    JD.map lookup JD.string
+
+
+foo_NestedEnumDefault : Foo_NestedEnum
+foo_NestedEnumDefault = Foo_EnumValueDefault
 
 
 fooEncoder : Foo -> JE.Value
@@ -188,24 +206,6 @@ fooEncoder v =
     , ("nestedMessageField", optionalEncoder foo_NestedMessageEncoder v.nestedMessageField)
     , ("nestedEnumField", foo_NestedEnumEncoder v.nestedEnumField)
     ]
-
-
-type Foo_NestedEnum
-  = Foo_EnumValueDefault -- 0
-
-
-foo_NestedEnumDecoder : JD.Decoder Foo_NestedEnum
-foo_NestedEnumDecoder =
-  let
-    lookup s = case s of
-      "ENUM_VALUE_DEFAULT" -> Foo_EnumValueDefault
-      _ -> Foo_EnumValueDefault
-  in
-    JD.map lookup JD.string
-
-
-foo_NestedEnumDefault : Foo_NestedEnum
-foo_NestedEnumDefault = Foo_EnumValueDefault
 
 
 foo_NestedEnumEncoder : Foo_NestedEnum -> JE.Value
@@ -314,5 +314,3 @@ fooRepeatedEncoder v =
     , ("enumField", repeatedFieldEncoder enumEncoder v.enumField)
     , ("subMessage", repeatedFieldEncoder subMessageEncoder v.subMessage)
     ]
-
-

@@ -70,9 +70,11 @@ type alias Foo =
   , secondOneof : SecondOneof
   }
 
+
 type FirstOneof
   = StringField String
   | IntField Int
+
 
 firstOneofDecoder : JD.Decoder FirstOneof
 firstOneofDecoder =
@@ -82,9 +84,21 @@ firstOneofDecoder =
     ]
 
 
+firstOneofEncoder : FirstOneof -> JE.Value
+firstOneofEncoder v =
+  let
+    f =
+      case v of
+        StringField x -> ("stringField", JE.string x)
+        IntField x -> ("intField", JE.int x)
+  in
+    JE.object [f]
+
+
 type SecondOneof
   = BoolField Bool
   | OtherStringField String
+
 
 secondOneofDecoder : JD.Decoder SecondOneof
 secondOneofDecoder =
@@ -93,6 +107,16 @@ secondOneofDecoder =
     , JD.map OtherStringField ("otherStringField" := JD.string)
     ]
 
+
+secondOneofEncoder : SecondOneof -> JE.Value
+secondOneofEncoder v =
+  let
+    f =
+      case v of
+        BoolField x -> ("boolField", JE.bool x)
+        OtherStringField x -> ("otherStringField", JE.string x)
+  in
+    JE.object [f]
 
 
 fooDecoder : JD.Decoder Foo
@@ -114,5 +138,3 @@ fooEncoder v =
     , ("boolField", JE.bool v.boolField)
     , ("otherStringField", JE.string v.otherStringField)
     ]
-
-

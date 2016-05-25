@@ -127,9 +127,11 @@ type alias Foo =
   , oo : Oo
   }
 
+
 type Oo
   = Oo1 Int
   | Oo2 Bool
+
 
 ooDecoder : JD.Decoder Oo
 ooDecoder =
@@ -138,6 +140,16 @@ ooDecoder =
     , JD.map Oo2 ("oo2" := JD.bool)
     ]
 
+
+ooEncoder : Oo -> JE.Value
+ooEncoder v =
+  let
+    f =
+      case v of
+        Oo1 x -> ("oo1", JE.int x)
+        Oo2 x -> ("oo2", JE.bool x)
+  in
+    JE.object [f]
 
 
 fooDecoder : JD.Decoder Foo
@@ -166,5 +178,3 @@ fooEncoder v =
     , ("oo1", JE.int v.oo1)
     , ("oo2", JE.bool v.oo2)
     ]
-
-

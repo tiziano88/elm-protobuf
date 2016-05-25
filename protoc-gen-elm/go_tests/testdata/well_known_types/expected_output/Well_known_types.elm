@@ -77,5 +77,3 @@ messageEncoder v =
   JE.object
     [ ("doubleValueField", optionalEncoder google_Protobuf_DoubleValueEncoder v.doubleValueField)
     ]
-
-

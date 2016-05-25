@@ -2,38 +2,10 @@ package main
 
 import "github.com/golang/protobuf/protoc-gen-go/descriptor"
 
-func (fg *FileGenerator) GenerateEnumThings(prefix string, inEnum *descriptor.EnumDescriptorProto) error {
-	var err error
-
-	err = fg.GenerateEnumDefinition(prefix, inEnum)
-	if err != nil {
-		return err
-	}
-
-	fg.P("")
-	fg.P("")
-
-	err = fg.GenerateEnumDecoder(prefix, inEnum)
-	if err != nil {
-		return err
-	}
-
-	fg.P("")
-	fg.P("")
-
-	err = fg.GenerateEnumEncoder(prefix, inEnum)
-	if err != nil {
-		return err
-	}
-
-	fg.P("")
-	fg.P("")
-
-	return nil
-}
-
 func (fg *FileGenerator) GenerateEnumDefinition(prefix string, inEnum *descriptor.EnumDescriptorProto) error {
 	typeName := prefix + inEnum.GetName()
+	fg.P("")
+	fg.P("")
 	fg.P("type %s", typeName)
 	fg.In()
 	leading := "="
@@ -49,6 +21,8 @@ func (fg *FileGenerator) GenerateEnumDefinition(prefix string, inEnum *descripto
 func (fg *FileGenerator) GenerateEnumDecoder(prefix string, inEnum *descriptor.EnumDescriptorProto) error {
 	typeName := prefix + inEnum.GetName()
 	decoderName := decoderName(typeName)
+	fg.P("")
+	fg.P("")
 	fg.P("%s : JD.Decoder %s", decoderName, typeName)
 	fg.P("%s =", decoderName)
 	fg.In()
@@ -69,10 +43,9 @@ func (fg *FileGenerator) GenerateEnumDecoder(prefix string, inEnum *descriptor.E
 	fg.Out()
 	fg.Out()
 
-	fg.P("")
-	fg.P("")
-
 	defaultName := defaultEnumValue(typeName)
+	fg.P("")
+	fg.P("")
 	fg.P("%s : %s", defaultName, typeName)
 	fg.P("%s = %s", defaultName, prefix+elmEnumValueName(inEnum.GetValue()[0].GetName()))
 	return nil
@@ -81,6 +54,8 @@ func (fg *FileGenerator) GenerateEnumDecoder(prefix string, inEnum *descriptor.E
 func (fg *FileGenerator) GenerateEnumEncoder(prefix string, inEnum *descriptor.EnumDescriptorProto) error {
 	typeName := prefix + inEnum.GetName()
 	argName := "v"
+	fg.P("")
+	fg.P("")
 	fg.P("%s : %s -> JE.Value", encoderName(typeName), typeName)
 	fg.P("%s %s =", encoderName(typeName), argName)
 	fg.In()

@@ -213,13 +213,11 @@ type alias BytesValue =
 bytesValueDecoder : JD.Decoder BytesValue
 bytesValueDecoder =
   BytesValue
-    <$> (requiredFieldDecoder "value"  bytesFieldDecoder)
+    <$> (requiredFieldDecoder "value" xxx bytesFieldDecoder)
 
 
 bytesValueEncoder : BytesValue -> JE.Value
 bytesValueEncoder v =
   JE.object
-    [ ("value", bytesFieldEncoder v.value)
+    [ ("value", bytesFieldDecoder v.value)
     ]
-
-

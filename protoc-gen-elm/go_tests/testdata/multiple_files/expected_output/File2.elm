@@ -77,5 +77,3 @@ file2MessageEncoder v =
   JE.object
     [ ("field", JE.bool v.field)
     ]
-
-
