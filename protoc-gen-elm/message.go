@@ -113,7 +113,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		d := fieldElmDecoderName(inField)
+		d := fieldElmEncoderName(inField)
 		val := argName + "." + elmFieldName(inField.GetName())
 		if repeated {
 			fg.P("%s (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField), d, val)
@@ -165,6 +165,41 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
 	default:
 		// TODO: Return error.
 		return fmt.Sprintf("Error generating type for field %q %s", inField.GetName(), inField.GetType())
+	}
+}
+
+func fieldElmEncoderName(inField *descriptor.FieldDescriptorProto) string {
+	switch inField.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		// TODO: Handle parsing from string (for 64 bit types).
+		return "JE.int"
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return "JE.float"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "JE.bool"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return "JE.string"
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		// TODO: Default enum value.
+		// Remove leading ".".
+		return encoderName(elmFieldType(inField))
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		// Remove leading ".".
+		return encoderName(elmFieldType(inField))
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		return "bytesFieldDecoder"
+	default:
+		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
 	}
 }
 
