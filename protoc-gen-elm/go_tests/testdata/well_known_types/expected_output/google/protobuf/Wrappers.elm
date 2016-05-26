@@ -46,19 +46,33 @@ withDefault default decoder =
     ]
 
 
-optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
-optionalEncoder encoder v =
+optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe (String, JE.Value)
+optionalEncoder name encoder v =
   case v of
     Just x ->
-      encoder x
+      Just (name, encoder x)
     
     Nothing ->
-      JE.null
+      Nothing
 
 
-repeatedFieldEncoder : (a -> JE.Value) -> List a -> JE.Value
-repeatedFieldEncoder encoder v =
-  JE.list <| List.map encoder v
+requiredFieldEncoder : String -> (a -> JE.Value) -> a -> a -> Maybe (String, JE.Value)
+requiredFieldEncoder name encoder default v =
+  if
+    v == default
+  then
+    Nothing
+  else
+    Just (name, encoder v)
+
+
+repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe (String, JE.Value)
+repeatedFieldEncoder name encoder v =
+  case v of
+    [] ->
+      Nothing
+    _ ->
+      Just (name, JE.list <| List.map encoder v)
 
 
 type alias DoubleValue =
@@ -74,8 +88,8 @@ doubleValueDecoder =
 
 doubleValueEncoder : DoubleValue -> JE.Value
 doubleValueEncoder v =
-  JE.object
-    [ ("value", JE.float v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" JE.float 0.0 v.value)
     ]
 
 
@@ -92,8 +106,8 @@ floatValueDecoder =
 
 floatValueEncoder : FloatValue -> JE.Value
 floatValueEncoder v =
-  JE.object
-    [ ("value", JE.float v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" JE.float 0.0 v.value)
     ]
 
 
@@ -110,8 +124,8 @@ int64ValueDecoder =
 
 int64ValueEncoder : Int64Value -> JE.Value
 int64ValueEncoder v =
-  JE.object
-    [ ("value", JE.int v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" JE.int 0 v.value)
     ]
 
 
@@ -128,8 +142,8 @@ uInt64ValueDecoder =
 
 uInt64ValueEncoder : UInt64Value -> JE.Value
 uInt64ValueEncoder v =
-  JE.object
-    [ ("value", JE.int v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" JE.int 0 v.value)
     ]
 
 
@@ -146,8 +160,8 @@ int32ValueDecoder =
 
 int32ValueEncoder : Int32Value -> JE.Value
 int32ValueEncoder v =
-  JE.object
-    [ ("value", JE.int v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" JE.int 0 v.value)
     ]
 
 
@@ -164,8 +178,8 @@ uInt32ValueDecoder =
 
 uInt32ValueEncoder : UInt32Value -> JE.Value
 uInt32ValueEncoder v =
-  JE.object
-    [ ("value", JE.int v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" JE.int 0 v.value)
     ]
 
 
@@ -182,8 +196,8 @@ boolValueDecoder =
 
 boolValueEncoder : BoolValue -> JE.Value
 boolValueEncoder v =
-  JE.object
-    [ ("value", JE.bool v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" JE.bool False v.value)
     ]
 
 
@@ -200,8 +214,8 @@ stringValueDecoder =
 
 stringValueEncoder : StringValue -> JE.Value
 stringValueEncoder v =
-  JE.object
-    [ ("value", JE.string v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" JE.string "" v.value)
     ]
 
 
@@ -218,6 +232,6 @@ bytesValueDecoder =
 
 bytesValueEncoder : BytesValue -> JE.Value
 bytesValueEncoder v =
-  JE.object
-    [ ("value", bytesFieldDecoder v.value)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "value" bytesFieldDecoder xxx v.value)
     ]

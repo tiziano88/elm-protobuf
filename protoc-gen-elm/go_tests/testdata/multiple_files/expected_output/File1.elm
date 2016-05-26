@@ -46,19 +46,33 @@ withDefault default decoder =
     ]
 
 
-optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
-optionalEncoder encoder v =
+optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe (String, JE.Value)
+optionalEncoder name encoder v =
   case v of
     Just x ->
-      encoder x
+      Just (name, encoder x)
     
     Nothing ->
-      JE.null
+      Nothing
 
 
-repeatedFieldEncoder : (a -> JE.Value) -> List a -> JE.Value
-repeatedFieldEncoder encoder v =
-  JE.list <| List.map encoder v
+requiredFieldEncoder : String -> (a -> JE.Value) -> a -> a -> Maybe (String, JE.Value)
+requiredFieldEncoder name encoder default v =
+  if
+    v == default
+  then
+    Nothing
+  else
+    Just (name, encoder v)
+
+
+repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe (String, JE.Value)
+repeatedFieldEncoder name encoder v =
+  case v of
+    [] ->
+      Nothing
+    _ ->
+      Just (name, JE.list <| List.map encoder v)
 
 
 type alias File1Message =
@@ -75,5 +89,5 @@ file1MessageDecoder =
 file1MessageEncoder : File1Message -> JE.Value
 file1MessageEncoder v =
   JE.object <| List.filterMap identity <|
-    [ Just ("field", JE.bool v.field)
+    [ (requiredFieldEncoder "field" JE.bool False v.field)
     ]

@@ -46,19 +46,33 @@ withDefault default decoder =
     ]
 
 
-optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
-optionalEncoder encoder v =
+optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe (String, JE.Value)
+optionalEncoder name encoder v =
   case v of
     Just x ->
-      encoder x
+      Just (name, encoder x)
     
     Nothing ->
-      JE.null
+      Nothing
 
 
-repeatedFieldEncoder : (a -> JE.Value) -> List a -> JE.Value
-repeatedFieldEncoder encoder v =
-  JE.list <| List.map encoder v
+requiredFieldEncoder : String -> (a -> JE.Value) -> a -> a -> Maybe (String, JE.Value)
+requiredFieldEncoder name encoder default v =
+  if
+    v == default
+  then
+    Nothing
+  else
+    Just (name, encoder v)
+
+
+repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe (String, JE.Value)
+repeatedFieldEncoder name encoder v =
+  case v of
+    [] ->
+      Nothing
+    _ ->
+      Just (name, JE.list <| List.map encoder v)
 
 
 type alias Message =
@@ -74,6 +88,6 @@ messageDecoder =
 
 messageEncoder : Message -> JE.Value
 messageEncoder v =
-  JE.object
-    [ ("doubleValueField", optionalEncoder google_Protobuf_DoubleValueEncoder v.doubleValueField)
+  JE.object <| List.filterMap identity <|
+    [ (optionalEncoder "doubleValueField" google_Protobuf_DoubleValueEncoder v.doubleValueField)
     ]

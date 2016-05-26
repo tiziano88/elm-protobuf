@@ -46,19 +46,33 @@ withDefault default decoder =
     ]
 
 
-optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
-optionalEncoder encoder v =
+optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe (String, JE.Value)
+optionalEncoder name encoder v =
   case v of
     Just x ->
-      encoder x
+      Just (name, encoder x)
     
     Nothing ->
-      JE.null
+      Nothing
 
 
-repeatedFieldEncoder : (a -> JE.Value) -> List a -> JE.Value
-repeatedFieldEncoder encoder v =
-  JE.list <| List.map encoder v
+requiredFieldEncoder : String -> (a -> JE.Value) -> a -> a -> Maybe (String, JE.Value)
+requiredFieldEncoder name encoder default v =
+  if
+    v == default
+  then
+    Nothing
+  else
+    Just (name, encoder v)
+
+
+repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe (String, JE.Value)
+repeatedFieldEncoder name encoder v =
+  case v of
+    [] ->
+      Nothing
+    _ ->
+      Just (name, JE.list <| List.map encoder v)
 
 
 type Enum
@@ -110,8 +124,8 @@ subMessageDecoder =
 
 subMessageEncoder : SubMessage -> JE.Value
 subMessageEncoder v =
-  JE.object
-    [ ("int32Field", JE.int v.int32Field)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "int32Field" JE.int 0 v.int32Field)
     ]
 
 
@@ -184,27 +198,27 @@ foo_NestedEnumDefault = Foo_EnumValueDefault
 
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
-  JE.object
-    [ ("doubleField", JE.float v.doubleField)
-    , ("floatField", JE.float v.floatField)
-    , ("int32Field", JE.int v.int32Field)
-    , ("int64Field", JE.int v.int64Field)
-    , ("uint32Field", JE.int v.uint32Field)
-    , ("uint64Field", JE.int v.uint64Field)
-    , ("sint32Field", JE.int v.sint32Field)
-    , ("sint64Field", JE.int v.sint64Field)
-    , ("fixed32Field", JE.int v.fixed32Field)
-    , ("fixed64Field", JE.int v.fixed64Field)
-    , ("sfixed32Field", JE.int v.sfixed32Field)
-    , ("sfixed64Field", JE.int v.sfixed64Field)
-    , ("boolField", JE.bool v.boolField)
-    , ("stringField", JE.string v.stringField)
-    , ("enumField", enumEncoder v.enumField)
-    , ("subMessage", optionalEncoder subMessageEncoder v.subMessage)
-    , ("repeatedInt64Field", repeatedFieldEncoder JE.int v.repeatedInt64Field)
-    , ("repeatedEnumField", repeatedFieldEncoder enumEncoder v.repeatedEnumField)
-    , ("nestedMessageField", optionalEncoder foo_NestedMessageEncoder v.nestedMessageField)
-    , ("nestedEnumField", foo_NestedEnumEncoder v.nestedEnumField)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "doubleField" JE.float 0.0 v.doubleField)
+    , (requiredFieldEncoder "floatField" JE.float 0.0 v.floatField)
+    , (requiredFieldEncoder "int32Field" JE.int 0 v.int32Field)
+    , (requiredFieldEncoder "int64Field" JE.int 0 v.int64Field)
+    , (requiredFieldEncoder "uint32Field" JE.int 0 v.uint32Field)
+    , (requiredFieldEncoder "uint64Field" JE.int 0 v.uint64Field)
+    , (requiredFieldEncoder "sint32Field" JE.int 0 v.sint32Field)
+    , (requiredFieldEncoder "sint64Field" JE.int 0 v.sint64Field)
+    , (requiredFieldEncoder "fixed32Field" JE.int 0 v.fixed32Field)
+    , (requiredFieldEncoder "fixed64Field" JE.int 0 v.fixed64Field)
+    , (requiredFieldEncoder "sfixed32Field" JE.int 0 v.sfixed32Field)
+    , (requiredFieldEncoder "sfixed64Field" JE.int 0 v.sfixed64Field)
+    , (requiredFieldEncoder "boolField" JE.bool False v.boolField)
+    , (requiredFieldEncoder "stringField" JE.string "" v.stringField)
+    , (requiredFieldEncoder "enumField" enumEncoder enumDefault v.enumField)
+    , (optionalEncoder "subMessage" subMessageEncoder v.subMessage)
+    , (repeatedFieldEncoder "repeatedInt64Field" JE.int v.repeatedInt64Field)
+    , (repeatedFieldEncoder "repeatedEnumField" enumEncoder v.repeatedEnumField)
+    , (optionalEncoder "nestedMessageField" foo_NestedMessageEncoder v.nestedMessageField)
+    , (requiredFieldEncoder "nestedEnumField" foo_NestedEnumEncoder foo_NestedEnumDefault v.nestedEnumField)
     ]
 
 
@@ -230,8 +244,8 @@ foo_NestedMessageDecoder =
 
 foo_NestedMessageEncoder : Foo_NestedMessage -> JE.Value
 foo_NestedMessageEncoder v =
-  JE.object
-    [ ("int32Field", JE.int v.int32Field)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "int32Field" JE.int 0 v.int32Field)
     ]
 
 
@@ -248,8 +262,8 @@ foo_NestedMessage_NestedNestedMessageDecoder =
 
 foo_NestedMessage_NestedNestedMessageEncoder : Foo_NestedMessage_NestedNestedMessage -> JE.Value
 foo_NestedMessage_NestedNestedMessageEncoder v =
-  JE.object
-    [ ("int32Field", JE.int v.int32Field)
+  JE.object <| List.filterMap identity <|
+    [ (requiredFieldEncoder "int32Field" JE.int 0 v.int32Field)
     ]
 
 
@@ -296,21 +310,21 @@ fooRepeatedDecoder =
 
 fooRepeatedEncoder : FooRepeated -> JE.Value
 fooRepeatedEncoder v =
-  JE.object
-    [ ("doubleField", repeatedFieldEncoder JE.float v.doubleField)
-    , ("floatField", repeatedFieldEncoder JE.float v.floatField)
-    , ("int32Field", repeatedFieldEncoder JE.int v.int32Field)
-    , ("int64Field", repeatedFieldEncoder JE.int v.int64Field)
-    , ("uint32Field", repeatedFieldEncoder JE.int v.uint32Field)
-    , ("uint64Field", repeatedFieldEncoder JE.int v.uint64Field)
-    , ("sint32Field", repeatedFieldEncoder JE.int v.sint32Field)
-    , ("sint64Field", repeatedFieldEncoder JE.int v.sint64Field)
-    , ("fixed32Field", repeatedFieldEncoder JE.int v.fixed32Field)
-    , ("fixed64Field", repeatedFieldEncoder JE.int v.fixed64Field)
-    , ("sfixed32Field", repeatedFieldEncoder JE.int v.sfixed32Field)
-    , ("sfixed64Field", repeatedFieldEncoder JE.int v.sfixed64Field)
-    , ("boolField", repeatedFieldEncoder JE.bool v.boolField)
-    , ("stringField", repeatedFieldEncoder JE.string v.stringField)
-    , ("enumField", repeatedFieldEncoder enumEncoder v.enumField)
-    , ("subMessage", repeatedFieldEncoder subMessageEncoder v.subMessage)
+  JE.object <| List.filterMap identity <|
+    [ (repeatedFieldEncoder "doubleField" JE.float v.doubleField)
+    , (repeatedFieldEncoder "floatField" JE.float v.floatField)
+    , (repeatedFieldEncoder "int32Field" JE.int v.int32Field)
+    , (repeatedFieldEncoder "int64Field" JE.int v.int64Field)
+    , (repeatedFieldEncoder "uint32Field" JE.int v.uint32Field)
+    , (repeatedFieldEncoder "uint64Field" JE.int v.uint64Field)
+    , (repeatedFieldEncoder "sint32Field" JE.int v.sint32Field)
+    , (repeatedFieldEncoder "sint64Field" JE.int v.sint64Field)
+    , (repeatedFieldEncoder "fixed32Field" JE.int v.fixed32Field)
+    , (repeatedFieldEncoder "fixed64Field" JE.int v.fixed64Field)
+    , (repeatedFieldEncoder "sfixed32Field" JE.int v.sfixed32Field)
+    , (repeatedFieldEncoder "sfixed64Field" JE.int v.sfixed64Field)
+    , (repeatedFieldEncoder "boolField" JE.bool v.boolField)
+    , (repeatedFieldEncoder "stringField" JE.string v.stringField)
+    , (repeatedFieldEncoder "enumField" enumEncoder v.enumField)
+    , (repeatedFieldEncoder "subMessage" subMessageEncoder v.subMessage)
     ]

@@ -46,19 +46,33 @@ withDefault default decoder =
     ]
 
 
-optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
-optionalEncoder encoder v =
+optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe (String, JE.Value)
+optionalEncoder name encoder v =
   case v of
     Just x ->
-      encoder x
+      Just (name, encoder x)
     
     Nothing ->
-      JE.null
+      Nothing
 
 
-repeatedFieldEncoder : (a -> JE.Value) -> List a -> JE.Value
-repeatedFieldEncoder encoder v =
-  JE.list <| List.map encoder v
+requiredFieldEncoder : String -> (a -> JE.Value) -> a -> a -> Maybe (String, JE.Value)
+requiredFieldEncoder name encoder default v =
+  if
+    v == default
+  then
+    Nothing
+  else
+    Just (name, encoder v)
+
+
+repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe (String, JE.Value)
+repeatedFieldEncoder name encoder v =
+  case v of
+    [] ->
+      Nothing
+    _ ->
+      Just (name, JE.list <| List.map encoder v)
 
 
 type alias Foo =
@@ -82,12 +96,12 @@ firstOneofDecoder =
     ]
 
 
-firstOneofEncoder : FirstOneof -> List (String, JE.Value)
+firstOneofEncoder : FirstOneof -> Maybe (String, JE.Value)
 firstOneofEncoder v =
   case v of
-    FirstOneofUnspecified -> []
-    StringField x -> [("stringField", JE.string x)]
-    IntField x -> [("intField", JE.int x)]
+    FirstOneofUnspecified -> Nothing
+    StringField x -> Just ("stringField", JE.string x)
+    IntField x -> Just ("intField", JE.int x)
 
 
 type SecondOneof
@@ -105,12 +119,12 @@ secondOneofDecoder =
     ]
 
 
-secondOneofEncoder : SecondOneof -> List (String, JE.Value)
+secondOneofEncoder : SecondOneof -> Maybe (String, JE.Value)
 secondOneofEncoder v =
   case v of
-    SecondOneofUnspecified -> []
-    BoolField x -> [("boolField", JE.bool x)]
-    OtherStringField x -> [("otherStringField", JE.string x)]
+    SecondOneofUnspecified -> Nothing
+    BoolField x -> Just ("boolField", JE.bool x)
+    OtherStringField x -> Just ("otherStringField", JE.string x)
 
 
 fooDecoder : JD.Decoder Foo
@@ -122,7 +136,7 @@ fooDecoder =
 
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
-  JE.object <|
+  JE.object <| List.filterMap identity <|
+    [ (firstOneofEncoder v.firstOneof)
+    , (secondOneofEncoder v.secondOneof)
     ]
-    ++ (firstOneofEncoder v.firstOneof)
-    ++ (secondOneofEncoder v.secondOneof)
