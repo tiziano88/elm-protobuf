@@ -91,6 +91,8 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 		oneofVariantName := oneofUnspecifiedValue(inOneof)
 		fg.P("%s -> Nothing", oneofVariantName)
 	}
+	// TODO: Evaluate them in reverse order, as per
+	// https://developers.google.com/protocol-buffers/docs/proto3#oneof
 	for _, inField := range inMessage.GetField() {
 		if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 			oneofVariantName := elmTypeName(inField.GetName())
