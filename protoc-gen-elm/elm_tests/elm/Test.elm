@@ -143,13 +143,8 @@ fooJson = String.trim """
 
 oo1Set : T.Foo
 oo1Set =
-  { s = Nothing
-  , ss = []
-  , colour = T.ColourUnspecified
-  , colours = []
-  , singleIntField = 0
-  , repeatedIntField = []
-  , oo = T.Oo1 123
+  { fooDefault
+  | oo = T.Oo1 123
   }
 
 
@@ -163,13 +158,8 @@ oo1SetJson = String.trim """
 
 oo2Set : T.Foo
 oo2Set =
-  { s = Nothing
-  , ss = []
-  , colour = T.ColourUnspecified
-  , colours = []
-  , singleIntField = 0
-  , repeatedIntField = []
-  , oo = T.Oo2 True
+  { fooDefault
+  | oo = T.Oo2 True
   }
 
 oo2SetJson : String
