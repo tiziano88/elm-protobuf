@@ -46,19 +46,33 @@ withDefault default decoder =
     ]
 
 
-optionalEncoder : (a -> JE.Value) -> Maybe a -> JE.Value
-optionalEncoder encoder v =
+optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe (String, JE.Value)
+optionalEncoder name encoder v =
   case v of
     Just x ->
-      encoder x
+      Just (name, encoder x)
     
     Nothing ->
-      JE.null
+      Nothing
 
 
-repeatedFieldEncoder : (a -> JE.Value) -> List a -> JE.Value
-repeatedFieldEncoder encoder v =
-  JE.list <| List.map encoder v
+requiredFieldEncoder : String -> (a -> JE.Value) -> a -> a -> Maybe (String, JE.Value)
+requiredFieldEncoder name encoder default v =
+  if
+    v == default
+  then
+    Nothing
+  else
+    Just (name, encoder v)
+
+
+repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe (String, JE.Value)
+repeatedFieldEncoder name encoder v =
+  case v of
+    [] ->
+      Nothing
+    _ ->
+      Just (name, JE.list <| List.map encoder v)
 
 
 type Colour
@@ -111,7 +125,7 @@ simpleDecoder =
 simpleEncoder : Simple -> JE.Value
 simpleEncoder v =
   JE.object <| List.filterMap identity <|
-    [ Just ("int32Field", JE.int v.int32Field)
+    [ (requiredFieldEncoder "int32Field" JE.int 0 v.int32Field)
     ]
 
 
@@ -164,11 +178,11 @@ fooDecoder =
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
   JE.object <| List.filterMap identity <|
-    [ Just ("s", optionalEncoder simpleEncoder v.s)
-    , Just ("ss", repeatedFieldEncoder simpleEncoder v.ss)
-    , Just ("colour", colourEncoder v.colour)
-    , Just ("colours", repeatedFieldEncoder colourEncoder v.colours)
-    , Just ("singleIntField", JE.int v.singleIntField)
-    , Just ("repeatedIntField", repeatedFieldEncoder JE.int v.repeatedIntField)
+    [ (optionalEncoder "s" simpleEncoder v.s)
+    , (repeatedFieldEncoder "ss" simpleEncoder v.ss)
+    , (requiredFieldEncoder "colour" colourEncoder colourDefault v.colour)
+    , (repeatedFieldEncoder "colours" colourEncoder v.colours)
+    , (requiredFieldEncoder "singleIntField" JE.int 0 v.singleIntField)
+    , (repeatedFieldEncoder "repeatedIntField" JE.int v.repeatedIntField)
     , (ooEncoder v.oo)
     ]

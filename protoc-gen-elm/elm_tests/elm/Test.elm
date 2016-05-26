@@ -19,6 +19,7 @@ tests =
     [ test "JSON encode" <| assertEqual msgJson (JE.encode 2 (T.simpleEncoder msg))
     , test "JSON decode" <| assertDecode T.simpleDecoder msgJson msg
     , test "JSON decode extra field" <| assertDecode T.simpleDecoder msgExtraFieldJson msg
+    , test "JSON encode empty message" <| assertEqual emptyJson (JE.encode 2 (T.fooEncoder fooDefault))
     , test "JSON decode empty JSON" <| assertDecode T.simpleDecoder emptyJson msgDefault
     , test "JSON encode message with repeated field" <| assertEqual (JE.encode 2 (T.fooEncoder foo)) fooJson
     , suite "oneof"
@@ -79,8 +80,7 @@ msgExtraFieldJson = String.trim """
 
 
 emptyJson = String.trim """
-{
-}
+{}
 """
 
 

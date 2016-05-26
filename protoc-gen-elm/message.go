@@ -137,13 +137,14 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 		d := fieldEncoderName(inField)
 		val := argName + "." + elmFieldName(inField.GetName())
+		def := fieldDefaultValue(inField)
 		if repeated {
-			fg.P("%s Just (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField), d, val)
+			fg.P("%s (repeatedFieldEncoder %q %s %s)", leading, jsonFieldName(inField), d, val)
 		} else {
 			if optional {
-				fg.P("%s Just (%q, optionalEncoder %s %s)", leading, jsonFieldName(inField), d, val)
+				fg.P("%s (optionalEncoder %q %s %s)", leading, jsonFieldName(inField), d, val)
 			} else {
-				fg.P("%s Just (%q, %s %s)", leading, jsonFieldName(inField), d, val)
+				fg.P("%s (requiredFieldEncoder %q %s %s %s)", leading, jsonFieldName(inField), d, def, val)
 			}
 		}
 
