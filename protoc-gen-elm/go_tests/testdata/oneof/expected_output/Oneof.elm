@@ -78,14 +78,16 @@ firstOneofDecoder =
   JD.oneOf
     [ JD.map StringField ("stringField" := JD.string)
     , JD.map IntField ("intField" := JD.int)
+    , JD.succeed FirstOneofUnspecified
     ]
 
 
-firstOneofEncoder : FirstOneof -> (String, JE.Value)
+firstOneofEncoder : FirstOneof -> List (String, JE.Value)
 firstOneofEncoder v =
   case v of
-    StringField x -> ("stringField", JE.string x)
-    IntField x -> ("intField", JE.int x)
+    FirstOneofUnspecified -> []
+    StringField x -> [("stringField", JE.string x)]
+    IntField x -> [("intField", JE.int x)]
 
 
 type SecondOneof
@@ -99,14 +101,16 @@ secondOneofDecoder =
   JD.oneOf
     [ JD.map BoolField ("boolField" := JD.bool)
     , JD.map OtherStringField ("otherStringField" := JD.string)
+    , JD.succeed SecondOneofUnspecified
     ]
 
 
-secondOneofEncoder : SecondOneof -> (String, JE.Value)
+secondOneofEncoder : SecondOneof -> List (String, JE.Value)
 secondOneofEncoder v =
   case v of
-    BoolField x -> ("boolField", JE.bool x)
-    OtherStringField x -> ("otherStringField", JE.string x)
+    SecondOneofUnspecified -> []
+    BoolField x -> [("boolField", JE.bool x)]
+    OtherStringField x -> [("otherStringField", JE.string x)]
 
 
 fooDecoder : JD.Decoder Foo
@@ -118,7 +122,7 @@ fooDecoder =
 
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
-  JE.object
-    [ firstOneofEncoder v.firstOneof
-    , secondOneofEncoder v.secondOneof
+  JE.object <|
     ]
+    ++ (firstOneofEncoder v.firstOneof)
+    ++ (secondOneofEncoder v.secondOneof)

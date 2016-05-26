@@ -74,6 +74,6 @@ file1MessageDecoder =
 
 file1MessageEncoder : File1Message -> JE.Value
 file1MessageEncoder v =
-  JE.object <|
-    [ ("field", JE.bool v.field)
+  JE.object <| List.filterMap identity <|
+    [ Just ("field", JE.bool v.field)
     ]
