@@ -19,10 +19,11 @@ tests =
     [ test "JSON encode" <| assertEqual msgJson (JE.encode 2 (T.simpleEncoder msg))
     , test "JSON decode" <| assertDecode T.simpleDecoder msgJson msg
     , test "JSON decode extra field" <| assertDecode T.simpleDecoder msgExtraFieldJson msg
-    , test "JSON decode empty message" <| assertDecode T.simpleDecoder msgEmptyJson msgDefault
+    , test "JSON decode empty JSON" <| assertDecode T.simpleDecoder emptyJson msgDefault
     , test "JSON encode message with repeated field" <| assertEqual (JE.encode 2 (T.fooEncoder foo)) fooJson
     , suite "oneof"
       [ test "encode" <| assertEqual fooJson (JE.encode 2 (T.fooEncoder foo))
+      , test "decode empty JSON" <| assertDecode T.fooDecoder emptyJson fooDefault
       , test "decode oo1" <| assertDecode T.fooDecoder oo1SetJson oo1Set
       , test "decode oo2" <| assertDecode T.fooDecoder oo2SetJson oo2Set
       ]
@@ -48,6 +49,18 @@ msgDefault =
   }
 
 
+fooDefault : T.Foo
+fooDefault =
+  { s = Nothing
+  , ss = []
+  , colour = T.ColourUnspecified
+  , colours = []
+  , singleIntField = 0
+  , repeatedIntField = []
+  , oo = T.OoUnspecified
+  }
+
+
 msgJson : String
 msgJson = String.trim """
 {
@@ -65,7 +78,7 @@ msgExtraFieldJson = String.trim """
 """
 
 
-msgEmptyJson = String.trim """
+emptyJson = String.trim """
 {
 }
 """

@@ -110,8 +110,8 @@ simpleDecoder =
 
 simpleEncoder : Simple -> JE.Value
 simpleEncoder v =
-  JE.object
-    [ ("int32Field", JE.int v.int32Field)
+  JE.object <| List.filterMap identity <|
+    [ Just ("int32Field", JE.int v.int32Field)
     ]
 
 
@@ -127,7 +127,8 @@ type alias Foo =
 
 
 type Oo
-  = Oo1 Int
+  = OoUnspecified
+  | Oo1 Int
   | Oo2 Bool
 
 
@@ -136,14 +137,16 @@ ooDecoder =
   JD.oneOf
     [ JD.map Oo1 ("oo1" := JD.int)
     , JD.map Oo2 ("oo2" := JD.bool)
+    , JD.succeed OoUnspecified
     ]
 
 
-ooEncoder : Oo -> (String, JE.Value)
+ooEncoder : Oo -> Maybe (String, JE.Value)
 ooEncoder v =
   case v of
-    Oo1 x -> ("oo1", JE.int x)
-    Oo2 x -> ("oo2", JE.bool x)
+    OoUnspecified -> Nothing
+    Oo1 x -> Just ("oo1", JE.int x)
+    Oo2 x -> Just ("oo2", JE.bool x)
 
 
 fooDecoder : JD.Decoder Foo
@@ -160,12 +163,12 @@ fooDecoder =
 
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
-  JE.object
-    [ ("s", optionalEncoder simpleEncoder v.s)
-    , ("ss", repeatedFieldEncoder simpleEncoder v.ss)
-    , ("colour", colourEncoder v.colour)
-    , ("colours", repeatedFieldEncoder colourEncoder v.colours)
-    , ("singleIntField", JE.int v.singleIntField)
-    , ("repeatedIntField", repeatedFieldEncoder JE.int v.repeatedIntField)
-    , ooEncoder v.oo
+  JE.object <| List.filterMap identity <|
+    [ Just ("s", optionalEncoder simpleEncoder v.s)
+    , Just ("ss", repeatedFieldEncoder simpleEncoder v.ss)
+    , Just ("colour", colourEncoder v.colour)
+    , Just ("colours", repeatedFieldEncoder colourEncoder v.colours)
+    , Just ("singleIntField", JE.int v.singleIntField)
+    , Just ("repeatedIntField", repeatedFieldEncoder JE.int v.repeatedIntField)
+    , (ooEncoder v.oo)
     ]

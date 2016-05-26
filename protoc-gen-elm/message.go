@@ -122,7 +122,7 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 	fg.P("%s : %s -> JE.Value", encoderName(typeName), typeName)
 	fg.P("%s %s =", encoderName(typeName), argName)
 	fg.In()
-	fg.P("JE.object")
+	fg.P("JE.object <| List.filterMap identity <|")
 	fg.In()
 
 	leading := "["
@@ -138,12 +138,12 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 		d := fieldEncoderName(inField)
 		val := argName + "." + elmFieldName(inField.GetName())
 		if repeated {
-			fg.P("%s (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField), d, val)
+			fg.P("%s Just (%q, repeatedFieldEncoder %s %s)", leading, jsonFieldName(inField), d, val)
 		} else {
 			if optional {
-				fg.P("%s (%q, optionalEncoder %s %s)", leading, jsonFieldName(inField), d, val)
+				fg.P("%s Just (%q, optionalEncoder %s %s)", leading, jsonFieldName(inField), d, val)
 			} else {
-				fg.P("%s (%q, %s %s)", leading, jsonFieldName(inField), d, val)
+				fg.P("%s Just (%q, %s %s)", leading, jsonFieldName(inField), d, val)
 			}
 		}
 
@@ -153,12 +153,12 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 	for _, inOneof := range inMessage.GetOneofDecl() {
 		val := argName + "." + elmFieldName(inOneof.GetName())
 		oneofEncoderName := oneofEncoderName(inOneof)
-		fg.P("%s %s %s", leading, oneofEncoderName, val)
-
+		fg.P("%s (%s %s)", leading, oneofEncoderName, val)
 		leading = ","
 	}
 
 	fg.P("]")
+
 	fg.Out()
 	fg.Out()
 	return nil

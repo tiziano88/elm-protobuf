@@ -15,6 +15,11 @@ func (fg *FileGenerator) GenerateOneofDefinition(prefix string, inMessage *descr
 	fg.In()
 
 	leading := "="
+	{
+		oneofVariantName := oneofUnspecifiedValue(inOneof)
+		fg.P("%s %s", leading, oneofVariantName)
+		leading = "|"
+	}
 	for _, inField := range inMessage.GetField() {
 		if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 
@@ -56,6 +61,7 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 			leading = ","
 		}
 	}
+	fg.P("%s JD.succeed %s", leading, oneofUnspecifiedValue(inOneof))
 	fg.P("]")
 	fg.Out()
 	fg.Out()
@@ -73,7 +79,7 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 
 	fg.P("")
 	fg.P("")
-	fg.P("%s : %s -> (String, JE.Value)", encoderName, oneofType)
+	fg.P("%s : %s -> Maybe (String, JE.Value)", encoderName, oneofType)
 	fg.P("%s %s =", encoderName, argName)
 
 	fg.In()
@@ -81,11 +87,15 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 	fg.In()
 
 	valueName := "x"
+	{
+		oneofVariantName := oneofUnspecifiedValue(inOneof)
+		fg.P("%s -> Nothing", oneofVariantName)
+	}
 	for _, inField := range inMessage.GetField() {
 		if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 			oneofVariantName := elmTypeName(inField.GetName())
 			e := fieldEncoderName(inField)
-			fg.P("%s %s -> (%q, %s %s)", oneofVariantName, valueName, inField.GetJsonName(), e, valueName)
+			fg.P("%s %s -> Just (%q, %s %s)", oneofVariantName, valueName, inField.GetJsonName(), e, valueName)
 		}
 	}
 	fg.Out()
@@ -106,4 +116,8 @@ func oneofEncoderName(inOneof *descriptor.OneofDescriptorProto) string {
 
 func oneofType(inOneof *descriptor.OneofDescriptorProto) string {
 	return elmTypeName(inOneof.GetName())
+}
+
+func oneofUnspecifiedValue(inOneof *descriptor.OneofDescriptorProto) string {
+	return elmTypeName(inOneof.GetName() + "_unspecified")
 }

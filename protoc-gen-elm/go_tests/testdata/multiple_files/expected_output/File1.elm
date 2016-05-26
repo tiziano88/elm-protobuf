@@ -74,6 +74,6 @@ file1MessageDecoder =
 
 file1MessageEncoder : File1Message -> JE.Value
 file1MessageEncoder v =
-  JE.object
+  JE.object <|
     [ ("field", JE.bool v.field)
     ]

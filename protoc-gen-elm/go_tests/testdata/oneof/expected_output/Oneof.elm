@@ -68,7 +68,8 @@ type alias Foo =
 
 
 type FirstOneof
-  = StringField String
+  = FirstOneofUnspecified
+  | StringField String
   | IntField Int
 
 
@@ -88,7 +89,8 @@ firstOneofEncoder v =
 
 
 type SecondOneof
-  = BoolField Bool
+  = SecondOneofUnspecified
+  | BoolField Bool
   | OtherStringField String
 
 
