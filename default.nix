@@ -2,9 +2,17 @@
 
 with pkgs;
 
-stdenv.mkDerivation rec {
-  name = "elm-protobuf";
-  builder = "./builder.sh";
-  inherit protobuf3_0;
-  buildInputs = [ elm go protobuf3_0 ];
-}
+let
+  goproto = callPackage ./goproto.nix {};
+in
+  stdenv.mkDerivation rec {
+    name = "elm-protobuf";
+    builder = "./builder.sh";
+    inherit protobuf3_0;
+    buildInputs = [
+      elmPackages.elm
+      go
+      goproto
+      protobuf3_0
+    ];
+  }
