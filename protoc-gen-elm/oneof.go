@@ -46,9 +46,9 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	fg.P("")
 	fg.P("%s : JD.Decoder %s", decoderName, oneofType)
 	fg.P("%s =", decoderName)
-
 	fg.In()
-
+	fg.P("lazy <| \\_ ->")
+	fg.In()
 	fg.P("JD.oneOf")
 	fg.In()
 
@@ -63,6 +63,8 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	}
 	fg.P("%s JD.succeed %s", leading, oneofUnspecifiedValue(inOneof))
 	fg.P("]")
+
+	fg.Out()
 	fg.Out()
 	fg.Out()
 

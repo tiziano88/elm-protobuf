@@ -72,6 +72,8 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 	fg.P("%s : JD.Decoder %s", decoderName(typeName), typeName)
 	fg.P("%s =", decoderName(typeName))
 	fg.In()
+	fg.P("lazy <| \\_ ->")
+	fg.In()
 	fg.P("%s", typeName)
 	fg.In()
 
@@ -108,6 +110,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 		leading = "<*>"
 	}
 
+	fg.Out()
 	fg.Out()
 	fg.Out()
 	return nil
