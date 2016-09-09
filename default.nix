@@ -7,7 +7,7 @@ stdenv.mkDerivation rec {
   builder = "./builder.sh";
   buildInputs = [
     elmPackages.elm
-    go
+    go_1_6
     goPackages.protobuf
     protobuf3_0
   ];
