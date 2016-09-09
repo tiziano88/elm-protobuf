@@ -1,44 +1,47 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"strings"
 )
 
 type FileGenerator struct {
-	out    bytes.Buffer
+	w      io.Writer
 	indent uint
 }
 
-func NewFileGenerator() *FileGenerator {
-	return &FileGenerator{}
+func NewFileGenerator(w io.Writer) *FileGenerator {
+	return &FileGenerator{
+		w: w,
+	}
 }
 
 func (fg *FileGenerator) In() {
-	fg.indent += 1
+	fg.indent++
 }
 
 func (fg *FileGenerator) Out() {
-	fg.indent -= 1
+	fg.indent--
 }
 
 func (fg *FileGenerator) P(format string, a ...interface{}) error {
 	var err error
 
-	_, err = fg.out.WriteString(strings.Repeat("  ", int(fg.indent)))
+	_, err = fmt.Fprintf(fg.w, strings.Repeat("  ", int(fg.indent)))
 	if err != nil {
 		return err
 	}
 
-	s := fmt.Sprintf(format, a...)
-	_, err = fg.out.WriteString(s)
+	_, err = fmt.Fprintf(fg.w, format, a...)
 	if err != nil {
 		return err
 	}
-	_, err = fg.out.WriteString("\n")
+
+	_, err = fmt.Fprintf(fg.w, "\n")
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

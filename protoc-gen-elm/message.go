@@ -12,48 +12,50 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 	fg.P("")
 	fg.P("")
 	fg.P("type alias %s =", typeName)
-	fg.In()
+	{
+		fg.In()
 
-	leading := "{"
-	for _, inField := range inMessage.GetField() {
-		if inField.OneofIndex != nil {
-			// Handled in the oneof only.
-			continue
-		}
-
-		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
-			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
-		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-
-		fType := fieldElmType(inField)
-
-		fName := elmFieldName(inField.GetName())
-		fNumber := inField.GetNumber()
-
-		if repeated {
-			fg.P("%s %s : List %s -- %d", leading, fName, fType, fNumber)
-		} else {
-			if optional {
-				fg.P("%s %s : Maybe %s -- %d", leading, fName, fType, fNumber)
-			} else {
-				fg.P("%s %s : %s -- %d", leading, fName, fType, fNumber)
+		leading := "{"
+		for _, inField := range inMessage.GetField() {
+			if inField.OneofIndex != nil {
+				// Handled in the oneof only.
+				continue
 			}
+
+			optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
+				(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+			repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
+
+			fType := fieldElmType(inField)
+
+			fName := elmFieldName(inField.GetName())
+			fNumber := inField.GetNumber()
+
+			if repeated {
+				fg.P("%s %s : List %s -- %d", leading, fName, fType, fNumber)
+			} else {
+				if optional {
+					fg.P("%s %s : Maybe %s -- %d", leading, fName, fType, fNumber)
+				} else {
+					fg.P("%s %s : %s -- %d", leading, fName, fType, fNumber)
+				}
+			}
+
+			leading = ","
 		}
 
-		leading = ","
+		for _, inOneof := range inMessage.GetOneofDecl() {
+			oneofName := elmFieldName(inOneof.GetName())
+			// TODO: Prefix with message name to avoid collisions.
+			oneofTypeName := elmTypeName(inOneof.GetName())
+			fg.P("%s %s : %s", leading, oneofName, oneofTypeName)
+
+			leading = ","
+		}
+
+		fg.P("}")
+		fg.Out()
 	}
-
-	for _, inOneof := range inMessage.GetOneofDecl() {
-		oneofName := elmFieldName(inOneof.GetName())
-		// TODO: Prefix with message name to avoid collisions.
-		oneofTypeName := elmTypeName(inOneof.GetName())
-		fg.P("%s %s : %s", leading, oneofName, oneofTypeName)
-
-		leading = ","
-	}
-
-	fg.P("}")
-	fg.Out()
 
 	for i, _ := range inMessage.GetOneofDecl() {
 		fg.GenerateOneofDefinition(prefix, inMessage, i)
@@ -71,45 +73,49 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 	fg.P("")
 	fg.P("%s : JD.Decoder %s", decoderName(typeName), typeName)
 	fg.P("%s =", decoderName(typeName))
-	fg.In()
-	fg.P("%s", typeName)
-	fg.In()
+	{
+		fg.In()
+		fg.P("%s", typeName)
+		{
+			fg.In()
 
-	leading := "<$>"
-	for _, inField := range inMessage.GetField() {
-		if inField.OneofIndex != nil {
-			// Handled in the oneof only.
-			continue
-		}
+			leading := "<$>"
+			for _, inField := range inMessage.GetField() {
+				if inField.OneofIndex != nil {
+					// Handled in the oneof only.
+					continue
+				}
 
-		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
-			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
-		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		d := fieldDecoderName(inField)
-		def := fieldDefaultValue(inField)
+				optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
+					(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+				repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
+				d := fieldDecoderName(inField)
+				def := fieldDefaultValue(inField)
 
-		if repeated {
-			fg.P("%s (repeatedFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
-		} else {
-			if optional {
-				fg.P("%s (optionalFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
-			} else {
-				fg.P("%s (requiredFieldDecoder %q %s %s)", leading, jsonFieldName(inField), def, d)
+				if repeated {
+					fg.P("%s (repeatedFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
+				} else {
+					if optional {
+						fg.P("%s (optionalFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
+					} else {
+						fg.P("%s (requiredFieldDecoder %q %s %s)", leading, jsonFieldName(inField), def, d)
+					}
+				}
+
+				leading = "<*>"
 			}
+
+			for _, inOneof := range inMessage.GetOneofDecl() {
+				oneofDecoderName := oneofDecoderName(inOneof)
+				fg.P("%s %s", leading, oneofDecoderName)
+
+				leading = "<*>"
+			}
+
+			fg.Out()
 		}
-
-		leading = "<*>"
+		fg.Out()
 	}
-
-	for _, inOneof := range inMessage.GetOneofDecl() {
-		oneofDecoderName := oneofDecoderName(inOneof)
-		fg.P("%s %s", leading, oneofDecoderName)
-
-		leading = "<*>"
-	}
-
-	fg.Out()
-	fg.Out()
 	return nil
 }
 
@@ -121,47 +127,51 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 	fg.P("")
 	fg.P("%s : %s -> JE.Value", encoderName(typeName), typeName)
 	fg.P("%s %s =", encoderName(typeName), argName)
-	fg.In()
-	fg.P("JE.object <| List.filterMap identity <|")
-	fg.In()
+	{
+		fg.In()
+		fg.P("JE.object <| List.filterMap identity <|")
+		{
+			fg.In()
 
-	leading := "["
-	for _, inField := range inMessage.GetField() {
-		if inField.OneofIndex != nil {
-			// Handled in the oneof only.
-			continue
-		}
+			leading := "["
+			for _, inField := range inMessage.GetField() {
+				if inField.OneofIndex != nil {
+					// Handled in the oneof only.
+					continue
+				}
 
-		optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
-			(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
-		repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		d := fieldEncoderName(inField)
-		val := argName + "." + elmFieldName(inField.GetName())
-		def := fieldDefaultValue(inField)
-		if repeated {
-			fg.P("%s (repeatedFieldEncoder %q %s %s)", leading, jsonFieldName(inField), d, val)
-		} else {
-			if optional {
-				fg.P("%s (optionalEncoder %q %s %s)", leading, jsonFieldName(inField), d, val)
-			} else {
-				fg.P("%s (requiredFieldEncoder %q %s %s %s)", leading, jsonFieldName(inField), d, def, val)
+				optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
+					(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+				repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
+				d := fieldEncoderName(inField)
+				val := argName + "." + elmFieldName(inField.GetName())
+				def := fieldDefaultValue(inField)
+				if repeated {
+					fg.P("%s (repeatedFieldEncoder %q %s %s)", leading, jsonFieldName(inField), d, val)
+				} else {
+					if optional {
+						fg.P("%s (optionalEncoder %q %s %s)", leading, jsonFieldName(inField), d, val)
+					} else {
+						fg.P("%s (requiredFieldEncoder %q %s %s %s)", leading, jsonFieldName(inField), d, def, val)
+					}
+				}
+
+				leading = ","
 			}
+
+			for _, inOneof := range inMessage.GetOneofDecl() {
+				val := argName + "." + elmFieldName(inOneof.GetName())
+				oneofEncoderName := oneofEncoderName(inOneof)
+				fg.P("%s (%s %s)", leading, oneofEncoderName, val)
+				leading = ","
+			}
+
+			fg.P("]")
+
+			fg.Out()
 		}
-
-		leading = ","
+		fg.Out()
 	}
-
-	for _, inOneof := range inMessage.GetOneofDecl() {
-		val := argName + "." + elmFieldName(inOneof.GetName())
-		oneofEncoderName := oneofEncoderName(inOneof)
-		fg.P("%s (%s %s)", leading, oneofEncoderName, val)
-		leading = ","
-	}
-
-	fg.P("]")
-
-	fg.Out()
-	fg.Out()
 	return nil
 }
 

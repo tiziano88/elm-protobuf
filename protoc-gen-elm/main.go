@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -85,7 +86,8 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	outFile.Name = proto.String(outFileName)
 
-	fg := NewFileGenerator()
+	b := &bytes.Buffer{}
+	fg := NewFileGenerator(b)
 
 	fg.GenerateModule(fullModuleName)
 	fg.GenerateImports()
@@ -119,7 +121,7 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 		}
 	}
 
-	outFile.Content = proto.String(fg.out.String())
+	outFile.Content = proto.String(b.String())
 
 	return outFile, nil
 }

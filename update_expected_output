@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -ex
+
+readonly ROOT="$(dirname "$0")"
+
+cd "$ROOT"
+
+cp -r ./protoc-gen-elm/go_tests/testdata/multiple_files/{actual_output/*,expected_output}
+cp -r ./protoc-gen-elm/go_tests/testdata/oneof/{actual_output/*,expected_output}
+cp -r ./protoc-gen-elm/go_tests/testdata/repeated/{actual_output/*,expected_output}
+cp -r ./protoc-gen-elm/go_tests/testdata/well_known_types/{actual_output/*,expected_output}
