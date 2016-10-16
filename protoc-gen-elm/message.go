@@ -75,7 +75,7 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 	fg.P("%s =", decoderName(typeName))
 	{
 		fg.In()
-		fg.P("%s", typeName)
+		fg.P("lazy <| \\_ -> %s", typeName)
 		{
 			fg.In()
 

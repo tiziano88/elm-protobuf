@@ -136,4 +136,19 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.Out()
 	fg.Out()
 	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	fg.P("lazy : (() -> JD.Decoder a) -> JD.Decoder a")
+	fg.P("lazy getDecoder =")
+	fg.In()
+	fg.P("JD.customDecoder JD.value")
+	fg.In()
+	fg.P("<| \\rawValue -> ")
+	fg.In()
+	fg.P("JD.decodeValue (getDecoder ()) rawValue")
+	fg.Out()
+	fg.Out()
+	fg.Out()
 }

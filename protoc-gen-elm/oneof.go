@@ -49,7 +49,7 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	fg.P("%s =", decoderName)
 	{
 		fg.In()
-		fg.P("JD.oneOf")
+		fg.P("lazy <| \\_ -> JD.oneOf")
 		{
 			fg.In()
 
