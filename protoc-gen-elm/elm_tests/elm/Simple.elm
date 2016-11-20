@@ -75,6 +75,13 @@ repeatedFieldEncoder name encoder v =
       Just (name, JE.list <| List.map encoder v)
 
 
+lazy : (() -> JD.Decoder a) -> JD.Decoder a
+lazy getDecoder =
+  JD.customDecoder JD.value
+    <| \rawValue -> 
+      JD.decodeValue (getDecoder ()) rawValue
+
+
 type Colour
   = ColourUnspecified -- 0
   | Red -- 1
@@ -118,7 +125,7 @@ type alias Simple =
 
 simpleDecoder : JD.Decoder Simple
 simpleDecoder =
-  Simple
+  lazy <| \_ -> Simple
     <$> (requiredFieldDecoder "int32Field" 0 JD.int)
 
 
@@ -148,7 +155,7 @@ type Oo
 
 ooDecoder : JD.Decoder Oo
 ooDecoder =
-  JD.oneOf
+  lazy <| \_ -> JD.oneOf
     [ JD.map Oo1 ("oo1" := JD.int)
     , JD.map Oo2 ("oo2" := JD.bool)
     , JD.succeed OoUnspecified
@@ -165,7 +172,7 @@ ooEncoder v =
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
-  Foo
+  lazy <| \_ -> Foo
     <$> (optionalFieldDecoder "s" simpleDecoder)
     <*> (repeatedFieldDecoder "ss" simpleDecoder)
     <*> (requiredFieldDecoder "colour" colourDefault colourDecoder)

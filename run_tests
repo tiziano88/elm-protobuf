@@ -6,5 +6,7 @@ readonly ROOT="$(dirname "$0")"
 
 cd "$ROOT"
 
-./protoc-gen-elm/go_tests/run_go_tests
+# Go tests are probably not needed, as long as we check in the resulting
+# generated files and check that there are no diffs in git.
+#./protoc-gen-elm/go_tests/run_go_tests
 ./protoc-gen-elm/elm_tests/run_elm_tests
