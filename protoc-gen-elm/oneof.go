@@ -49,7 +49,7 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	fg.P("%s =", decoderName)
 	{
 		fg.In()
-		fg.P("lazy <| \\_ -> JD.oneOf")
+		fg.P("JD.lazy <| \\_ -> JD.oneOf")
 		{
 			fg.In()
 
@@ -58,7 +58,7 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 				if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 					oneofVariantName := elmTypeName(inField.GetName())
 					decoderName := fieldDecoderName(inField)
-					fg.P("%s JD.map %s (%q := %s)", leading, oneofVariantName, inField.GetJsonName(), decoderName)
+					fg.P("%s JD.map %s (JD.field %q %s)", leading, oneofVariantName, inField.GetJsonName(), decoderName)
 					leading = ","
 				}
 			}
@@ -82,7 +82,7 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 
 	fg.P("")
 	fg.P("")
-	fg.P("%s : %s -> Maybe (String, JE.Value)", encoderName, oneofType)
+	fg.P("%s : %s -> Maybe ( String, JE.Value )", encoderName, oneofType)
 	fg.P("%s %s =", encoderName, argName)
 	{
 		fg.In()
@@ -101,7 +101,10 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 				if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 					oneofVariantName := elmTypeName(inField.GetName())
 					e := fieldEncoderName(inField)
-					fg.P("%s %s -> Just (%q, %s %s)", oneofVariantName, valueName, inField.GetJsonName(), e, valueName)
+					fg.P("%s %s ->", oneofVariantName, valueName)
+					fg.In()
+					fg.P("Just ( %q, %s %s )", inField.GetJsonName(), e, valueName)
+					fg.Out()
 				}
 			}
 			fg.Out()

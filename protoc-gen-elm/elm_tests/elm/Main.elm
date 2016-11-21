@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
@@ -6,34 +6,40 @@ import Result
 import String
 import Task
 import Test exposing (..)
+import Test.Runner.Node exposing (run, TestProgram)
+import Expect exposing (..)
 import Simple as T
 
 
+main : TestProgram
 main =
-    runSuite tests
+    run emit suite
 
 
-tests : Test
-tests =
-    suite "JSON"
-        [ test "JSON encode" <| assertEqual msgJson (JE.encode 2 (T.simpleEncoder msg))
-        , test "JSON decode" <| assertDecode T.simpleDecoder msgJson msg
-        , test "JSON decode extra field" <| assertDecode T.simpleDecoder msgExtraFieldJson msg
-        , test "JSON encode empty message" <| assertEqual emptyJson (JE.encode 2 (T.fooEncoder fooDefault))
-        , test "JSON decode empty JSON" <| assertDecode T.simpleDecoder emptyJson msgDefault
-        , test "JSON encode message with repeated field" <| assertEqual (JE.encode 2 (T.fooEncoder foo)) fooJson
-        , suite "oneof"
-            [ test "encode" <| assertEqual fooJson (JE.encode 2 (T.fooEncoder foo))
-            , test "decode empty JSON" <| assertDecode T.fooDecoder emptyJson fooDefault
-            , test "decode oo1" <| assertDecode T.fooDecoder oo1SetJson oo1Set
-            , test "decode oo2" <| assertDecode T.fooDecoder oo2SetJson oo2Set
+port emit : ( String, JE.Value ) -> Cmd msg
+
+
+suite : Test
+suite =
+    describe "JSON"
+        [ test "JSON encode" <| \_ -> equal msgJson (JE.encode 2 (T.simpleEncoder msg))
+        , test "JSON decode" <| \_ -> assertDecode T.simpleDecoder msgJson msg
+        , test "JSON decode extra field" <| \_ -> assertDecode T.simpleDecoder msgExtraFieldJson msg
+        , test "JSON encode empty message" <| \_ -> equal emptyJson (JE.encode 2 (T.fooEncoder fooDefault))
+        , test "JSON decode empty JSON" <| \_ -> assertDecode T.simpleDecoder emptyJson msgDefault
+        , test "JSON encode message with repeated field" <| \_ -> equal (JE.encode 2 (T.fooEncoder foo)) fooJson
+        , describe "oneof"
+            [ test "encode" <| \_ -> equal fooJson (JE.encode 2 (T.fooEncoder foo))
+            , test "decode empty JSON" <| \_ -> assertDecode T.fooDecoder emptyJson fooDefault
+            , test "decode oo1" <| \_ -> assertDecode T.fooDecoder oo1SetJson oo1Set
+            , test "decode oo2" <| \_ -> assertDecode T.fooDecoder oo2SetJson oo2Set
             ]
         ]
 
 
-assertDecode : JD.Decoder a -> String -> a -> Assertion
+assertDecode : JD.Decoder a -> String -> a -> Expectation
 assertDecode decoder json msg =
-    assertEqual
+    equal
         (JD.decodeString decoder json)
         (Result.Ok msg)
 

@@ -133,7 +133,7 @@ func (fg *FileGenerator) GenerateModule(moduleName string) {
 func (fg *FileGenerator) GenerateImports() {
 	fg.P("")
 	fg.P("")
-	fg.P("import Json.Decode as JD exposing ((:=))")
+	fg.P("import Json.Decode as JD")
 	fg.P("import Json.Encode as JE")
 }
 

@@ -28,14 +28,17 @@ func (fg *FileGenerator) Out() {
 func (fg *FileGenerator) P(format string, a ...interface{}) error {
 	var err error
 
-	_, err = fmt.Fprintf(fg.w, strings.Repeat("  ", int(fg.indent)))
-	if err != nil {
-		return err
-	}
+	// If format is empty, avoid printing just whitespaces.
+	if format != "" {
+		_, err = fmt.Fprintf(fg.w, strings.Repeat("    ", int(fg.indent)))
+		if err != nil {
+			return err
+		}
 
-	_, err = fmt.Fprintf(fg.w, format, a...)
-	if err != nil {
-		return err
+		_, err = fmt.Fprintf(fg.w, format, a...)
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = fmt.Fprintf(fg.w, "\n")
