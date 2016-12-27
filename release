@@ -2,7 +2,11 @@
 
 set -x
 
-TAG=$(git tag)
+# Make sure the current commit is tagged, using the following command:
+# git tag -a 0.0.2 -m 'release'
+
+TAG=$(git tag --contains)
+[[ -z $TAG ]] && exit
 
 OUT=elm-protobuf-${TAG}-linux-x86_32
 GOOS=linux GOARCH=386 go build -o ./bin/${OUT}/protoc-gen-elm ./protoc-gen-elm
