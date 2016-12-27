@@ -2,6 +2,9 @@
 
 set -x
 
+# Make sure the current commit is tagged, using the following command:
+# git tag -a 0.0.2 -m 'release'
+
 TAG=$(git tag)
 
 OUT=elm-protobuf-${TAG}-linux-x86_32
