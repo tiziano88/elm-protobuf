@@ -43,6 +43,14 @@ https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/go_tests/te
 
 ## How to install
 
+### Release
+
+The simplest way to install the plugin is to download a pre-compiled binary from
+https://github.com/tiziano88/elm-protobuf/releases , then unpack it and copy or
+move the `protoc-gen-elm` binary somewhere in your `$PATH`.
+
+### From source
+
 -   Make sure that you have a Go environment correctly set up, and that
     `$GOPATH/bin` is included in your `$PATH`. See
     https://golang.org/doc/install for info.
