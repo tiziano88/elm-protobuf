@@ -1,4 +1,19 @@
 #!/bin/bash
 
-GOOS=linux GOARCH=amd64 go build -o ./bin/linux_amd64/protoc-gen-elm ./protoc-gen-elm
-GOOS=darwin GOARCH=amd64 go build -o ./bin/darwin_amd64/protoc-gen-elm ./protoc-gen-elm
+set -x
+
+OUT=elm-protobuf-linux-x86_32
+GOOS=linux GOARCH=386 go build -o ./bin/${OUT}/protoc-gen-elm ./protoc-gen-elm
+tar -zcvf ./bin/${OUT}.tar.gz ./bin/${OUT}
+
+OUT=elm-protobuf-linux-x86_64
+GOOS=linux GOARCH=amd64 go build -o ./bin/${OUT}/protoc-gen-elm ./protoc-gen-elm
+tar -zcvf ./bin/${OUT}.tar.gz ./bin/${OUT}
+
+OUT=elm-protobuf-osx-x86_32
+GOOS=darwin GOARCH=386 go build -o ./bin/${OUT}/protoc-gen-elm ./protoc-gen-elm
+tar -zcvf ./bin/${OUT}.tar.gz ./bin/${OUT}
+
+OUT=elm-protobuf-osx-x86_64
+GOOS=darwin GOARCH=amd64 go build -o ./bin/${OUT}/protoc-gen-elm ./protoc-gen-elm
+tar -zcvf ./bin/${OUT}.tar.gz ./bin/${OUT}
