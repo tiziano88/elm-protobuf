@@ -73,6 +73,16 @@ repeatedFieldEncoder name encoder v =
             Just (name, JE.list <| List.map encoder v)
 
 
+bytesFieldDecoder : JD.Decoder (List Int)
+bytesFieldDecoder =
+    JD.succeed []
+
+
+bytesFieldEncoder : (List Int) -> JE.Value
+bytesFieldEncoder v =
+    JE.list []
+
+
 type Colour
     = ColourUnspecified -- 0
     | Red -- 1
@@ -153,6 +163,7 @@ type alias Foo =
     , colours : List Colour -- 4
     , singleIntField : Int -- 5
     , repeatedIntField : List Int -- 6
+    , bytesField : (List Int) -- 9
     , oo : Oo
     }
 
@@ -191,6 +202,7 @@ fooDecoder =
         <*> (repeatedFieldDecoder "colours" colourDecoder)
         <*> (requiredFieldDecoder "singleIntField" 0 JD.int)
         <*> (repeatedFieldDecoder "repeatedIntField" JD.int)
+        <*> (requiredFieldDecoder "bytesField" [] bytesFieldDecoder)
         <*> ooDecoder
 
 
@@ -203,5 +215,6 @@ fooEncoder v =
         , (repeatedFieldEncoder "colours" colourEncoder v.colours)
         , (requiredFieldEncoder "singleIntField" JE.int 0 v.singleIntField)
         , (repeatedFieldEncoder "repeatedIntField" JE.int v.repeatedIntField)
+        , (requiredFieldEncoder "bytesField" bytesFieldEncoder [] v.bytesField)
         , (ooEncoder v.oo)
         ]

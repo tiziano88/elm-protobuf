@@ -203,7 +203,7 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
 		return elmFieldType(inField)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		// XXX
-		return "Bytes"
+		return "(List Int)"
 	default:
 		// TODO: Return error.
 		return fmt.Sprintf("Error generating type for field %q %s", inField.GetName(), inField.GetType())
@@ -239,7 +239,7 @@ func fieldEncoderName(inField *descriptor.FieldDescriptorProto) string {
 		// Remove leading ".".
 		return encoderName(elmFieldType(inField))
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		return "bytesFieldDecoder"
+		return "bytesFieldEncoder"
 	default:
 		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
 	}
@@ -306,7 +306,7 @@ func fieldDefaultValue(inField *descriptor.FieldDescriptorProto) string {
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		return "xxx"
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		return "xxx"
+		return "[]"
 	default:
 		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
 	}

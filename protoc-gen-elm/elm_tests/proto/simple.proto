@@ -25,4 +25,6 @@ message Foo {
     int32 oo1 = 7;
     bool oo2 = 8;
   }
+
+  bytes bytes_field = 9;
 }

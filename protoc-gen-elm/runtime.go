@@ -132,4 +132,24 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.Out()
 	fg.Out()
 	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	// TODO: Implement.
+	fg.P("bytesFieldDecoder : JD.Decoder (List Int)")
+	fg.P("bytesFieldDecoder =")
+	fg.In()
+	fg.P("JD.succeed []")
+	fg.Out()
+
+	fg.P("")
+	fg.P("")
+
+	// TODO: Implement.
+	fg.P("bytesFieldEncoder : (List Int) -> JE.Value")
+	fg.P("bytesFieldEncoder v =")
+	fg.In()
+	fg.P("JE.list []")
+	fg.Out()
 }

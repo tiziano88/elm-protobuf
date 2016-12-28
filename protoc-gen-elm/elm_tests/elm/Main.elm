@@ -65,6 +65,7 @@ fooDefault =
     , singleIntField = 0
     , repeatedIntField = []
     , oo = T.OoUnspecified
+    , bytesField = []
     }
 
 
@@ -117,6 +118,7 @@ foo =
         , 333
         ]
     , oo = T.Oo1 1
+    , bytesField = []
     }
 
 
