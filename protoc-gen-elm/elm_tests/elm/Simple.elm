@@ -188,8 +188,8 @@ type alias Foo =
     , repeatedIntField :
         List Int
         -- 6
-    , stringValueField :
-        Maybe Google.Protobuf.StringValue
+    , bytesField :
+        List Int
         -- 9
     , oo : Oo
     }
@@ -236,7 +236,7 @@ fooDecoder =
                 <*> (repeatedFieldDecoder "colours" colourDecoder)
                 <*> (requiredFieldDecoder "singleIntField" 0 JD.int)
                 <*> (repeatedFieldDecoder "repeatedIntField" JD.int)
-                <*> (optionalFieldDecoder "stringValueField" google_Protobuf_StringValueDecoder)
+                <*> (requiredFieldDecoder "bytesField" [] bytesFieldDecoder)
                 <*> ooDecoder
 
 
@@ -250,6 +250,6 @@ fooEncoder v =
             , (repeatedFieldEncoder "colours" colourEncoder v.colours)
             , (requiredFieldEncoder "singleIntField" JE.int 0 v.singleIntField)
             , (repeatedFieldEncoder "repeatedIntField" JE.int v.repeatedIntField)
-            , (optionalEncoder "stringValueField" google_Protobuf_StringValueEncoder v.stringValueField)
+            , (requiredFieldEncoder "bytesField" bytesFieldEncoder [] v.bytesField)
             , (ooEncoder v.oo)
             ]
