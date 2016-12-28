@@ -1,6 +1,5 @@
 module Simple exposing (..)
 
-
 import Json.Decode as JD
 import Json.Encode as JE
 import Google.Protobuf.Wrappers exposing (..)
@@ -188,7 +187,8 @@ ooDecoder =
 ooEncoder : Oo -> Maybe ( String, JE.Value )
 ooEncoder v =
     case v of
-        OoUnspecified -> Nothing
+        OoUnspecified ->
+            Nothing
         Oo1 x ->
             Just ( "oo1", JE.int x )
         Oo2 x ->

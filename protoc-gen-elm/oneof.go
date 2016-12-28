@@ -93,7 +93,10 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 			valueName := "x"
 			{
 				oneofVariantName := oneofUnspecifiedValue(inOneof)
-				fg.P("%s -> Nothing", oneofVariantName)
+				fg.P("%s ->", oneofVariantName)
+				fg.In()
+				fg.P("Nothing")
+				fg.Out()
 			}
 			// TODO: Evaluate them in reverse order, as per
 			// https://developers.google.com/protocol-buffers/docs/proto3#oneof

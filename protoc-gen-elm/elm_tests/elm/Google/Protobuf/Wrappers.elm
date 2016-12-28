@@ -1,6 +1,5 @@
 module Google.Protobuf.Wrappers exposing (..)
 
-
 import Json.Decode as JD
 import Json.Encode as JE
 
