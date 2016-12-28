@@ -81,7 +81,7 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe (String, JE.Value)")
+	fg.P("optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe ( String, JE.Value )")
 	fg.P("optionalEncoder name encoder v =")
 	fg.In()
 	fg.P("case v of")
@@ -117,7 +117,7 @@ func (fg *FileGenerator) GenerateRuntime() {
 	fg.P("")
 	fg.P("")
 
-	fg.P("repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe (String, JE.Value)")
+	fg.P("repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe ( String, JE.Value )")
 	fg.P("repeatedFieldEncoder name encoder v =")
 	fg.In()
 	fg.P("case v of")

@@ -91,6 +91,21 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	fg.GenerateModule(fullModuleName)
 	fg.GenerateImports()
+
+	// Generate additional imports.
+	for _, d := range inFile.GetDependency() {
+		fullModuleName := ""
+		for _, segment := range strings.Split(strings.TrimSuffix(d, ".proto"), "/") {
+			if segment == "" {
+				continue
+			}
+			fullModuleName += firstUpper(segment) + "."
+		}
+		fullModuleName = strings.TrimSuffix(fullModuleName, ".")
+		// TODO: Do not expose everything.
+		fg.P("import %s exposing (..)", fullModuleName)
+	}
+
 	fg.GenerateRuntime()
 
 	var err error
@@ -231,6 +246,11 @@ func elmFieldType(field *descriptor.FieldDescriptorProto) string {
 	inFieldName := field.GetTypeName()
 	packageName, messageName := convert(inFieldName)
 
+	// Since we are exposing everything from imported modules, we do not use the package name at
+	// all here.
+	// TODO: Change this.
+	packageName = ""
+
 	if packageName == "" {
 		return messageName
 	} else {
@@ -238,6 +258,7 @@ func elmFieldType(field *descriptor.FieldDescriptorProto) string {
 	}
 }
 
+// Returns package name and message name.
 func convert(inType string) (string, string) {
 	segments := strings.Split(inType, ".")
 	outPackageSegments := []string{}

@@ -46,7 +46,7 @@ withDefault default decoder =
         ]
 
 
-optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe (String, JE.Value)
+optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe ( String, JE.Value )
 optionalEncoder name encoder v =
     case v of
         Just x ->
@@ -64,13 +64,23 @@ requiredFieldEncoder name encoder default v =
         Just ( name, encoder v )
 
 
-repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe (String, JE.Value)
+repeatedFieldEncoder : String -> (a -> JE.Value) -> List a -> Maybe ( String, JE.Value )
 repeatedFieldEncoder name encoder v =
     case v of
         [] ->
             Nothing
         _ ->
             Just (name, JE.list <| List.map encoder v)
+
+
+bytesFieldDecoder : JD.Decoder (List Int)
+bytesFieldDecoder =
+    JD.succeed []
+
+
+bytesFieldEncoder : (List Int) -> JE.Value
+bytesFieldEncoder v =
+    JE.list []
 
 
 type alias DoubleValue =
@@ -218,18 +228,18 @@ stringValueEncoder v =
 
 
 type alias BytesValue =
-    { value : Bytes -- 1
+    { value : (List Int) -- 1
     }
 
 
 bytesValueDecoder : JD.Decoder BytesValue
 bytesValueDecoder =
     JD.lazy <| \_ -> BytesValue
-        <$> (requiredFieldDecoder "value" xxx bytesFieldDecoder)
+        <$> (requiredFieldDecoder "value" [] bytesFieldDecoder)
 
 
 bytesValueEncoder : BytesValue -> JE.Value
 bytesValueEncoder v =
     JE.object <| List.filterMap identity <|
-        [ (requiredFieldEncoder "value" bytesFieldDecoder xxx v.value)
+        [ (requiredFieldEncoder "value" bytesFieldEncoder [] v.value)
         ]
