@@ -1,11 +1,11 @@
-language: go
+language: node_js
 
 sudo: false
 
 addons:
   apt:
     packages:
-      - nodejs
+      - golang
 
 before_install:
   - ./install_protobuf
