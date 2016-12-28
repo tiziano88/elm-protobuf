@@ -75,6 +75,13 @@ repeatedFieldEncoder name encoder v =
       Just (name, JE.list <| List.map encoder v)
 
 
+lazy : (() -> JD.Decoder a) -> JD.Decoder a
+lazy getDecoder =
+  JD.customDecoder JD.value
+    <| \rawValue -> 
+      JD.decodeValue (getDecoder ()) rawValue
+
+
 type alias File1Message =
   { field : Bool -- 1
   }
@@ -82,7 +89,7 @@ type alias File1Message =
 
 file1MessageDecoder : JD.Decoder File1Message
 file1MessageDecoder =
-  File1Message
+  lazy <| \_ -> File1Message
     <$> (requiredFieldDecoder "field" False JD.bool)
 
 

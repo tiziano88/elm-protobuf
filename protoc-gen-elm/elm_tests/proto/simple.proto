@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/wrappers.proto";
+
 message Simple {
   int32 int32_field = 1;
 }
@@ -27,4 +29,6 @@ message Foo {
   }
 
   bytes bytes_field = 9;
+
+  google.protobuf.StringValue string_value_field = 10;
 }
