@@ -18,6 +18,11 @@ import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
+var (
+	// Maps each type to the file in which it was defined.
+	typeToFile = map[string]string{}
+)
+
 func main() {
 	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
@@ -91,27 +96,14 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	fg.GenerateModule(fullModuleName)
 	fg.GenerateImports()
-
-	// Generate additional imports.
-	for _, d := range inFile.GetDependency() {
-		fullModuleName := ""
-		for _, segment := range strings.Split(strings.TrimSuffix(d, ".proto"), "/") {
-			if segment == "" {
-				continue
-			}
-			fullModuleName += firstUpper(segment) + "."
-		}
-		fullModuleName = strings.TrimSuffix(fullModuleName, ".")
-		// TODO: Do not expose everything.
-		fg.P("import %s exposing (..)", fullModuleName)
-	}
-
 	fg.GenerateRuntime()
 
 	var err error
 
 	// Top-level enums.
 	for _, inEnum := range inFile.GetEnumType() {
+		typeToFile[strings.TrimPrefix(inFile.GetPackage() + "." + inEnum.GetName(), ".")] = inFile.GetName()
+
 		err = fg.GenerateEnumDefinition("", inEnum)
 		if err != nil {
 			return nil, err
@@ -130,7 +122,9 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	// Top-level messages.
 	for _, inMessage := range inFile.GetMessageType() {
-		err = fg.GenerateEverything("", inMessage)
+		typeToFile[strings.TrimPrefix(inFile.GetPackage() + "." +inMessage.GetName(), ".")] = inFile.GetName()
+
+		err = fg.GenerateEverything(inFile.GetName(), "", inMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -149,13 +143,20 @@ func (fg *FileGenerator) GenerateImports() {
 	fg.P("")
 	fg.P("import Json.Decode as JD")
 	fg.P("import Json.Encode as JE")
+
+	// This is importing literally everything.
+	// TODO: Trim deps.
+	fg.P("")
+	for _, f := range typeToFile {
+		fg.P("import %s", moduleName(f))
+	}
 }
 
-func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor.DescriptorProto) error {
+func (fg *FileGenerator) GenerateEverything(fileName string, prefix string, inMessage *descriptor.DescriptorProto) error {
 	newPrefix := prefix + inMessage.GetName() + "_"
 	var err error
 
-	err = fg.GenerateMessageDefinition(prefix, inMessage)
+	err = fg.GenerateMessageDefinition(fileName, prefix, inMessage)
 	if err != nil {
 		return err
 	}
@@ -167,7 +168,7 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 		}
 	}
 
-	err = fg.GenerateMessageDecoder(prefix, inMessage)
+	err = fg.GenerateMessageDecoder(fileName, prefix, inMessage)
 	if err != nil {
 		return err
 	}
@@ -179,7 +180,7 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 		}
 	}
 
-	err = fg.GenerateMessageEncoder(prefix, inMessage)
+	err = fg.GenerateMessageEncoder(fileName, prefix, inMessage)
 	if err != nil {
 		return err
 	}
@@ -193,7 +194,7 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 
 	// Nested messages.
 	for _, nested := range inMessage.GetNestedType() {
-		fg.GenerateEverything(newPrefix, nested)
+		fg.GenerateEverything(fileName, newPrefix, nested)
 	}
 
 	return nil
@@ -211,8 +212,14 @@ func elmEnumValueName(in string) string {
 	return camelCase(strings.ToLower(in))
 }
 
-func decoderName(typeName string) string {
+func decoderName(fileName string, typeName string) string {
 	packageName, messageName := convert(typeName)
+
+	file := typeToFile[strings.TrimPrefix(typeName, ".")]
+	// Do not qualify local symbols.
+	if file != fileName {
+		packageName = moduleName(file)
+	}
 
 	if packageName == "" {
 		return firstLower(messageName) + "Decoder"
@@ -241,20 +248,34 @@ func encoderName(typeName string) string {
 	}
 }
 
-func elmFieldType(field *descriptor.FieldDescriptorProto) string {
+func elmFieldType(fileName string, field *descriptor.FieldDescriptorProto) string {
 	inFieldName := field.GetTypeName()
 	packageName, messageName := convert(inFieldName)
 
-	// Since we are exposing everything from imported modules, we do not use the package name at
-	// all here.
-	// TODO: Change this.
-	packageName = ""
+	file := typeToFile[strings.TrimPrefix(field.GetTypeName(), ".")]
+	log.Printf("field type: %v", field.GetTypeName())
+	log.Printf("file: %v", file)
+	// Do not qualify local symbols.
+	if file != fileName {
+		packageName = moduleName(file)
+	}
 
 	if packageName == "" {
 		return messageName
 	} else {
 		return packageName + "." + messageName
 	}
+}
+
+func moduleName(fileName string) string {
+	fullModuleName := ""
+	for _, segment := range strings.Split(strings.TrimSuffix(fileName, ".proto"), "/") {
+		if segment == "" {
+			continue
+		}
+		fullModuleName += firstUpper(segment) + "."
+	}
+	return strings.TrimSuffix(fullModuleName, ".")
 }
 
 // Returns package name and message name.

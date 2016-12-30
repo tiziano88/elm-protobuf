@@ -3,6 +3,9 @@ module Google.Protobuf.Wrappers exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 
+import Dir.Other_dir
+import Other
+
 
 (<$>) : (a -> b) -> JD.Decoder a -> JD.Decoder b
 (<$>) =

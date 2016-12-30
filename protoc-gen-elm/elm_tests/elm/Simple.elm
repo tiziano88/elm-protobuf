@@ -2,7 +2,18 @@ module Simple exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
-import Google.Protobuf.Wrappers exposing (..)
+
+import Google.Protobuf.Wrappers
+import Google.Protobuf.Wrappers
+import Other
+import Google.Protobuf.Wrappers
+import Google.Protobuf.Wrappers
+import Google.Protobuf.Wrappers
+import Google.Protobuf.Wrappers
+import Google.Protobuf.Wrappers
+import Google.Protobuf.Wrappers
+import Dir.Other_dir
+import Google.Protobuf.Wrappers
 
 
 (<$>) : (a -> b) -> JD.Decoder a -> JD.Decoder b
@@ -164,7 +175,9 @@ type alias Foo =
     , singleIntField : Int -- 5
     , repeatedIntField : List Int -- 6
     , bytesField : (List Int) -- 9
-    , stringValueField : Maybe StringValue -- 10
+    , stringValueField : Maybe Google.Protobuf.Wrappers.StringValue -- 10
+    , otherField : Maybe Other.Other -- 11
+    , otherDirField : Maybe Dir.Other_dir.OtherDir -- 12
     , oo : Oo
     }
 
@@ -205,7 +218,9 @@ fooDecoder =
         <*> (requiredFieldDecoder "singleIntField" 0 JD.int)
         <*> (repeatedFieldDecoder "repeatedIntField" JD.int)
         <*> (requiredFieldDecoder "bytesField" [] bytesFieldDecoder)
-        <*> (optionalFieldDecoder "stringValueField" stringValueDecoder)
+        <*> (optionalFieldDecoder "stringValueField" google_Protobuf_Wrappers_StringValueDecoder)
+        <*> (optionalFieldDecoder "otherField" other_OtherDecoder)
+        <*> (optionalFieldDecoder "otherDirField" dir_Other_dir_OtherDirDecoder)
         <*> ooDecoder
 
 
@@ -219,6 +234,8 @@ fooEncoder v =
         , (requiredFieldEncoder "singleIntField" JE.int 0 v.singleIntField)
         , (repeatedFieldEncoder "repeatedIntField" JE.int v.repeatedIntField)
         , (requiredFieldEncoder "bytesField" bytesFieldEncoder [] v.bytesField)
-        , (optionalEncoder "stringValueField" stringValueEncoder v.stringValueField)
+        , (optionalEncoder "stringValueField" google_Protobuf_Wrappers_StringValueEncoder v.stringValueField)
+        , (optionalEncoder "otherField" other_OtherEncoder v.otherField)
+        , (optionalEncoder "otherDirField" dir_Other_dir_OtherDirEncoder v.otherDirField)
         , (ooEncoder v.oo)
         ]

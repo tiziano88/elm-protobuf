@@ -2,7 +2,7 @@ package main
 
 import "github.com/golang/protobuf/protoc-gen-go/descriptor"
 
-func (fg *FileGenerator) GenerateOneofDefinition(prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
+func (fg *FileGenerator) GenerateOneofDefinition(fileName string, prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
 	inOneof := inMessage.GetOneofDecl()[oneofIndex]
 
 	// TODO: Prefix with message name to avoid collisions.
@@ -24,7 +24,7 @@ func (fg *FileGenerator) GenerateOneofDefinition(prefix string, inMessage *descr
 			if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 
 				oneofVariantName := elmTypeName(inField.GetName())
-				oneofArgumentType := fieldElmType(inField)
+				oneofArgumentType := fieldElmType(fileName, inField)
 				fg.P("%s %s %s", leading, oneofVariantName, oneofArgumentType)
 
 				leading = "|"
@@ -36,7 +36,7 @@ func (fg *FileGenerator) GenerateOneofDefinition(prefix string, inMessage *descr
 	return nil
 }
 
-func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
+func (fg *FileGenerator) GenerateOneofDecoder(fileName string, prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
 	inOneof := inMessage.GetOneofDecl()[oneofIndex]
 
 	// TODO: Prefix with message name to avoid collisions.
@@ -57,7 +57,7 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 			for _, inField := range inMessage.GetField() {
 				if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 					oneofVariantName := elmTypeName(inField.GetName())
-					decoderName := fieldDecoderName(inField)
+					decoderName := fieldDecoderName(fileName, inField)
 					fg.P("%s JD.map %s (JD.field %q %s)", leading, oneofVariantName, inField.GetJsonName(), decoderName)
 					leading = ","
 				}
@@ -72,7 +72,7 @@ func (fg *FileGenerator) GenerateOneofDecoder(prefix string, inMessage *descript
 	return nil
 }
 
-func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
+func (fg *FileGenerator) GenerateOneofEncoder(fileName string, prefix string, inMessage *descriptor.DescriptorProto, oneofIndex int) error {
 	inOneof := inMessage.GetOneofDecl()[oneofIndex]
 
 	// TODO: Prefix with message name to avoid collisions.
@@ -103,7 +103,7 @@ func (fg *FileGenerator) GenerateOneofEncoder(prefix string, inMessage *descript
 			for _, inField := range inMessage.GetField() {
 				if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 					oneofVariantName := elmTypeName(inField.GetName())
-					e := fieldEncoderName(inField)
+					e := fieldEncoderName(fileName, inField)
 					fg.P("%s %s ->", oneofVariantName, valueName)
 					fg.In()
 					fg.P("Just ( %q, %s %s )", inField.GetJsonName(), e, valueName)
