@@ -87,7 +87,7 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 	outFile.Name = proto.String(outFileName)
 
 	b := &bytes.Buffer{}
-	fg := NewFileGenerator(b)
+	fg := NewFileGenerator(b, inFileName)
 
 	fg.GenerateComments(inFile)
 	fg.GenerateModule(fullModuleName)

@@ -7,13 +7,16 @@ import (
 )
 
 type FileGenerator struct {
-	w      io.Writer
-	indent uint
+	w io.Writer
+	// Used to avoid qualifying names in the same file.
+	inFileName string
+	indent     uint
 }
 
-func NewFileGenerator(w io.Writer) *FileGenerator {
+func NewFileGenerator(w io.Writer, inFileName string) *FileGenerator {
 	return &FileGenerator{
-		w: w,
+		w:          w,
+		inFileName: inFileName,
 	}
 }
 
