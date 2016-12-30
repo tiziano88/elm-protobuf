@@ -281,6 +281,10 @@ func fieldDecoderName(inField *descriptor.FieldDescriptorProto) string {
 }
 
 func fieldDefaultValue(inField *descriptor.FieldDescriptorProto) string {
+	if inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+		return "[]"
+	}
+
 	switch inField.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_INT32,
 		descriptor.FieldDescriptorProto_TYPE_INT64,
