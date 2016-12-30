@@ -18,6 +18,11 @@ import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
+var (
+	// Maps each type to the file in which it was defined.
+	typeToFile = map[string]string{}
+)
+
 func main() {
 	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
@@ -113,6 +118,8 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	// Top-level enums.
 	for _, inEnum := range inFile.GetEnumType() {
+		typeToFile[strings.TrimPrefix(inFile.GetPackage()+"."+inEnum.GetName(), ".")] = inFile.GetName()
+
 		err = fg.GenerateEnumDefinition("", inEnum)
 		if err != nil {
 			return nil, err
@@ -131,6 +138,8 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	// Top-level messages.
 	for _, inMessage := range inFile.GetMessageType() {
+		typeToFile[strings.TrimPrefix(inFile.GetPackage()+"."+inMessage.GetName(), ".")] = inFile.GetName()
+
 		err = fg.GenerateEverything("", inMessage)
 		if err != nil {
 			return nil, err
