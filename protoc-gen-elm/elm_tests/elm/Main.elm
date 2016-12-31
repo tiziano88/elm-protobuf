@@ -122,7 +122,10 @@ foo =
     , oo = T.Oo1 1
     , bytesField = []
     , stringValueField = Nothing
-    , otherField = Nothing
+    , otherField =
+        Just
+            { stringField = "xyz"
+            }
     }
 
 
@@ -152,6 +155,9 @@ fooJson =
     222,
     333
   ],
+  "otherField": {
+    "stringField": "xyz"
+  },
   "oo1": 1
 }
 """
