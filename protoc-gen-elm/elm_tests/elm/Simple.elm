@@ -8,6 +8,7 @@ module Simple exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import Google.Protobuf.Wrappers exposing (..)
+import Other exposing (..)
 
 
 (<$>) : (a -> b) -> JD.Decoder a -> JD.Decoder b
@@ -170,6 +171,7 @@ type alias Foo =
     , repeatedIntField : List Int -- 6
     , bytesField : (List Int) -- 9
     , stringValueField : Maybe StringValue -- 10
+    , otherField : Maybe Other -- 11
     , oo : Oo
     }
 
@@ -211,6 +213,7 @@ fooDecoder =
         <*> (repeatedFieldDecoder "repeatedIntField" JD.int)
         <*> (requiredFieldDecoder "bytesField" [] bytesFieldDecoder)
         <*> (optionalFieldDecoder "stringValueField" stringValueDecoder)
+        <*> (optionalFieldDecoder "otherField" otherDecoder)
         <*> ooDecoder
 
 
@@ -225,5 +228,6 @@ fooEncoder v =
         , (repeatedFieldEncoder "repeatedIntField" JE.int v.repeatedIntField)
         , (requiredFieldEncoder "bytesField" bytesFieldEncoder [] v.bytesField)
         , (optionalEncoder "stringValueField" stringValueEncoder v.stringValueField)
+        , (optionalEncoder "otherField" otherEncoder v.otherField)
         , (ooEncoder v.oo)
         ]

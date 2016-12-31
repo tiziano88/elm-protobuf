@@ -67,6 +67,7 @@ fooDefault =
     , oo = T.OoUnspecified
     , bytesField = []
     , stringValueField = Nothing
+    , otherField = Nothing
     }
 
 
@@ -121,6 +122,7 @@ foo =
     , oo = T.Oo1 1
     , bytesField = []
     , stringValueField = Nothing
+    , otherField = Nothing
     }
 
 
