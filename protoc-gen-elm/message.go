@@ -195,12 +195,11 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
 		return "Bool"
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		return "String"
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE,
+		descriptor.FieldDescriptorProto_TYPE_ENUM:
 		// XXX
-		return elmFieldType(inField)
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		// XXX
-		return elmFieldType(inField)
+		_, messageName := convert(inField.GetTypeName())
+		return messageName
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		// XXX
 		return "(List Int)"
@@ -234,10 +233,12 @@ func fieldEncoderName(inField *descriptor.FieldDescriptorProto) string {
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		// TODO: Default enum value.
 		// Remove leading ".".
-		return encoderName(elmFieldType(inField))
+		_, messageName := convert(inField.GetTypeName())
+		return encoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		// Remove leading ".".
-		return encoderName(elmFieldType(inField))
+		_, messageName := convert(inField.GetTypeName())
+		return encoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		return "bytesFieldEncoder"
 	default:
@@ -269,10 +270,12 @@ func fieldDecoderName(inField *descriptor.FieldDescriptorProto) string {
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		// TODO: Default enum value.
 		// Remove leading ".".
-		return decoderName(elmFieldType(inField))
+		_, messageName := convert(inField.GetTypeName())
+		return decoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		// Remove leading ".".
-		return decoderName(elmFieldType(inField))
+		_, messageName := convert(inField.GetTypeName())
+		return decoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		return "bytesFieldDecoder"
 	default:
@@ -306,7 +309,8 @@ func fieldDefaultValue(inField *descriptor.FieldDescriptorProto) string {
 		return "\"\""
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		// TODO: Default enum value.
-		return defaultEnumValue(elmFieldType(inField))
+		_, messageName := convert(inField.GetTypeName())
+		return defaultEnumValue(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		return "xxx"
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:

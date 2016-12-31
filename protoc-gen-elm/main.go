@@ -229,34 +229,16 @@ func elmEnumValueName(in string) string {
 	return camelCase(strings.ToLower(in))
 }
 
-func decoderName(typeName string) string {
-	packageName, messageName := convert(typeName)
-
-	if packageName == "" {
-		return firstLower(messageName) + "Decoder"
-	} else {
-		return packageName + "." + firstLower(messageName) + "Decoder"
-	}
-}
-
 func defaultEnumValue(typeName string) string {
-	packageName, messageName := convert(typeName)
-
-	if packageName == "" {
-		return firstLower(messageName) + "Default"
-	} else {
-		return packageName + "." + firstLower(messageName) + "Default"
-	}
+	return firstLower(typeName) + "Default"
 }
 
 func encoderName(typeName string) string {
-	packageName, messageName := convert(typeName)
+	return firstLower(typeName) + "Encoder"
+}
 
-	if packageName == "" {
-		return firstLower(messageName) + "Encoder"
-	} else {
-		return packageName + "." + firstLower(messageName) + "Encoder"
-	}
+func decoderName(typeName string) string {
+	return firstLower(typeName) + "Decoder"
 }
 
 func elmFieldType(field *descriptor.FieldDescriptorProto) string {
