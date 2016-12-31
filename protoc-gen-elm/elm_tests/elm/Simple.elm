@@ -8,6 +8,7 @@ module Simple exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import Google.Protobuf.Wrappers exposing (..)
+import Dir.Other_dir exposing (..)
 import Other exposing (..)
 
 
@@ -172,6 +173,7 @@ type alias Foo =
     , bytesField : (List Int) -- 9
     , stringValueField : Maybe StringValue -- 10
     , otherField : Maybe Other -- 11
+    , otherDirField : Maybe OtherDir -- 12
     , oo : Oo
     }
 
@@ -214,6 +216,7 @@ fooDecoder =
         <*> (requiredFieldDecoder "bytesField" [] bytesFieldDecoder)
         <*> (optionalFieldDecoder "stringValueField" stringValueDecoder)
         <*> (optionalFieldDecoder "otherField" otherDecoder)
+        <*> (optionalFieldDecoder "otherDirField" otherDirDecoder)
         <*> ooDecoder
 
 
@@ -229,5 +232,6 @@ fooEncoder v =
         , (requiredFieldEncoder "bytesField" bytesFieldEncoder [] v.bytesField)
         , (optionalEncoder "stringValueField" stringValueEncoder v.stringValueField)
         , (optionalEncoder "otherField" otherEncoder v.otherField)
+        , (optionalEncoder "otherDirField" otherDirEncoder v.otherDirField)
         , (ooEncoder v.oo)
         ]

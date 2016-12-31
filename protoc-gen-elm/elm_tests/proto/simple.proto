@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/wrappers.proto";
 
+import "dir/other_dir.proto";
 import "other.proto";
 
 message Simple {
@@ -35,4 +36,5 @@ message Foo {
   google.protobuf.StringValue string_value_field = 10;
 
   Other other_field = 11;
+  OtherDir other_dir_field = 12;
 }

@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message OtherDir {
+  string string_field = 1;
+}

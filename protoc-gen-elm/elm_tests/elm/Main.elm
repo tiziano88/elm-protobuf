@@ -68,6 +68,7 @@ fooDefault =
     , bytesField = []
     , stringValueField = Nothing
     , otherField = Nothing
+    , otherDirField = Nothing
     }
 
 
@@ -124,7 +125,11 @@ foo =
     , stringValueField = Nothing
     , otherField =
         Just
-            { stringField = "xyz"
+            { stringField = "xxx"
+            }
+    , otherDirField =
+        Just
+            { stringField = "yyy"
             }
     }
 
@@ -156,7 +161,10 @@ fooJson =
     333
   ],
   "otherField": {
-    "stringField": "xyz"
+    "stringField": "xxx"
+  },
+  "otherDirField": {
+    "stringField": "yyy"
   },
   "oo1": 1
 }
