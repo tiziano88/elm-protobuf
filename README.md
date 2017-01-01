@@ -74,6 +74,10 @@ Run the `protoc` compiler specifying the `--elm_out` flag:
 `protoc` will automatically detect the `protoc-gen-elm` binary from your `$PATH`
 and use it to generate the output elm code.
 
+Then, in your project, add a dependency on the runtime library:
+
+`elm package install tiziano88/elm-protobuf`
+
 ## References
 
 https://developers.google.com/protocol-buffers/
