@@ -192,9 +192,14 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
 		return "String"
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE,
 		descriptor.FieldDescriptorProto_TYPE_ENUM:
-		// XXX
-		_, messageName := convert(inField.GetTypeName())
-		return messageName
+		// Well known types.
+		switch inField.GetTypeName() {
+		case ".google.protobuf.Timestamp":
+			return "Timestamp"
+		default:
+			_, messageName := convert(inField.GetTypeName())
+			return messageName
+		}
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		// XXX
 		return "(List Int)"
@@ -268,9 +273,14 @@ func fieldDecoderName(inField *descriptor.FieldDescriptorProto) string {
 		_, messageName := convert(inField.GetTypeName())
 		return decoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		// Remove leading ".".
-		_, messageName := convert(inField.GetTypeName())
-		return decoderName(messageName)
+		// Well Known Types.
+		switch inField.GetTypeName() {
+		case ".google.protobuf.Timestamp":
+			return "timestampDecoder"
+		default:
+			_, messageName := convert(inField.GetTypeName())
+			return decoderName(messageName)
+		}
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		return "bytesFieldDecoder"
 	default:

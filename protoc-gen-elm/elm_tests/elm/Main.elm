@@ -10,6 +10,8 @@ import Test.Runner.Node exposing (run, TestProgram)
 import Expect exposing (..)
 import Simple as T
 import Recursive as R
+import Protobuf exposing (..)
+import ISO8601
 
 
 main : TestProgram
@@ -39,6 +41,10 @@ suite =
             [ test "decode empty JSON" <| \_ -> assertDecode R.recDecoder emptyJson recDefault
             , test "decode 1-level JSON" <| \_ -> assertDecode R.recDecoder recJson1 rec1
             , test "decode 2-level JSON" <| \_ -> assertDecode R.recDecoder recJson2 rec2
+            ]
+        , describe "timestamp"
+            [ test "encode" <| \_ -> equal timestampJson (JE.encode 2 (T.fooEncoder timestampFoo))
+            , test "decode" <| \_ -> assertDecode T.fooDecoder timestampJson timestampFoo
             ]
         ]
 
@@ -267,4 +273,21 @@ rec2 =
             , stringField = ""
             }
     , stringField = ""
+    }
+
+
+timestampJson : String
+timestampJson =
+    String.trim """
+{
+  "timestampField": "1988-12-14T01:23:45.678Z"
+}
+"""
+
+
+timestampFoo : T.Foo
+timestampFoo =
+    { fooDefault
+        | timestampField =
+            Just <| ISO8601.fromTime 598065825678
     }

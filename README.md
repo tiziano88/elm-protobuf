@@ -28,7 +28,7 @@ https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/go_tests/te
 -   [ ] imports
 -   [x] nested types
 -   [ ] `Any` type
--   [ ] `Timestamp` type
+-   [x] `Timestamp` type
 -   [ ] `Duration` type
 -   [ ] `Struct` type
 -   [ ] wrapper types

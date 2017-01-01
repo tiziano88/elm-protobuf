@@ -21,6 +21,11 @@ import (
 var (
 	// Maps each type to the file in which it was defined.
 	typeToFile = map[string]string{}
+
+	// Well Known Types.
+	excludedFiles = map[string]bool{
+		"google/protobuf/timestamp.proto": true,
+	}
 )
 
 func main() {
@@ -47,6 +52,11 @@ func main() {
 
 	for _, inFile := range req.GetProtoFile() {
 		log.Printf("Processing file %s", inFile.GetName())
+		// Well Known Types.
+		if excludedFiles[inFile.GetName()] {
+			log.Printf("Skipping well known type")
+			continue
+		}
 		outFile, err := processFile(inFile)
 		if err != nil {
 			log.Fatalf("Could not process file: %v", err)
@@ -100,6 +110,10 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	// Generate additional imports.
 	for _, d := range inFile.GetDependency() {
+		// Well Known Types.
+		if excludedFiles[d] {
+			continue
+		}
 		fullModuleName := ""
 		for _, segment := range strings.Split(strings.TrimSuffix(d, ".proto"), "/") {
 			if segment == "" {

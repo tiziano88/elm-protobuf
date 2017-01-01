@@ -9,7 +9,6 @@ import Protobuf exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
-import Google.Protobuf.Timestamp exposing (..)
 import Google.Protobuf.Wrappers exposing (..)
 import Dir.Other_dir exposing (..)
 import Other exposing (..)
