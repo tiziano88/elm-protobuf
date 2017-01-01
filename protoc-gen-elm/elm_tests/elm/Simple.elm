@@ -76,8 +76,8 @@ type alias Simple =
 
 simpleDecoder : JD.Decoder Simple
 simpleDecoder =
-    JD.lazy <| \_ -> Simple
-        <$> (requiredFieldDecoder "int32Field" 0 JD.int)
+    JD.lazy <| \_ -> decode Simple
+        |> required "int32Field" JD.int 0
 
 
 simpleEncoder : Simple -> JE.Value
@@ -130,18 +130,18 @@ ooEncoder v =
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
-    JD.lazy <| \_ -> Foo
-        <$> (optionalFieldDecoder "s" simpleDecoder)
-        <*> (repeatedFieldDecoder "ss" simpleDecoder)
-        <*> (requiredFieldDecoder "colour" colourDefault colourDecoder)
-        <*> (repeatedFieldDecoder "colours" colourDecoder)
-        <*> (requiredFieldDecoder "singleIntField" 0 JD.int)
-        <*> (repeatedFieldDecoder "repeatedIntField" JD.int)
-        <*> (requiredFieldDecoder "bytesField" [] bytesFieldDecoder)
-        <*> (optionalFieldDecoder "stringValueField" stringValueDecoder)
-        <*> (optionalFieldDecoder "otherField" otherDecoder)
-        <*> (optionalFieldDecoder "otherDirField" otherDirDecoder)
-        <*> ooDecoder
+    JD.lazy <| \_ -> decode Foo
+        |> optional "s" simpleDecoder
+        |> repeated "ss" simpleDecoder
+        |> required "colour" colourDecoder colourDefault
+        |> repeated "colours" colourDecoder
+        |> required "singleIntField" JD.int 0
+        |> repeated "repeatedIntField" JD.int
+        |> required "bytesField" bytesFieldDecoder []
+        |> optional "stringValueField" stringValueDecoder
+        |> optional "otherField" otherDecoder
+        |> optional "otherDirField" otherDirDecoder
+        |> field ooDecoder
 
 
 fooEncoder : Foo -> JE.Value

@@ -18,8 +18,8 @@ type alias DoubleValue =
 
 doubleValueDecoder : JD.Decoder DoubleValue
 doubleValueDecoder =
-    JD.lazy <| \_ -> DoubleValue
-        <$> (requiredFieldDecoder "value" 0.0 JD.float)
+    JD.lazy <| \_ -> decode DoubleValue
+        |> required "value" JD.float 0.0
 
 
 doubleValueEncoder : DoubleValue -> JE.Value
@@ -36,8 +36,8 @@ type alias FloatValue =
 
 floatValueDecoder : JD.Decoder FloatValue
 floatValueDecoder =
-    JD.lazy <| \_ -> FloatValue
-        <$> (requiredFieldDecoder "value" 0.0 JD.float)
+    JD.lazy <| \_ -> decode FloatValue
+        |> required "value" JD.float 0.0
 
 
 floatValueEncoder : FloatValue -> JE.Value
@@ -54,8 +54,8 @@ type alias Int64Value =
 
 int64ValueDecoder : JD.Decoder Int64Value
 int64ValueDecoder =
-    JD.lazy <| \_ -> Int64Value
-        <$> (requiredFieldDecoder "value" 0 JD.int)
+    JD.lazy <| \_ -> decode Int64Value
+        |> required "value" JD.int 0
 
 
 int64ValueEncoder : Int64Value -> JE.Value
@@ -72,8 +72,8 @@ type alias UInt64Value =
 
 uInt64ValueDecoder : JD.Decoder UInt64Value
 uInt64ValueDecoder =
-    JD.lazy <| \_ -> UInt64Value
-        <$> (requiredFieldDecoder "value" 0 JD.int)
+    JD.lazy <| \_ -> decode UInt64Value
+        |> required "value" JD.int 0
 
 
 uInt64ValueEncoder : UInt64Value -> JE.Value
@@ -90,8 +90,8 @@ type alias Int32Value =
 
 int32ValueDecoder : JD.Decoder Int32Value
 int32ValueDecoder =
-    JD.lazy <| \_ -> Int32Value
-        <$> (requiredFieldDecoder "value" 0 JD.int)
+    JD.lazy <| \_ -> decode Int32Value
+        |> required "value" JD.int 0
 
 
 int32ValueEncoder : Int32Value -> JE.Value
@@ -108,8 +108,8 @@ type alias UInt32Value =
 
 uInt32ValueDecoder : JD.Decoder UInt32Value
 uInt32ValueDecoder =
-    JD.lazy <| \_ -> UInt32Value
-        <$> (requiredFieldDecoder "value" 0 JD.int)
+    JD.lazy <| \_ -> decode UInt32Value
+        |> required "value" JD.int 0
 
 
 uInt32ValueEncoder : UInt32Value -> JE.Value
@@ -126,8 +126,8 @@ type alias BoolValue =
 
 boolValueDecoder : JD.Decoder BoolValue
 boolValueDecoder =
-    JD.lazy <| \_ -> BoolValue
-        <$> (requiredFieldDecoder "value" False JD.bool)
+    JD.lazy <| \_ -> decode BoolValue
+        |> required "value" JD.bool False
 
 
 boolValueEncoder : BoolValue -> JE.Value
@@ -144,8 +144,8 @@ type alias StringValue =
 
 stringValueDecoder : JD.Decoder StringValue
 stringValueDecoder =
-    JD.lazy <| \_ -> StringValue
-        <$> (requiredFieldDecoder "value" "" JD.string)
+    JD.lazy <| \_ -> decode StringValue
+        |> required "value" JD.string ""
 
 
 stringValueEncoder : StringValue -> JE.Value
@@ -162,8 +162,8 @@ type alias BytesValue =
 
 bytesValueDecoder : JD.Decoder BytesValue
 bytesValueDecoder =
-    JD.lazy <| \_ -> BytesValue
-        <$> (requiredFieldDecoder "value" [] bytesFieldDecoder)
+    JD.lazy <| \_ -> decode BytesValue
+        |> required "value" bytesFieldDecoder []
 
 
 bytesValueEncoder : BytesValue -> JE.Value

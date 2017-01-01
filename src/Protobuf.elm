@@ -7,13 +7,9 @@ Buffer compiler.
 
 See https://github.com/tiziano88/elm-protobuf .
 
-# Operators
-
-@docs (<$>), (<*>)
-
 # Decoder Helpers
 
-@docs requiredFieldDecoder, optionalFieldDecoder, repeatedFieldDecoder, bytesFieldDecoder
+@docs decode, required, optional, repeated, field, bytesFieldDecoder
 
 @docs withDefault
 
@@ -27,39 +23,39 @@ import Json.Decode as JD
 import Json.Encode as JE
 
 
-{-| Applicative initial application.
+{-| Decodes a message.
 -}
-(<$>) : (a -> b) -> JD.Decoder a -> JD.Decoder b
-(<$>) =
-    JD.map
-
-
-{-| Applicative continued application.
--}
-(<*>) : JD.Decoder (a -> b) -> JD.Decoder a -> JD.Decoder b
-(<*>) f v =
-    f |> JD.andThen (\x -> x <$> v)
+decode : a -> JD.Decoder a
+decode =
+    JD.succeed
 
 
 {-| Decodes a required field.
 -}
-requiredFieldDecoder : String -> a -> JD.Decoder a -> JD.Decoder a
-requiredFieldDecoder name default decoder =
-    withDefault default (JD.field name decoder)
+required : String -> JD.Decoder a -> a -> JD.Decoder (a -> b) -> JD.Decoder b
+required name decoder default d =
+    field (withDefault default <| JD.field name decoder) d
 
 
 {-| Decodes an optional field.
 -}
-optionalFieldDecoder : String -> JD.Decoder a -> JD.Decoder (Maybe a)
-optionalFieldDecoder name decoder =
-    JD.maybe (JD.field name decoder)
+optional : String -> JD.Decoder a -> JD.Decoder (Maybe a -> b) -> JD.Decoder b
+optional name decoder d =
+    field (JD.maybe <| JD.field name decoder) d
 
 
-{-| Decodes an repeated field.
+{-| Decodes a repeated field.
 -}
-repeatedFieldDecoder : String -> JD.Decoder a -> JD.Decoder (List a)
-repeatedFieldDecoder name decoder =
-    withDefault [] (JD.field name (JD.list decoder))
+repeated : String -> JD.Decoder a -> JD.Decoder (List a -> b) -> JD.Decoder b
+repeated name decoder d =
+    field (withDefault [] <| JD.list <| JD.field name decoder) d
+
+
+{-| Decodes a field.
+-}
+field : JD.Decoder a -> JD.Decoder (a -> b) -> JD.Decoder b
+field =
+    JD.map2 (|>)
 
 
 {-| Provides a default value for a field.

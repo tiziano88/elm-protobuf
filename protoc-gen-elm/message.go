@@ -75,11 +75,10 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 	fg.P("%s =", decoderName(typeName))
 	{
 		fg.In()
-		fg.P("JD.lazy <| \\_ -> %s", typeName)
+		fg.P("JD.lazy <| \\_ -> decode %s", typeName)
 		{
 			fg.In()
 
-			leading := "<$>"
 			for _, inField := range inMessage.GetField() {
 				if inField.OneofIndex != nil {
 					// Handled in the oneof only.
@@ -93,23 +92,19 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 				def := fieldDefaultValue(inField)
 
 				if repeated {
-					fg.P("%s (repeatedFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
+					fg.P("|> repeated %q %s", jsonFieldName(inField), d)
 				} else {
 					if optional {
-						fg.P("%s (optionalFieldDecoder %q %s)", leading, jsonFieldName(inField), d)
+						fg.P("|> optional %q %s", jsonFieldName(inField), d)
 					} else {
-						fg.P("%s (requiredFieldDecoder %q %s %s)", leading, jsonFieldName(inField), def, d)
+						fg.P("|> required %q %s %s", jsonFieldName(inField), d, def)
 					}
 				}
-
-				leading = "<*>"
 			}
 
 			for _, inOneof := range inMessage.GetOneofDecl() {
 				oneofDecoderName := oneofDecoderName(inOneof)
-				fg.P("%s %s", leading, oneofDecoderName)
-
-				leading = "<*>"
+				fg.P("|> field %s", oneofDecoderName)
 			}
 
 			fg.Out()

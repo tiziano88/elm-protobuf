@@ -18,8 +18,8 @@ type alias OtherDir =
 
 otherDirDecoder : JD.Decoder OtherDir
 otherDirDecoder =
-    JD.lazy <| \_ -> OtherDir
-        <$> (requiredFieldDecoder "stringField" "" JD.string)
+    JD.lazy <| \_ -> decode OtherDir
+        |> required "stringField" JD.string ""
 
 
 otherDirEncoder : OtherDir -> JE.Value

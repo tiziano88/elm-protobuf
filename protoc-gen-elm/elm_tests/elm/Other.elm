@@ -18,8 +18,8 @@ type alias Other =
 
 otherDecoder : JD.Decoder Other
 otherDecoder =
-    JD.lazy <| \_ -> Other
-        <$> (requiredFieldDecoder "stringField" "" JD.string)
+    JD.lazy <| \_ -> decode Other
+        |> required "stringField" JD.string ""
 
 
 otherEncoder : Other -> JE.Value
