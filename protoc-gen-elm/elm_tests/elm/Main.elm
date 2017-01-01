@@ -37,9 +37,7 @@ suite =
             ]
         , describe "recursion"
             [ test "decode empty JSON" <| \_ -> assertDecode R.recDecoder emptyJson recDefault
-              -- TODO: Fix.
             , test "decode 1-level JSON" <| \_ -> assertDecode R.recDecoder recJson1 rec1
-              -- TODO: Fix.
             , test "decode 2-level JSON" <| \_ -> assertDecode R.recDecoder recJson2 rec2
             ]
         ]
@@ -223,7 +221,7 @@ recJson1 : String
 recJson1 =
     String.trim """
 {
-  "r": {}
+  "recField": {}
 }
 """
 
@@ -231,7 +229,12 @@ recJson1 =
 rec1 : R.Rec
 rec1 =
     { int32Field = 0
-    , r = R.RUnspecified
+    , r =
+        R.RecField
+            { int32Field = 0
+            , r = R.RUnspecified
+            , stringField = ""
+            }
     , stringField = ""
     }
 
@@ -240,8 +243,8 @@ recJson2 : String
 recJson2 =
     String.trim """
 {
-  "r": {
-    "r": {}
+  "recField": {
+    "recField": {}
   }
 }
 """
@@ -250,6 +253,16 @@ recJson2 =
 rec2 : R.Rec
 rec2 =
     { int32Field = 0
-    , r = R.RUnspecified
+    , r =
+        R.RecField
+            { int32Field = 0
+            , r =
+                R.RecField
+                    { int32Field = 0
+                    , r = R.RUnspecified
+                    , stringField = ""
+                    }
+            , stringField = ""
+            }
     , stringField = ""
     }
