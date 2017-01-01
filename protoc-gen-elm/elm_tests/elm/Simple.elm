@@ -9,6 +9,7 @@ import Protobuf exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
+import Google.Protobuf.Timestamp exposing (..)
 import Google.Protobuf.Wrappers exposing (..)
 import Dir.Other_dir exposing (..)
 import Other exposing (..)
@@ -98,6 +99,7 @@ type alias Foo =
     , stringValueField : Maybe StringValue -- 10
     , otherField : Maybe Other -- 11
     , otherDirField : Maybe OtherDir -- 12
+    , timestampField : Maybe Timestamp -- 13
     , oo : Oo
     }
 
@@ -141,6 +143,7 @@ fooDecoder =
         |> optional "stringValueField" stringValueDecoder
         |> optional "otherField" otherDecoder
         |> optional "otherDirField" otherDirDecoder
+        |> optional "timestampField" timestampDecoder
         |> field ooDecoder
 
 
@@ -157,5 +160,6 @@ fooEncoder v =
         , (optionalEncoder "stringValueField" stringValueEncoder v.stringValueField)
         , (optionalEncoder "otherField" otherEncoder v.otherField)
         , (optionalEncoder "otherDirField" otherDirEncoder v.otherDirField)
+        , (optionalEncoder "timestampField" timestampEncoder v.timestampField)
         , (ooEncoder v.oo)
         ]

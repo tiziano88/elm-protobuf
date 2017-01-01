@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 import "dir/other_dir.proto";
@@ -37,4 +38,6 @@ message Foo {
 
   Other other_field = 11;
   OtherDir other_dir_field = 12;
+
+  google.protobuf.Timestamp timestamp_field = 13;
 }

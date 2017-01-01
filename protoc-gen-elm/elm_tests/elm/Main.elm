@@ -75,6 +75,7 @@ fooDefault =
     , stringValueField = Nothing
     , otherField = Nothing
     , otherDirField = Nothing
+    , timestampField = Nothing
     }
 
 
@@ -145,6 +146,7 @@ foo =
         Just
             { stringField = "yyy"
             }
+    , timestampField = Nothing
     }
 
 
