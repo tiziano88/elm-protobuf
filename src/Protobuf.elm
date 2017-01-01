@@ -102,6 +102,7 @@ repeatedFieldEncoder name encoder v =
 
 
 {-| Decodes a bytes field.
+TODO: Implement.
 -}
 bytesFieldDecoder : JD.Decoder (List Int)
 bytesFieldDecoder =
@@ -109,6 +110,7 @@ bytesFieldDecoder =
 
 
 {-| Encodes a bytes field.
+TODO: Implement.
 -}
 bytesFieldEncoder : List Int -> JE.Value
 bytesFieldEncoder v =

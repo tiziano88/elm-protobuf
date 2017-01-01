@@ -112,8 +112,6 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 		fg.P("import %s exposing (..)", fullModuleName)
 	}
 
-	fg.GenerateRuntime()
-
 	var err error
 
 	// Top-level enums.
@@ -164,6 +162,8 @@ func (fg *FileGenerator) GenerateComments(inFile *descriptor.FileDescriptorProto
 }
 
 func (fg *FileGenerator) GenerateImports() {
+	fg.P("")
+	fg.P("import Protobuf exposing (..)")
 	fg.P("")
 	fg.P("import Json.Decode as JD")
 	fg.P("import Json.Encode as JE")
