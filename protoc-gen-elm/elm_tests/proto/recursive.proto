@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message Rec {
+  int32 int32_field = 1;
+
+  oneof r {
+    Rec rec_field = 2;
+  }
+
+  string string_field = 4;
+}

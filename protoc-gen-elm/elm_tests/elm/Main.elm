@@ -9,6 +9,7 @@ import Test exposing (..)
 import Test.Runner.Node exposing (run, TestProgram)
 import Expect exposing (..)
 import Simple as T
+import Recursive as R
 
 
 main : TestProgram
@@ -33,6 +34,13 @@ suite =
             , test "decode empty JSON" <| \_ -> assertDecode T.fooDecoder emptyJson fooDefault
             , test "decode oo1" <| \_ -> assertDecode T.fooDecoder oo1SetJson oo1Set
             , test "decode oo2" <| \_ -> assertDecode T.fooDecoder oo2SetJson oo2Set
+            ]
+        , describe "recursion"
+            [ test "decode empty JSON" <| \_ -> assertDecode R.recDecoder emptyJson recDefault
+              -- TODO: Fix.
+            , test "decode 1-level JSON" <| \_ -> assertDecode R.recDecoder recJson1 rec1
+              -- TODO: Fix.
+            , test "decode 2-level JSON" <| \_ -> assertDecode R.recDecoder recJson2 rec2
             ]
         ]
 
@@ -69,6 +77,14 @@ fooDefault =
     , stringValueField = Nothing
     , otherField = Nothing
     , otherDirField = Nothing
+    }
+
+
+recDefault : R.Rec
+recDefault =
+    { int32Field = 0
+    , r = R.RUnspecified
+    , stringField = ""
     }
 
 
@@ -201,3 +217,39 @@ oo2SetJson =
   "oo2": true
 }
 """
+
+
+recJson1 : String
+recJson1 =
+    String.trim """
+{
+  "r": {}
+}
+"""
+
+
+rec1 : R.Rec
+rec1 =
+    { int32Field = 0
+    , r = R.RUnspecified
+    , stringField = ""
+    }
+
+
+recJson2 : String
+recJson2 =
+    String.trim """
+{
+  "r": {
+    "r": {}
+  }
+}
+"""
+
+
+rec2 : R.Rec
+rec2 =
+    { int32Field = 0
+    , r = R.RUnspecified
+    , stringField = ""
+    }
