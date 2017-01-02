@@ -25,13 +25,13 @@ https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/go_tests/te
 -   [ ] `bytes` fields
 -   [x] message fields
 -   [x] enum fields
--   [ ] imports
+-   [x] imports
 -   [x] nested types
 -   [ ] `Any` type
 -   [x] `Timestamp` type
 -   [ ] `Duration` type
 -   [ ] `Struct` type
--   [ ] wrapper types
+-   [x] wrapper types
 -   [ ] `FieldMask` type
 -   [ ] `ListValue` type
 -   [ ] `Value` type
