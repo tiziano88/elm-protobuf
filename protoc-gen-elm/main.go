@@ -63,6 +63,23 @@ var (
 		".google.protobuf.BytesValue":  "bytesValueEncoder",
 		".google.protobuf.BoolValue":   "boolValueEncoder",
 	}
+
+	reservedKeywords = map[string]bool{
+		"module":   true,
+		"exposing": true,
+		"import":   true,
+		"type":     true,
+		"let":      true,
+		"in":       true,
+		"if":       true,
+		"then":     true,
+		"else":     true,
+		"where":    true,
+		"case":     true,
+		"of":       true,
+		"port":     true,
+		"as":       true,
+	}
 )
 
 func main() {
@@ -269,11 +286,25 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 }
 
 func elmTypeName(in string) string {
-	return camelCase(in)
+	n := camelCase(in)
+	// Avoid collisions with reserved keywords by appending a single underscore after the name.
+	// This does not guarantee that collisions are avoided, but makes them less likely to
+	// happen.
+	if reservedKeywords[n] {
+		n += "_"
+	}
+	return n
 }
 
 func elmFieldName(in string) string {
-	return firstLower(camelCase(in))
+	n := firstLower(camelCase(in))
+	// Avoid collisions with reserved keywords by appending a single underscore after the name.
+	// This does not guarantee that collisions are avoided, but makes them less likely to
+	// happen.
+	if reservedKeywords[n] {
+		n += "_"
+	}
+	return n
 }
 
 func elmEnumValueName(in string) string {

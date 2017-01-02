@@ -53,3 +53,20 @@ message Wrappers {
   google.protobuf.StringValue string_value_field = 8;
   google.protobuf.BytesValue bytes_value_field = 9;
 }
+
+message Keywords {
+  int32 module = 1;
+  int32 exposing = 2;
+  int32 import = 3;
+  int32 type = 4;
+  int32 let = 5;
+  int32 in = 6;
+  int32 if = 7;
+  int32 then = 8;
+  int32 else = 9;
+  int32 where = 10;
+  int32 case = 11;
+  int32 of = 12;
+  int32 port = 13;
+  int32 as = 14;
+}
