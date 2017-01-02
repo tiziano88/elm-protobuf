@@ -31,6 +31,9 @@ suite =
         , test "JSON encode empty message" <| \_ -> equal emptyJson (JE.encode 2 (T.fooEncoder fooDefault))
         , test "JSON decode empty JSON" <| \_ -> assertDecode T.simpleDecoder emptyJson msgDefault
         , test "JSON encode message with repeated field" <| \_ -> equal (JE.encode 2 (T.fooEncoder foo)) fooJson
+          -- TODO: Should fail.
+        , test "JSON decode wrong type" <| \_ -> assertDecode T.simpleDecoder wrongTypeJson msgDefault
+        , test "JSON decode null" <| \_ -> assertDecode T.simpleDecoder nullJson msgDefault
         , describe "oneof"
             [ test "encode" <| \_ -> equal fooJson (JE.encode 2 (T.fooEncoder foo))
             , test "decode empty JSON" <| \_ -> assertDecode T.fooDecoder emptyJson fooDefault
@@ -194,6 +197,24 @@ fooJson =
     "stringField": "yyy"
   },
   "oo1": 1
+}
+"""
+
+
+nullJson : String
+nullJson =
+    String.trim """
+{
+  "singleIntField": null
+}
+"""
+
+
+wrongTypeJson : String
+wrongTypeJson =
+    String.trim """
+{
+  "singleIntField": "invalid-value"
 }
 """
 
