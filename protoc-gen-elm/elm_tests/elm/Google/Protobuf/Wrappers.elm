@@ -156,7 +156,7 @@ stringValueEncoder v =
 
 
 type alias BytesValue =
-    { value : (List Int) -- 1
+    { value : Bytes -- 1
     }
 
 

@@ -94,7 +94,7 @@ type alias Foo =
     , colours : List Colour -- 4
     , singleIntField : Int -- 5
     , repeatedIntField : List Int -- 6
-    , bytesField : (List Int) -- 9
+    , bytesField : Bytes -- 9
     , stringValueField : Maybe StringValue -- 10
     , otherField : Maybe Other -- 11
     , otherDirField : Maybe OtherDir -- 12

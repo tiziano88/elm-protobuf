@@ -200,7 +200,7 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
 		return messageName
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		// XXX
-		return "(List Int)"
+		return "Bytes"
 	default:
 		// TODO: Return error.
 		return fmt.Sprintf("Error generating type for field %q %s", inField.GetName(), inField.GetType())

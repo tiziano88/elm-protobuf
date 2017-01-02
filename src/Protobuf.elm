@@ -7,13 +7,17 @@ Buffer compiler](https://github.com/tiziano88/elm-protobuf).
 
 # Decoder Helpers
 
-@docs decode, required, optional, repeated, field, bytesFieldDecoder
+@docs decode, required, optional, repeated, field
 
 @docs withDefault
 
 # Encoder Helpers
 
-@docs requiredFieldEncoder, optionalEncoder, repeatedFieldEncoder, bytesFieldEncoder
+@docs requiredFieldEncoder, optionalEncoder, repeatedFieldEncoder
+
+# Bytes
+
+@docs Bytes, bytesFieldDecoder, bytesFieldEncoder
 
 # Well Known Types
 
@@ -105,10 +109,16 @@ repeatedFieldEncoder name encoder v =
             Just ( name, JE.list <| List.map encoder v )
 
 
+{-| Bytes field.
+-}
+type alias Bytes =
+    List Int
+
+
 {-| Decodes a bytes field.
 TODO: Implement.
 -}
-bytesFieldDecoder : JD.Decoder (List Int)
+bytesFieldDecoder : JD.Decoder Bytes
 bytesFieldDecoder =
     JD.succeed []
 
@@ -116,7 +126,7 @@ bytesFieldDecoder =
 {-| Encodes a bytes field.
 TODO: Implement.
 -}
-bytesFieldEncoder : List Int -> JE.Value
+bytesFieldEncoder : Bytes -> JE.Value
 bytesFieldEncoder v =
     JE.list []
 
