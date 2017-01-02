@@ -64,6 +64,9 @@ var (
 		".google.protobuf.BoolValue":   "boolValueEncoder",
 	}
 
+	// Avoid collisions with reserved keywords by appending a single underscore after the name.
+	// This does not guarantee that collisions are avoided, but makes them less likely to
+	// happen.
 	reservedKeywords = map[string]bool{
 		"module":   true,
 		"exposing": true,
@@ -287,9 +290,6 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 
 func elmTypeName(in string) string {
 	n := camelCase(in)
-	// Avoid collisions with reserved keywords by appending a single underscore after the name.
-	// This does not guarantee that collisions are avoided, but makes them less likely to
-	// happen.
 	if reservedKeywords[n] {
 		n += "_"
 	}
@@ -298,9 +298,6 @@ func elmTypeName(in string) string {
 
 func elmFieldName(in string) string {
 	n := firstLower(camelCase(in))
-	// Avoid collisions with reserved keywords by appending a single underscore after the name.
-	// This does not guarantee that collisions are avoided, but makes them less likely to
-	// happen.
 	if reservedKeywords[n] {
 		n += "_"
 	}
