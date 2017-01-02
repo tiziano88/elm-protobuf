@@ -172,3 +172,43 @@ intValueDecoder =
 intValueEncoder : Int -> JE.Value
 intValueEncoder =
     JE.int
+
+
+stringValueDecoder : JD.Decoder String
+stringValueDecoder =
+    JD.string
+
+
+stringValueEncoder : String -> JE.Value
+stringValueEncoder =
+    JE.string
+
+
+boolValueDecoder : JD.Decoder Bool
+boolValueDecoder =
+    JD.bool
+
+
+boolValueEncoder : Bool -> JE.Value
+boolValueEncoder =
+    JE.bool
+
+
+bytesValueDecoder : JD.Decoder Bytes
+bytesValueDecoder =
+    bytesFieldDecoder
+
+
+bytesValueEncoder : Bytes -> JE.Value
+bytesValueEncoder =
+    bytesFieldEncoder
+
+
+floatValueDecoder : JD.Decoder Float
+floatValueDecoder =
+    JD.float
+
+
+floatValueEncoder : Float -> JE.Value
+floatValueEncoder =
+    JE.float

@@ -9,7 +9,6 @@ import Protobuf exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
-import Google.Protobuf.Wrappers exposing (..)
 import Dir.Other_dir exposing (..)
 import Other exposing (..)
 
@@ -95,7 +94,7 @@ type alias Foo =
     , singleIntField : Int -- 5
     , repeatedIntField : List Int -- 6
     , bytesField : Bytes -- 9
-    , stringValueField : Maybe StringValue -- 10
+    , stringValueField : Maybe String -- 10
     , otherField : Maybe Other -- 11
     , otherDirField : Maybe OtherDir -- 12
     , timestampField : Maybe Timestamp -- 13
@@ -169,11 +168,11 @@ type alias Wrappers =
     , int64ValueField : Maybe Int -- 2
     , uInt32ValueField : Maybe Int -- 3
     , uInt64ValueField : Maybe Int -- 4
-    , doubleValueField : Maybe DoubleValue -- 5
-    , floatValueField : Maybe FloatValue -- 6
-    , boolValueField : Maybe BoolValue -- 7
-    , stringValueField : Maybe StringValue -- 8
-    , bytesValueField : Maybe BytesValue -- 9
+    , doubleValueField : Maybe Float -- 5
+    , floatValueField : Maybe Float -- 6
+    , boolValueField : Maybe Bool -- 7
+    , stringValueField : Maybe String -- 8
+    , bytesValueField : Maybe Bytes -- 9
     }
 
 
@@ -184,7 +183,7 @@ wrappersDecoder =
         |> optional "int64ValueField" intValueDecoder
         |> optional "uInt32ValueField" intValueDecoder
         |> optional "uInt64ValueField" intValueDecoder
-        |> optional "doubleValueField" doubleValueDecoder
+        |> optional "doubleValueField" floatValueDecoder
         |> optional "floatValueField" floatValueDecoder
         |> optional "boolValueField" boolValueDecoder
         |> optional "stringValueField" stringValueDecoder
@@ -198,7 +197,7 @@ wrappersEncoder v =
         , (optionalEncoder "int64ValueField" intValueEncoder v.int64ValueField)
         , (optionalEncoder "uInt32ValueField" intValueEncoder v.uInt32ValueField)
         , (optionalEncoder "uInt64ValueField" intValueEncoder v.uInt64ValueField)
-        , (optionalEncoder "doubleValueField" doubleValueEncoder v.doubleValueField)
+        , (optionalEncoder "doubleValueField" floatValueEncoder v.doubleValueField)
         , (optionalEncoder "floatValueField" floatValueEncoder v.floatValueField)
         , (optionalEncoder "boolValueField" boolValueEncoder v.boolValueField)
         , (optionalEncoder "stringValueField" stringValueEncoder v.stringValueField)

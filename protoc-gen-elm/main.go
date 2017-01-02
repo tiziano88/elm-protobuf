@@ -25,6 +25,7 @@ var (
 	// Well Known Types.
 	excludedFiles = map[string]bool{
 		"google/protobuf/timestamp.proto": true,
+		"google/protobuf/wrappers.proto":  true,
 	}
 	excludedTypes = map[string]string{
 		".google.protobuf.Timestamp":   "Timestamp",
@@ -32,6 +33,11 @@ var (
 		".google.protobuf.Int64Value":  "Int",
 		".google.protobuf.UInt32Value": "Int",
 		".google.protobuf.UInt64Value": "Int",
+		".google.protobuf.DoubleValue": "Float",
+		".google.protobuf.FloatValue":  "Float",
+		".google.protobuf.StringValue": "String",
+		".google.protobuf.BytesValue":  "Bytes",
+		".google.protobuf.BoolValue":   "Bool",
 	}
 	excludedDecoders = map[string]string{
 		".google.protobuf.Timestamp":   "timestampDecoder",
@@ -39,6 +45,11 @@ var (
 		".google.protobuf.Int64Value":  "intValueDecoder",
 		".google.protobuf.UInt32Value": "intValueDecoder",
 		".google.protobuf.UInt64Value": "intValueDecoder",
+		".google.protobuf.DoubleValue": "floatValueDecoder",
+		".google.protobuf.FloatValue":  "floatValueDecoder",
+		".google.protobuf.StringValue": "stringValueDecoder",
+		".google.protobuf.BytesValue":  "bytesValueDecoder",
+		".google.protobuf.BoolValue":   "boolValueDecoder",
 	}
 	excludedEncoders = map[string]string{
 		".google.protobuf.Timestamp":   "timestampEncoder",
@@ -46,6 +57,11 @@ var (
 		".google.protobuf.Int64Value":  "intValueEncoder",
 		".google.protobuf.UInt32Value": "intValueEncoder",
 		".google.protobuf.UInt64Value": "intValueEncoder",
+		".google.protobuf.DoubleValue": "floatValueEncoder",
+		".google.protobuf.FloatValue":  "floatValueEncoder",
+		".google.protobuf.StringValue": "stringValueEncoder",
+		".google.protobuf.BytesValue":  "bytesValueEncoder",
+		".google.protobuf.BoolValue":   "boolValueEncoder",
 	}
 )
 
