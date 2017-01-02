@@ -38,14 +38,18 @@ suite =
         , test "JSON decode null" <| \_ -> assertDecode T.simpleDecoder nullJson msgDefault
         , describe "oneof"
             [ test "encode" <| \_ -> equal fooJson (JE.encode 2 (T.fooEncoder foo))
-            , test "decode empty JSON" <| \_ -> assertDecode T.fooDecoder emptyJson fooDefault
-            , test "decode oo1" <| \_ -> assertDecode T.fooDecoder oo1SetJson oo1Set
-            , test "decode oo2" <| \_ -> assertDecode T.fooDecoder oo2SetJson oo2Set
+            , describe "decode"
+                [ test "empty JSON" <| \_ -> assertDecode T.fooDecoder emptyJson fooDefault
+                , test "oo1" <| \_ -> assertDecode T.fooDecoder oo1SetJson oo1Set
+                , test "oo2" <| \_ -> assertDecode T.fooDecoder oo2SetJson oo2Set
+                ]
             ]
         , describe "recursion"
             [ test "decode empty JSON" <| \_ -> assertDecode R.recDecoder emptyJson recDefault
-            , test "decode 1-level JSON" <| \_ -> assertDecode R.recDecoder recJson1 rec1
-            , test "decode 2-level JSON" <| \_ -> assertDecode R.recDecoder recJson2 rec2
+            , describe "decode"
+                [ test "1-level JSON" <| \_ -> assertDecode R.recDecoder recJson1 rec1
+                , test "2-level JSON" <| \_ -> assertDecode R.recDecoder recJson2 rec2
+                ]
             ]
         , describe "timestamp"
             [ test "encode" <| \_ -> equal timestampJson (JE.encode 2 (T.fooEncoder timestampFoo))
@@ -54,9 +58,11 @@ suite =
         , describe "wrappers"
             -- TODO: Preserve nulls.
             [ test "encodeEmpty" <| \_ -> equal wrappersJsonEmpty (JE.encode 2 (W.wrappersEncoder wrappersEmpty))
-            , test "decodeEmpty" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonEmpty wrappersEmpty
-            , test "decodeZero" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonZero wrappersZero
-            , test "decodeSet" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonSet wrappersSet
+            , describe "decode"
+                [ test "decodeEmpty" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonEmpty wrappersEmpty
+                , test "decodeZero" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonZero wrappersZero
+                , test "decodeSet" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonSet wrappersSet
+                ]
             ]
         ]
 
