@@ -9,6 +9,8 @@ import Test exposing (..)
 import Test.Runner.Node exposing (run, TestProgram)
 import Expect exposing (..)
 import Simple as T
+import Wrappers as W
+import Keywords as K
 import Recursive as R
 import Protobuf exposing (..)
 import ISO8601
@@ -51,10 +53,10 @@ suite =
             ]
         , describe "wrappers"
             -- TODO: Preserve nulls.
-            [ test "encodeEmpty" <| \_ -> equal wrappersJsonEmpty (JE.encode 2 (T.wrappersEncoder wrappersEmpty))
-            , test "decodeEmpty" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonEmpty wrappersEmpty
-            , test "decodeZero" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonZero wrappersZero
-            , test "decodeSet" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonSet wrappersSet
+            [ test "encodeEmpty" <| \_ -> equal wrappersJsonEmpty (JE.encode 2 (W.wrappersEncoder wrappersEmpty))
+            , test "decodeEmpty" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonEmpty wrappersEmpty
+            , test "decodeZero" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonZero wrappersZero
+            , test "decodeSet" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonSet wrappersSet
             ]
         ]
 
@@ -345,7 +347,7 @@ wrappersJsonNull =
 """
 
 
-wrappersEmpty : T.Wrappers
+wrappersEmpty : W.Wrappers
 wrappersEmpty =
     { int32ValueField = Nothing
     , int64ValueField = Nothing
@@ -376,7 +378,7 @@ wrappersJsonZero =
 """
 
 
-wrappersZero : T.Wrappers
+wrappersZero : W.Wrappers
 wrappersZero =
     { int32ValueField = Just 0
     , int64ValueField = Just 0
@@ -407,7 +409,7 @@ wrappersJsonSet =
 """
 
 
-wrappersSet : T.Wrappers
+wrappersSet : W.Wrappers
 wrappersSet =
     { int32ValueField = Just 111
     , int64ValueField = Just 222
