@@ -26,6 +26,15 @@ var (
 	excludedFiles = map[string]bool{
 		"google/protobuf/timestamp.proto": true,
 	}
+	excludedTypes = map[string]string{
+		".google.protobuf.Timestamp": "Timestamp",
+	}
+	excludedDecoders = map[string]string{
+		".google.protobuf.Timestamp": "timestampDecoder",
+	}
+	excludedEncoders = map[string]string{
+		".google.protobuf.Timestamp": "timestampEncoder",
+	}
 )
 
 func main() {

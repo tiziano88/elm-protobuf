@@ -193,13 +193,11 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE,
 		descriptor.FieldDescriptorProto_TYPE_ENUM:
 		// Well known types.
-		switch inField.GetTypeName() {
-		case ".google.protobuf.Timestamp":
-			return "Timestamp"
-		default:
-			_, messageName := convert(inField.GetTypeName())
-			return messageName
+		if n, ok := excludedTypes[inField.GetTypeName()]; ok {
+			return n
 		}
+		_, messageName := convert(inField.GetTypeName())
+		return messageName
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		// XXX
 		return "(List Int)"
@@ -236,7 +234,10 @@ func fieldEncoderName(inField *descriptor.FieldDescriptorProto) string {
 		_, messageName := convert(inField.GetTypeName())
 		return encoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		// Remove leading ".".
+		// Well Known Types.
+		if n, ok := excludedEncoders[inField.GetTypeName()]; ok {
+			return n
+		}
 		_, messageName := convert(inField.GetTypeName())
 		return encoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
@@ -274,13 +275,11 @@ func fieldDecoderName(inField *descriptor.FieldDescriptorProto) string {
 		return decoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		// Well Known Types.
-		switch inField.GetTypeName() {
-		case ".google.protobuf.Timestamp":
-			return "timestampDecoder"
-		default:
-			_, messageName := convert(inField.GetTypeName())
-			return decoderName(messageName)
+		if n, ok := excludedDecoders[inField.GetTypeName()]; ok {
+			return n
 		}
+		_, messageName := convert(inField.GetTypeName())
+		return decoderName(messageName)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		return "bytesFieldDecoder"
 	default:
