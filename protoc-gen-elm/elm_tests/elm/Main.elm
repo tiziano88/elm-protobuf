@@ -46,6 +46,10 @@ suite =
             [ test "encode" <| \_ -> equal timestampJson (JE.encode 2 (T.fooEncoder timestampFoo))
             , test "decode" <| \_ -> assertDecode T.fooDecoder timestampJson timestampFoo
             ]
+        , describe "wrappers"
+            [ test "encode" <| \_ -> equal wrappersJsonEmpty (JE.encode 2 (T.wrappersEncoder wrappersEmpty))
+            , test "decode" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonEmpty wrappersEmpty
+            ]
         ]
 
 
@@ -290,4 +294,59 @@ timestampFoo =
     { fooDefault
         | timestampField =
             Just <| ISO8601.fromTime 598065825678
+    }
+
+
+wrappersJsonEmpty : String
+wrappersJsonEmpty =
+    String.trim """
+{}
+"""
+
+
+wrappersJsonNull : String
+wrappersJsonNull =
+    String.trim """
+{
+  "int32ValueField": null,
+  "int64ValueField": null,
+  "uInt32ValueField": null,
+  "uInt64ValueField": null,
+  "doubleValueField": null,
+  "floatValueField": null,
+  "boolValueField": null,
+  "stringValueField": null,
+  "bytesValueField": null
+}
+"""
+
+
+wrappersJsonSet : String
+wrappersJsonSet =
+    String.trim """
+{
+  "int32ValueField": "111",
+  "int64ValueField": "222",
+  "uInt32ValueField": "333",
+  "uInt64ValueField": "444",
+  "doubleValueField": "5.5",
+  "floatValueField": "6.6",
+  "boolValueField": true,
+  "stringValueField": "888",
+  "bytesValueField": []
+}
+"""
+
+
+wrappersEmpty : T.Wrappers
+wrappersEmpty =
+    { int32ValueField = Nothing
+    , int64ValueField = Nothing
+    , uInt32ValueField = Nothing
+    , uInt64ValueField = Nothing
+    , doubleValueField = Nothing
+    , floatValueField = Nothing
+    , boolValueField = Nothing
+    , stringValueField = Nothing
+    , bytesValueField = Nothing
     }

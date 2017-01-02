@@ -162,3 +162,45 @@ fooEncoder v =
         , (optionalEncoder "timestampField" timestampEncoder v.timestampField)
         , (ooEncoder v.oo)
         ]
+
+
+type alias Wrappers =
+    { int32ValueField : Maybe Int32Value -- 1
+    , int64ValueField : Maybe Int64Value -- 2
+    , uInt32ValueField : Maybe UInt32Value -- 3
+    , uInt64ValueField : Maybe UInt64Value -- 4
+    , doubleValueField : Maybe DoubleValue -- 5
+    , floatValueField : Maybe FloatValue -- 6
+    , boolValueField : Maybe BoolValue -- 7
+    , stringValueField : Maybe StringValue -- 8
+    , bytesValueField : Maybe BytesValue -- 9
+    }
+
+
+wrappersDecoder : JD.Decoder Wrappers
+wrappersDecoder =
+    JD.lazy <| \_ -> decode Wrappers
+        |> optional "int32ValueField" int32ValueDecoder
+        |> optional "int64ValueField" int64ValueDecoder
+        |> optional "uInt32ValueField" uInt32ValueDecoder
+        |> optional "uInt64ValueField" uInt64ValueDecoder
+        |> optional "doubleValueField" doubleValueDecoder
+        |> optional "floatValueField" floatValueDecoder
+        |> optional "boolValueField" boolValueDecoder
+        |> optional "stringValueField" stringValueDecoder
+        |> optional "bytesValueField" bytesValueDecoder
+
+
+wrappersEncoder : Wrappers -> JE.Value
+wrappersEncoder v =
+    JE.object <| List.filterMap identity <|
+        [ (optionalEncoder "int32ValueField" int32ValueEncoder v.int32ValueField)
+        , (optionalEncoder "int64ValueField" int64ValueEncoder v.int64ValueField)
+        , (optionalEncoder "uInt32ValueField" uInt32ValueEncoder v.uInt32ValueField)
+        , (optionalEncoder "uInt64ValueField" uInt64ValueEncoder v.uInt64ValueField)
+        , (optionalEncoder "doubleValueField" doubleValueEncoder v.doubleValueField)
+        , (optionalEncoder "floatValueField" floatValueEncoder v.floatValueField)
+        , (optionalEncoder "boolValueField" boolValueEncoder v.boolValueField)
+        , (optionalEncoder "stringValueField" stringValueEncoder v.stringValueField)
+        , (optionalEncoder "bytesValueField" bytesValueEncoder v.bytesValueField)
+        ]
