@@ -350,3 +350,20 @@ wrappersEmpty =
     , stringValueField = Nothing
     , bytesValueField = Nothing
     }
+
+
+
+{-
+   wrappersSet : T.Wrappers
+   wrappersSet =
+       { int32ValueField = Just 111
+       , int64ValueField = Just 222
+       , uInt32ValueField = Just 333
+       , uInt64ValueField = Just 444
+       , doubleValueField = Just 5.5
+       , floatValueField = Just 6.6
+       , boolValueField = Just True
+       , stringValueField = Just "888"
+       , bytesValueField = Just []
+       }
+-}
