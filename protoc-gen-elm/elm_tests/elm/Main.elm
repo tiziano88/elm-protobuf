@@ -39,7 +39,7 @@ suite =
         , describe "oneof"
             [ test "encode" <| \_ -> equal fooJson (JE.encode 2 (T.fooEncoder foo))
             , describe "decode"
-                [ test "empty JSON" <| \_ -> assertDecode T.fooDecoder emptyJson fooDefault
+                [ test "empty" <| \_ -> assertDecode T.fooDecoder emptyJson fooDefault
                 , test "oo1" <| \_ -> assertDecode T.fooDecoder oo1SetJson oo1Set
                 , test "oo2" <| \_ -> assertDecode T.fooDecoder oo2SetJson oo2Set
                 ]
@@ -59,9 +59,9 @@ suite =
             -- TODO: Preserve nulls.
             [ test "encodeEmpty" <| \_ -> equal wrappersJsonEmpty (JE.encode 2 (W.wrappersEncoder wrappersEmpty))
             , describe "decode"
-                [ test "decodeEmpty" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonEmpty wrappersEmpty
-                , test "decodeZero" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonZero wrappersZero
-                , test "decodeSet" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonSet wrappersSet
+                [ test "Empty" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonEmpty wrappersEmpty
+                , test "Zero" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonZero wrappersZero
+                , test "Set" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonSet wrappersSet
                 ]
             ]
         ]
