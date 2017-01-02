@@ -165,10 +165,10 @@ fooEncoder v =
 
 
 type alias Wrappers =
-    { int32ValueField : Maybe Int32Value -- 1
-    , int64ValueField : Maybe Int64Value -- 2
-    , uInt32ValueField : Maybe UInt32Value -- 3
-    , uInt64ValueField : Maybe UInt64Value -- 4
+    { int32ValueField : Maybe Int -- 1
+    , int64ValueField : Maybe Int -- 2
+    , uInt32ValueField : Maybe Int -- 3
+    , uInt64ValueField : Maybe Int -- 4
     , doubleValueField : Maybe DoubleValue -- 5
     , floatValueField : Maybe FloatValue -- 6
     , boolValueField : Maybe BoolValue -- 7
@@ -180,10 +180,10 @@ type alias Wrappers =
 wrappersDecoder : JD.Decoder Wrappers
 wrappersDecoder =
     JD.lazy <| \_ -> decode Wrappers
-        |> optional "int32ValueField" int32ValueDecoder
-        |> optional "int64ValueField" int64ValueDecoder
-        |> optional "uInt32ValueField" uInt32ValueDecoder
-        |> optional "uInt64ValueField" uInt64ValueDecoder
+        |> optional "int32ValueField" intValueDecoder
+        |> optional "int64ValueField" intValueDecoder
+        |> optional "uInt32ValueField" intValueDecoder
+        |> optional "uInt64ValueField" intValueDecoder
         |> optional "doubleValueField" doubleValueDecoder
         |> optional "floatValueField" floatValueDecoder
         |> optional "boolValueField" boolValueDecoder
@@ -194,10 +194,10 @@ wrappersDecoder =
 wrappersEncoder : Wrappers -> JE.Value
 wrappersEncoder v =
     JE.object <| List.filterMap identity <|
-        [ (optionalEncoder "int32ValueField" int32ValueEncoder v.int32ValueField)
-        , (optionalEncoder "int64ValueField" int64ValueEncoder v.int64ValueField)
-        , (optionalEncoder "uInt32ValueField" uInt32ValueEncoder v.uInt32ValueField)
-        , (optionalEncoder "uInt64ValueField" uInt64ValueEncoder v.uInt64ValueField)
+        [ (optionalEncoder "int32ValueField" intValueEncoder v.int32ValueField)
+        , (optionalEncoder "int64ValueField" intValueEncoder v.int64ValueField)
+        , (optionalEncoder "uInt32ValueField" intValueEncoder v.uInt32ValueField)
+        , (optionalEncoder "uInt64ValueField" intValueEncoder v.uInt64ValueField)
         , (optionalEncoder "doubleValueField" doubleValueEncoder v.doubleValueField)
         , (optionalEncoder "floatValueField" floatValueEncoder v.floatValueField)
         , (optionalEncoder "boolValueField" boolValueEncoder v.boolValueField)

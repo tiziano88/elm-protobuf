@@ -27,13 +27,25 @@ var (
 		"google/protobuf/timestamp.proto": true,
 	}
 	excludedTypes = map[string]string{
-		".google.protobuf.Timestamp": "Timestamp",
+		".google.protobuf.Timestamp":   "Timestamp",
+		".google.protobuf.Int32Value":  "Int",
+		".google.protobuf.Int64Value":  "Int",
+		".google.protobuf.UInt32Value": "Int",
+		".google.protobuf.UInt64Value": "Int",
 	}
 	excludedDecoders = map[string]string{
-		".google.protobuf.Timestamp": "timestampDecoder",
+		".google.protobuf.Timestamp":   "timestampDecoder",
+		".google.protobuf.Int32Value":  "intValueDecoder",
+		".google.protobuf.Int64Value":  "intValueDecoder",
+		".google.protobuf.UInt32Value": "intValueDecoder",
+		".google.protobuf.UInt64Value": "intValueDecoder",
 	}
 	excludedEncoders = map[string]string{
-		".google.protobuf.Timestamp": "timestampEncoder",
+		".google.protobuf.Timestamp":   "timestampEncoder",
+		".google.protobuf.Int32Value":  "intValueEncoder",
+		".google.protobuf.Int64Value":  "intValueEncoder",
+		".google.protobuf.UInt32Value": "intValueEncoder",
+		".google.protobuf.UInt64Value": "intValueEncoder",
 	}
 )
 

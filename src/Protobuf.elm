@@ -162,3 +162,13 @@ timestampDecoder =
 timestampEncoder : Timestamp -> JE.Value
 timestampEncoder v =
     JE.string <| ISO8601.toString v
+
+
+intValueDecoder : JD.Decoder Int
+intValueDecoder =
+    JD.int
+
+
+intValueEncoder : Int -> JE.Value
+intValueEncoder =
+    JE.int

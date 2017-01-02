@@ -47,7 +47,8 @@ suite =
             , test "decode" <| \_ -> assertDecode T.fooDecoder timestampJson timestampFoo
             ]
         , describe "wrappers"
-            [ test "encode" <| \_ -> equal wrappersJsonEmpty (JE.encode 2 (T.wrappersEncoder wrappersEmpty))
+            -- TODO: Preserve nulls.
+            [ test "encodeEmpty" <| \_ -> equal wrappersJsonEmpty (JE.encode 2 (T.wrappersEncoder wrappersEmpty))
             , test "decode" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonEmpty wrappersEmpty
             ]
         ]
@@ -328,12 +329,7 @@ wrappersJsonSet =
   "int32ValueField": "111",
   "int64ValueField": "222",
   "uInt32ValueField": "333",
-  "uInt64ValueField": "444",
-  "doubleValueField": "5.5",
-  "floatValueField": "6.6",
-  "boolValueField": true,
-  "stringValueField": "888",
-  "bytesValueField": []
+  "uInt64ValueField": "444"
 }
 """
 
@@ -352,18 +348,15 @@ wrappersEmpty =
     }
 
 
-
-{-
-   wrappersSet : T.Wrappers
-   wrappersSet =
-       { int32ValueField = Just 111
-       , int64ValueField = Just 222
-       , uInt32ValueField = Just 333
-       , uInt64ValueField = Just 444
-       , doubleValueField = Just 5.5
-       , floatValueField = Just 6.6
-       , boolValueField = Just True
-       , stringValueField = Just "888"
-       , bytesValueField = Just []
-       }
--}
+wrappersSet : T.Wrappers
+wrappersSet =
+    { int32ValueField = Just 111
+    , int64ValueField = Just 222
+    , uInt32ValueField = Just 333
+    , uInt64ValueField = Just 444
+    , doubleValueField = Nothing
+    , floatValueField = Nothing
+    , boolValueField = Nothing
+    , stringValueField = Nothing
+    , bytesValueField = Nothing
+    }
