@@ -52,7 +52,9 @@ suite =
         , describe "wrappers"
             -- TODO: Preserve nulls.
             [ test "encodeEmpty" <| \_ -> equal wrappersJsonEmpty (JE.encode 2 (T.wrappersEncoder wrappersEmpty))
-            , test "decode" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonEmpty wrappersEmpty
+            , test "decodeEmpty" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonEmpty wrappersEmpty
+            , test "decodeZero" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonZero wrappersZero
+            , test "decodeSet" <| \_ -> assertDecode T.wrappersDecoder wrappersJsonSet wrappersSet
             ]
         ]
 
@@ -343,18 +345,6 @@ wrappersJsonNull =
 """
 
 
-wrappersJsonSet : String
-wrappersJsonSet =
-    String.trim """
-{
-  "int32ValueField": "111",
-  "int64ValueField": "222",
-  "uInt32ValueField": "333",
-  "uInt64ValueField": "444"
-}
-"""
-
-
 wrappersEmpty : T.Wrappers
 wrappersEmpty =
     { int32ValueField = Nothing
@@ -369,15 +359,63 @@ wrappersEmpty =
     }
 
 
+wrappersJsonZero : String
+wrappersJsonZero =
+    String.trim """
+{
+  "int32ValueField": 0,
+  "int64ValueField": 0,
+  "uInt32ValueField": 0,
+  "uInt64ValueField": 0,
+  "doubleValueField": 0.0,
+  "floatValueField": 0.0,
+  "boolValueField": false,
+  "stringValueField" : "",
+  "bytesValueField" : ""
+}
+"""
+
+
+wrappersZero : T.Wrappers
+wrappersZero =
+    { int32ValueField = Just 0
+    , int64ValueField = Just 0
+    , uInt32ValueField = Just 0
+    , uInt64ValueField = Just 0
+    , doubleValueField = Just 0.0
+    , floatValueField = Just 0.0
+    , boolValueField = Just False
+    , stringValueField = Just ""
+    , bytesValueField = Just []
+    }
+
+
+wrappersJsonSet : String
+wrappersJsonSet =
+    String.trim """
+{
+  "int32ValueField": 111,
+  "int64ValueField": 222,
+  "uInt32ValueField": 333,
+  "uInt64ValueField": 444,
+  "doubleValueField": 5.5,
+  "floatValueField": 6.6,
+  "boolValueField": true,
+  "stringValueField" : "888",
+  "bytesValueField" : ""
+}
+"""
+
+
 wrappersSet : T.Wrappers
 wrappersSet =
     { int32ValueField = Just 111
     , int64ValueField = Just 222
     , uInt32ValueField = Just 333
     , uInt64ValueField = Just 444
-    , doubleValueField = Nothing
-    , floatValueField = Nothing
-    , boolValueField = Nothing
-    , stringValueField = Nothing
-    , bytesValueField = Nothing
+    , doubleValueField = Just 5.5
+    , floatValueField = Just 6.6
+    , boolValueField = Just True
+    , stringValueField = Just "888"
+    , bytesValueField = Just []
     }
