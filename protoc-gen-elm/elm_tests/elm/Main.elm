@@ -3,10 +3,12 @@ port module Main exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import Date
+import Fuzzer as F
 import Result
 import String
 import Task
 import Test exposing (..)
+import Fuzz exposing (..)
 import Test.Runner.Node exposing (run, TestProgram)
 import Expect exposing (..)
 import Simple as T
@@ -66,7 +68,9 @@ suite =
                 ]
             ]
         , describe "encode / decode"
-            [ test "foo" <| \_ -> assertEncodeDecode T.fooEncoder T.fooDecoder timestampFoo ]
+            [ fuzz3 string int int "fuzzer" <|
+                \s i1 i2 -> assertEncodeDecode F.fuzzEncoder F.fuzzDecoder <| genFuzz s i1 i2
+            ]
         ]
 
 
@@ -87,6 +91,14 @@ assertEncodeDecode encoder decoder msg =
             JD.decodeString decoder encoded
     in
         equal (Ok msg) decoded
+
+
+genFuzz : String -> Int -> Int -> F.Fuzz
+genFuzz s i1 i2 =
+    { stringField = s
+    , int32Field = i1
+    , int64Field = i2
+    }
 
 
 msg : T.Simple

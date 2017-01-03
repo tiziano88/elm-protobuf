@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message Fuzz {
+  string string_field = 1;
+  int32 int_32_field = 2;
+  int64 int_64_field = 3;
+}
