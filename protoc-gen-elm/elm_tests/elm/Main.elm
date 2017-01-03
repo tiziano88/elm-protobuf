@@ -2,6 +2,7 @@ port module Main exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
+import Date
 import Result
 import String
 import Task
@@ -325,7 +326,7 @@ timestampFoo : T.Foo
 timestampFoo =
     { fooDefault
         | timestampField =
-            Just <| ISO8601.fromTime 598065825678
+            Result.toMaybe <| Date.fromString "1988-12-14T01:23:45.678Z"
     }
 
 

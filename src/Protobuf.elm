@@ -25,6 +25,8 @@ Buffer compiler](https://github.com/tiziano88/elm-protobuf).
 
 -}
 
+import Date
+import Time
 import Json.Decode as JD
 import Json.Encode as JE
 import ISO8601
@@ -138,7 +140,7 @@ bytesFieldEncoder v =
 {-| Timestamp.
 -}
 type alias Timestamp =
-    ISO8601.Time
+    Date.Date
 
 
 {-| Decodes a Timestamp.
@@ -150,7 +152,7 @@ timestampDecoder =
             (\v ->
                 case v of
                     Ok v ->
-                        JD.succeed v
+                        JD.succeed <| Date.fromTime <| Time.millisecond * (toFloat (ISO8601.toTime v))
 
                     Err e ->
                         JD.fail e
@@ -161,7 +163,7 @@ timestampDecoder =
 -}
 timestampEncoder : Timestamp -> JE.Value
 timestampEncoder v =
-    JE.string <| ISO8601.toString v
+    JE.string <| ISO8601.toString <| ISO8601.fromTime <| round <| Time.inMilliseconds <| Date.toTime <| v
 
 
 intValueDecoder : JD.Decoder Int
