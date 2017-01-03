@@ -65,6 +65,8 @@ suite =
                 , test "Set" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonSet wrappersSet
                 ]
             ]
+        , describe "encode / decode"
+            [ test "foo" <| \_ -> assertEncodeDecode T.fooEncoder T.fooDecoder timestampFoo ]
         ]
 
 
@@ -73,6 +75,18 @@ assertDecode decoder json msg =
     equal
         (JD.decodeString decoder json)
         (Result.Ok msg)
+
+
+assertEncodeDecode : (a -> JE.Value) -> JD.Decoder a -> a -> Expectation
+assertEncodeDecode encoder decoder msg =
+    let
+        encoded =
+            JE.encode 2 (encoder msg)
+
+        decoded =
+            JD.decodeString decoder encoded
+    in
+        equal (Ok msg) decoded
 
 
 msg : T.Simple
