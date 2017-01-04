@@ -30,41 +30,41 @@ port emit : ( String, JE.Value ) -> Cmd msg
 suite : Test
 suite =
     describe "JSON"
-        [ test "JSON encode" <| \_ -> JE.encode 2 (T.simpleEncoder msg) |> equal msgJson
-        , test "JSON decode" <| \_ -> assertDecode T.simpleDecoder msgJson msg
-        , test "JSON decode extra field" <| \_ -> assertDecode T.simpleDecoder msgExtraFieldJson msg
-        , test "JSON encode empty message" <| \_ -> (JE.encode 2 (T.fooEncoder fooDefault)) |> equal emptyJson
-        , test "JSON decode empty JSON" <| \_ -> assertDecode T.simpleDecoder emptyJson msgDefault
-        , test "JSON encode message with repeated field" <| \_ -> (JE.encode 2 (T.fooEncoder foo)) |> equal fooJson
+        [ test "JSON encode" <| \() -> encode T.simpleEncoder msg |> equal msgJson
+        , test "JSON decode" <| \() -> decode T.simpleDecoder msgJson |> equal (Ok msg)
+        , test "JSON decode extra field" <| \() -> decode T.simpleDecoder msgExtraFieldJson |> equal (Ok msg)
+        , test "JSON encode empty message" <| \() -> encode T.fooEncoder fooDefault |> equal emptyJson
+        , test "JSON decode empty JSON" <| \() -> decode T.simpleDecoder emptyJson |> equal (Ok msgDefault)
+        , test "JSON encode message with repeated field" <| \_ -> encode T.fooEncoder foo |> equal fooJson
           -- TODO: Should fail.
-        , test "JSON decode wrong type" <| \_ -> assertDecode T.simpleDecoder wrongTypeJson msgDefault
-        , test "JSON decode null" <| \_ -> assertDecode T.simpleDecoder nullJson msgDefault
+        , test "JSON decode wrong type" <| \() -> decode T.simpleDecoder wrongTypeJson |> equal (Ok msgDefault)
+        , test "JSON decode null" <| \() -> decode T.simpleDecoder nullJson |> equal (Ok msgDefault)
         , describe "oneof"
-            [ test "encode" <| \_ -> JE.encode 2 (T.fooEncoder foo) |> equal fooJson
+            [ test "encode" <| \() -> encode T.fooEncoder foo |> equal fooJson
             , describe "decode"
-                [ test "empty" <| \_ -> assertDecode T.fooDecoder emptyJson fooDefault
-                , test "oo1" <| \_ -> assertDecode T.fooDecoder oo1SetJson oo1Set
-                , test "oo2" <| \_ -> assertDecode T.fooDecoder oo2SetJson oo2Set
+                [ test "empty" <| \() -> decode T.fooDecoder emptyJson |> equal (Ok fooDefault)
+                , test "oo1" <| \() -> decode T.fooDecoder oo1SetJson |> equal (Ok oo1Set)
+                , test "oo2" <| \() -> decode T.fooDecoder oo2SetJson |> equal (Ok oo2Set)
                 ]
             ]
         , describe "recursion"
-            [ test "decode empty JSON" <| \_ -> assertDecode R.recDecoder emptyJson recDefault
+            [ test "decode empty JSON" <| \() -> decode R.recDecoder emptyJson |> equal (Ok recDefault)
             , describe "decode"
-                [ test "1-level JSON" <| \_ -> assertDecode R.recDecoder recJson1 rec1
-                , test "2-level JSON" <| \_ -> assertDecode R.recDecoder recJson2 rec2
+                [ test "1-level JSON" <| \() -> decode R.recDecoder recJson1 |> equal (Ok rec1)
+                , test "2-level JSON" <| \() -> decode R.recDecoder recJson2 |> equal (Ok rec2)
                 ]
             ]
         , describe "timestamp"
-            [ test "encode" <| \_ -> JE.encode 2 (T.fooEncoder timestampFoo) |> equal timestampJson
-            , test "decode" <| \_ -> assertDecode T.fooDecoder timestampJson timestampFoo
+            [ test "encode" <| \() -> encode T.fooEncoder timestampFoo |> equal timestampJson
+            , test "decode" <| \() -> decode T.fooDecoder timestampJson |> equal (Ok timestampFoo)
             ]
         , describe "wrappers"
             -- TODO: Preserve nulls.
-            [ test "encodeEmpty" <| \_ -> JE.encode 2 (W.wrappersEncoder wrappersEmpty) |> equal wrappersJsonEmpty
+            [ test "encodeEmpty" <| \() -> encode W.wrappersEncoder wrappersEmpty |> equal wrappersJsonEmpty
             , describe "decode"
-                [ test "Empty" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonEmpty wrappersEmpty
-                , test "Zero" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonZero wrappersZero
-                , test "Set" <| \_ -> assertDecode W.wrappersDecoder wrappersJsonSet wrappersSet
+                [ test "Empty" <| \() -> decode W.wrappersDecoder wrappersJsonEmpty |> equal (Ok wrappersEmpty)
+                , test "Zero" <| \() -> decode W.wrappersDecoder wrappersJsonZero |> equal (Ok wrappersZero)
+                , test "Set" <| \() -> decode W.wrappersDecoder wrappersJsonSet |> equal (Ok wrappersSet)
                 ]
             ]
         , describe "encode / decode"
@@ -74,21 +74,24 @@ suite =
         ]
 
 
-assertDecode : JD.Decoder a -> String -> a -> Expectation
-assertDecode decoder json msg =
-    equal
-        (JD.decodeString decoder json)
-        (Result.Ok msg)
+encode : (a -> JE.Value) -> a -> String
+encode encoder msg =
+    JE.encode 2 (encoder msg)
+
+
+decode : JD.Decoder a -> String -> Result String a
+decode decoder json =
+    JD.decodeString decoder json
 
 
 assertEncodeDecode : (a -> JE.Value) -> JD.Decoder a -> a -> Expectation
 assertEncodeDecode encoder decoder msg =
     let
         encoded =
-            JE.encode 2 (encoder msg)
+            encode encoder msg
 
         decoded =
-            JD.decodeString decoder encoded
+            decode decoder encoded
     in
         decoded |> equal (Ok msg)
 
