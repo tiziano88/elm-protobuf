@@ -1,7 +1,12 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
 message Fuzz {
   string string_field = 1;
   int32 int_32_field = 2;
-  int64 int_64_field = 3;
+  google.protobuf.StringValue string_value_field = 3;
+  google.protobuf.Int32Value int_32_value_field = 4;
+  google.protobuf.Timestamp timestamp_field = 5;
 }

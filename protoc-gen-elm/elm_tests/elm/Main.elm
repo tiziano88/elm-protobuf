@@ -68,10 +68,16 @@ suite =
                 ]
             ]
         , describe "encode / decode"
-            [ fuzz3 string int int "fuzzer" <|
-                \s i1 i2 -> assertEncodeDecode F.fuzzEncoder F.fuzzDecoder <| genFuzz s i1 i2
+            [ fuzz (tuple5 ( string, int, maybe string, maybe int, maybe float )) "fuzzer" <|
+                assertEncodeDecode F.fuzzEncoder F.fuzzDecoder
+                    << genFuzz
             ]
         ]
+
+
+fuzz : Fuzzer a -> String -> (a -> Expectation) -> Test
+fuzz =
+    fuzzWith { runs = 2000 }
 
 
 encode : (a -> JE.Value) -> a -> String
@@ -96,11 +102,13 @@ assertEncodeDecode encoder decoder msg =
         decoded |> equal (Ok msg)
 
 
-genFuzz : String -> Int -> Int -> F.Fuzz
-genFuzz s i1 i2 =
-    { stringField = s
+genFuzz : ( String, Int, Maybe String, Maybe Int, Maybe Float ) -> F.Fuzz
+genFuzz ( s1, i1, s2, i2, t ) =
+    { stringField = s1
     , int32Field = i1
-    , int64Field = i2
+    , stringValueField = s2
+    , int32ValueField = i2
+    , timestampField = Maybe.map Date.fromTime t
     }
 
 
