@@ -23,6 +23,15 @@ Buffer compiler](https://github.com/tiziano88/elm-protobuf).
 
 @docs Timestamp, timestampDecoder, timestampEncoder
 
+@docs intValueDecoder, intValueEncoder
+
+@docs stringValueDecoder, stringValueEncoder
+
+@docs boolValueDecoder, boolValueEncoder
+
+@docs bytesValueDecoder, bytesValueEncoder
+
+@docs floatValueDecoder, floatValueEncoder
 -}
 
 import Date
@@ -166,51 +175,71 @@ timestampEncoder v =
     JE.string <| ISO8601.toString <| ISO8601.fromTime <| round <| Time.inMilliseconds <| Date.toTime <| v
 
 
+{-| Decodes an IntValue.
+-}
 intValueDecoder : JD.Decoder Int
 intValueDecoder =
     JD.int
 
 
+{-| Encodes an IntValue.
+-}
 intValueEncoder : Int -> JE.Value
 intValueEncoder =
     JE.int
 
 
+{-| Decodes a StringValue.
+-}
 stringValueDecoder : JD.Decoder String
 stringValueDecoder =
     JD.string
 
 
+{-| Encodes a StringValue.
+-}
 stringValueEncoder : String -> JE.Value
 stringValueEncoder =
     JE.string
 
 
+{-| Encodes a BoolValue.
+-}
 boolValueDecoder : JD.Decoder Bool
 boolValueDecoder =
     JD.bool
 
 
+{-| Encodes a BoolValue.
+-}
 boolValueEncoder : Bool -> JE.Value
 boolValueEncoder =
     JE.bool
 
 
+{-| Decodes a BytesValue.
+-}
 bytesValueDecoder : JD.Decoder Bytes
 bytesValueDecoder =
     bytesFieldDecoder
 
 
+{-| Encodes a BytesValue.
+-}
 bytesValueEncoder : Bytes -> JE.Value
 bytesValueEncoder =
     bytesFieldEncoder
 
 
+{-| Decodes a FloatValue.
+-}
 floatValueDecoder : JD.Decoder Float
 floatValueDecoder =
     JD.float
 
 
+{-| Encodes a FloatValue.
+-}
 floatValueEncoder : Float -> JE.Value
 floatValueEncoder =
     JE.float

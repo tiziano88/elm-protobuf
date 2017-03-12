@@ -1,5 +1,5 @@
 {
-    "version": "1.0.1",
+    "version": "2.0.0",
     "summary": "Google Protocol Buffers runtime library",
     "repository": "https://github.com/tiziano88/elm-protobuf.git",
     "license": "MIT",
