@@ -5,13 +5,14 @@ set -ex
 readonly ROOT="$(dirname "$0")"
 
 (
-  cd $ROOT/proto
+  cd ${ROOT}/proto
 
-  protoc --elm_out=../elm ./*.proto
+  readonly PROTOC="../../../protoc/bin/protoc"
+  ${PROTOC} --elm_out=../elm ./*.proto
 )
 
 (
-  cd $ROOT/elm
+  cd ${ROOT}/elm
 
   elm-package install -y
 
