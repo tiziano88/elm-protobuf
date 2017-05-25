@@ -7,8 +7,7 @@ readonly ROOT="$(dirname "$0")"
 (
   cd ${ROOT}/proto
 
-  readonly PROTOC="../../../protoc/bin/protoc"
-  ${PROTOC} --elm_out=../elm ./*.proto
+  protoc --elm_out=../elm ./*.proto
 )
 
 (
