@@ -22,6 +22,5 @@ install:
   - npm --version
   - npm install -g elm
   - npm install -g elm-test
-  - (cd ./protoc-gen-elm/elm_tests/elm && elm package install -y)
 
 script: ./run_tests
