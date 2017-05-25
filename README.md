@@ -1,8 +1,6 @@
 # elm-protobuf
 
-[![Build Status]
-(https://travis-ci.org/tiziano88/elm-protobuf.svg?branch=master)]
-(https://travis-ci.org/tiziano88/elm-protobuf)
+[![Build Status](https://travis-ci.org/tiziano88/elm-protobuf.svg?branch=master)](https://travis-ci.org/tiziano88/elm-protobuf)
 
 [Join #elm-protobuf on Slack](https://elmlang.slack.com/messages/elm-protobuf/details/)
 
