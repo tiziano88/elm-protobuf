@@ -12,7 +12,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/golang/protobuf/proto"
-
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
@@ -244,6 +243,25 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 	newPrefix := prefix + inMessage.GetName() + "_"
 	var err error
 
+	if inMessage.Options.GetMapEntry() {
+		if len(inMessage.Field) != 2 {
+			return fmt.Errorf("map entry must have exactly two fields")
+		}
+
+		keyField := inMessage.Field[0]
+		if keyField.GetName() != "key" {
+			return fmt.Errorf("first map entry field must be called `key`")
+		}
+		if keyField.GetType() != descriptor.FieldDescriptorProto_TYPE_STRING {
+			return fmt.Errorf("map key must have type `string`")
+		}
+
+		valueField := inMessage.Field[1]
+		if valueField.GetName() != "value" {
+			return fmt.Errorf("second map entry field must be called `value`")
+		}
+	}
+
 	err = fg.GenerateMessageDefinition(prefix, inMessage)
 	if err != nil {
 		return err
@@ -282,7 +300,10 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 
 	// Nested messages.
 	for _, nested := range inMessage.GetNestedType() {
-		fg.GenerateEverything(newPrefix, nested)
+		err = fg.GenerateEverything(newPrefix, nested)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

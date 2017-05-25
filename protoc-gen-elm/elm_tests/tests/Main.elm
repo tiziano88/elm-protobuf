@@ -4,6 +4,7 @@ import Json.Decode as JD
 import Json.Encode as JE
 import Date
 import Fuzzer as F
+import Map as M
 import Result
 import String
 import Task
@@ -28,6 +29,8 @@ suite =
         , test "JSON decode empty JSON" <| \() -> decode T.simpleDecoder emptyJson |> equal (Ok msgDefault)
         , test "JSON encode message with repeated field" <| \() -> encode T.fooEncoder foo |> equal fooJson
         , test "JSON decode message with repeated field" <| \() -> decode T.fooDecoder fooJson |> equal (Ok foo)
+        , test "JSON encode message with map field" <| \() -> encode M.mapEncoder map |> equal mapJson
+        , test "JSON decode message with map field" <| \() -> decode M.mapDecoder mapJson |> equal (Ok map)
           -- TODO: Should fail.
         , test "JSON decode wrong type" <| \() -> decode T.simpleDecoder wrongTypeJson |> equal (Ok msgDefault)
         , test "JSON decode null" <| \() -> decode T.simpleDecoder nullJson |> equal (Ok msgDefault)
@@ -457,3 +460,27 @@ wrappersSet =
     , stringValueField = Just "888"
     , bytesValueField = Just []
     }
+
+
+map : M.Map
+map =
+    { stringToString =
+        [ { key = "foo"
+          , value = "bar"
+          }
+        ]
+    }
+
+
+mapJson : String
+mapJson =
+    String.trim """
+{
+  "stringToString": [
+    {
+      "key": "foo",
+      "value": "bar"
+    }
+  ]
+}
+"""

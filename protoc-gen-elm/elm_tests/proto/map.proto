@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message Map {
+  map<string, string> string_to_string = 1;
+}
