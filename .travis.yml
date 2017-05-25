@@ -15,7 +15,7 @@ before_install:
 
 install:
   - ./install_protobuf
-  - export PATH=$PATH:$PWD/protoc
+  - export PATH=$PATH:$PWD/protoc/bin
   - go get -t -v ./protoc-gen-elm
   - protoc --version
   - node --version
