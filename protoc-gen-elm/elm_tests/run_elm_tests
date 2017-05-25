@@ -6,8 +6,10 @@ readonly ROOT="$(dirname "$0")"
 
 (
   cd ${ROOT}/proto
-
   protoc --elm_out=../tests ./*.proto
 )
 
-elm-test
+(
+  cd ${ROOT}
+  elm-test
+)
