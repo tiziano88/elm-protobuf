@@ -26,7 +26,8 @@ suite =
         , test "JSON decode extra field" <| \() -> decode T.simpleDecoder msgExtraFieldJson |> equal (Ok msg)
         , test "JSON encode empty message" <| \() -> encode T.fooEncoder fooDefault |> equal emptyJson
         , test "JSON decode empty JSON" <| \() -> decode T.simpleDecoder emptyJson |> equal (Ok msgDefault)
-        , test "JSON encode message with repeated field" <| \_ -> encode T.fooEncoder foo |> equal fooJson
+        , test "JSON encode message with repeated field" <| \() -> encode T.fooEncoder foo |> equal fooJson
+        , test "JSON decode message with repeated field" <| \() -> decode T.fooDecoder fooJson |> equal (Ok foo)
           -- TODO: Should fail.
         , test "JSON decode wrong type" <| \() -> decode T.simpleDecoder wrongTypeJson |> equal (Ok msgDefault)
         , test "JSON decode null" <| \() -> decode T.simpleDecoder nullJson |> equal (Ok msgDefault)
