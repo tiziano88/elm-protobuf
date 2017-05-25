@@ -1,4 +1,4 @@
-port module Main exposing (..)
+module Main exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
@@ -9,7 +9,6 @@ import String
 import Task
 import Test exposing (..)
 import Fuzz exposing (..)
-import Test.Runner.Node exposing (run, TestProgram)
 import Expect exposing (..)
 import Simple as T
 import Wrappers as W
@@ -17,14 +16,6 @@ import Keywords as K
 import Recursive as R
 import Protobuf exposing (..)
 import ISO8601
-
-
-main : TestProgram
-main =
-    run emit suite
-
-
-port emit : ( String, JE.Value ) -> Cmd msg
 
 
 suite : Test

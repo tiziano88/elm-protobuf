@@ -7,13 +7,7 @@ readonly ROOT="$(dirname "$0")"
 (
   cd ${ROOT}/proto
 
-  protoc --elm_out=../elm ./*.proto
+  protoc --elm_out=../tests ./*.proto
 )
 
-(
-  cd ${ROOT}/elm
-
-  elm-package install -y
-
-  elm-test
-)
+elm-test
