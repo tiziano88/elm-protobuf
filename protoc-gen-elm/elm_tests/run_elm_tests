@@ -15,5 +15,5 @@ readonly ROOT="$(dirname "$0")"
 
   elm-package install -y
 
-  elm-test ./Main.elm
+  elm-test
 )
