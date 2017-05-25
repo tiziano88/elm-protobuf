@@ -66,7 +66,7 @@ optional name decoder d =
 -}
 repeated : String -> JD.Decoder a -> JD.Decoder (List a -> b) -> JD.Decoder b
 repeated name decoder d =
-    field (withDefault [] <| JD.list <| JD.field name decoder) d
+    field (withDefault [] <| JD.field name <| JD.list decoder) d
 
 
 {-| Decodes a field.
