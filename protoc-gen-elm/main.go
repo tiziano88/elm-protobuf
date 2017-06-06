@@ -298,6 +298,13 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 		}
 	}
 
+	for _, inEnum := range inMessage.GetEnumType() {
+		err = fg.GenerateEnumNames(newPrefix, inEnum)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Nested messages.
 	for _, nested := range inMessage.GetNestedType() {
 		err = fg.GenerateEverything(newPrefix, nested)
@@ -339,6 +346,10 @@ func encoderName(typeName string) string {
 
 func decoderName(typeName string) string {
 	return firstLower(typeName) + "Decoder"
+}
+
+func enumNamesName(typeName string) string {
+	return firstLower(typeName) + "Names"
 }
 
 func elmFieldType(field *descriptor.FieldDescriptorProto) string {
