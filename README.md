@@ -1,6 +1,7 @@
 # elm-protobuf
 
 [![Build Status](https://travis-ci.org/tiziano88/elm-protobuf.svg?branch=master)](https://travis-ci.org/tiziano88/elm-protobuf)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tiziano88/elm-protobuf)](https://goreportcard.com/report/github.com/tiziano88/elm-protobuf)
 
 [Join #elm-protobuf on Slack](https://elmlang.slack.com/messages/elm-protobuf/details/)
 
