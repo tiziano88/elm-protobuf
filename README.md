@@ -5,13 +5,13 @@
 
 [Join #elm-protobuf on Slack](https://elmlang.slack.com/messages/elm-protobuf/details/)
 
-Experimental protobuf plugin generating elm code from proto definitions.
+Experimental protobuf plugin generating elm code to decode/encode [Proto3/JSON](https://developers.google.com/protocol-buffers/docs/proto3#json) from proto definitions.
 
 The plugin itself is written in Go, and it requires the base `protoc` protobuf
 compiler to be installed on the system.
 
 For a sample generated output file, see
-https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/go_tests/testdata/repeated/expected_output/Repeated.elm
+[Repeated.elm](https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/go_tests/testdata/repeated/expected_output/Repeated.elm).
 
 ## Supported features
 
@@ -35,7 +35,7 @@ https://github.com/tiziano88/elm-protobuf/blob/master/protoc-gen-elm/go_tests/te
 -   [ ] `ListValue` type
 -   [ ] `Value` type
 -   [ ] `NullValue` type
--   [ ] `oneof`
+-   [x] `oneof`
 -   [ ] `map`
 -   [ ] packages
 -   [ ] options
