@@ -6,6 +6,9 @@ import "google/protobuf/wrappers.proto";
 import "dir/other_dir.proto";
 import "other.proto";
 
+message Empty {
+}
+
 message Simple {
   int32 int32_field = 1;
 }

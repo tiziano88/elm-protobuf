@@ -16,6 +16,11 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 		fg.In()
 
 		leading := "{"
+
+		if len(inMessage.GetField()) == 0 {
+			fg.P(leading)
+		}
+
 		for _, inField := range inMessage.GetField() {
 			if inField.OneofIndex != nil {
 				// Handled in the oneof only.
@@ -129,6 +134,11 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 			fg.In()
 
 			leading := "["
+
+			if len(inMessage.GetField()) == 0 {
+				fg.P(leading)
+			}
+
 			for _, inField := range inMessage.GetField() {
 				if inField.OneofIndex != nil {
 					// Handled in the oneof only.
