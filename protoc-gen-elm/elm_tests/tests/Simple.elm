@@ -68,6 +68,23 @@ colourEncoder v =
         JE.string <| lookup v
 
 
+type alias Empty =
+    {
+    }
+
+
+emptyDecoder : JD.Decoder Empty
+emptyDecoder =
+    JD.lazy <| \_ -> decode Empty
+
+
+emptyEncoder : Empty -> JE.Value
+emptyEncoder v =
+    JE.object <| List.filterMap identity <|
+        [
+        ]
+
+
 type alias Simple =
     { int32Field : Int -- 1
     }

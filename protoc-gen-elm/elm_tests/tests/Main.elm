@@ -25,8 +25,8 @@ suite =
         [ test "JSON encode" <| \() -> encode T.simpleEncoder msg |> equal msgJson
         , test "JSON decode" <| \() -> decode T.simpleDecoder msgJson |> equal (Ok msg)
         , test "JSON decode extra field" <| \() -> decode T.simpleDecoder msgExtraFieldJson |> equal (Ok msg)
-        , test "JSON encode empty message" <| \() -> encode T.fooEncoder fooDefault |> equal emptyJson
-        , test "JSON decode empty JSON" <| \() -> decode T.simpleDecoder emptyJson |> equal (Ok msgDefault)
+        , test "JSON encode empty message" <| \() -> encode T.emptyEncoder msgEmpty |> equal emptyJson
+        , test "JSON decode empty JSON" <| \() -> decode T.emptyDecoder emptyJson |> equal (Ok msgEmpty)
         , test "JSON encode message with repeated field" <| \() -> encode T.fooEncoder foo |> equal fooJson
         , test "JSON decode message with repeated field" <| \() -> decode T.fooDecoder fooJson |> equal (Ok foo)
         , test "JSON encode message with map field" <| \() -> encode M.mapEncoder map |> equal mapJson
@@ -118,6 +118,10 @@ msgDefault =
     { int32Field = 0
     }
 
+msgEmpty : T.Empty
+msgEmpty =
+    { 
+    }
 
 fooDefault : T.Foo
 fooDefault =
