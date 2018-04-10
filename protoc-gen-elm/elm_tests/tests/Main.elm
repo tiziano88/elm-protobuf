@@ -12,6 +12,7 @@ import Test exposing (..)
 import Fuzz exposing (..)
 import Expect exposing (..)
 import Simple as T
+import Integers as I
 import Wrappers as W
 import Keywords as K
 import Recursive as R
@@ -31,7 +32,14 @@ suite =
         , test "JSON decode message with repeated field" <| \() -> decode T.fooDecoder fooJson |> equal (Ok foo)
         , test "JSON encode message with map field" <| \() -> encode M.mapEncoder map |> equal mapJson
         , test "JSON decode message with map field" <| \() -> decode M.mapDecoder mapJson |> equal (Ok map)
-          -- TODO: Should fail.
+        , test "JSON encode 32-bit ints as numbers" <| \() -> encode I.thirtyTwoEncoder msg32 |> equal json32numbers
+        , test "JSON decode numbers to 32-bit ints" <| \() -> decode I.thirtyTwoDecoder json32numbers |> equal (Ok msg32)
+        , test "JSON decode numeric strings to 32-bit ints" <| \() -> decode I.thirtyTwoDecoder json32strings |> equal (Ok msg32)
+        , test "JSON encode 64-bit ints as strings" <| \() -> encode I.sixtyFourEncoder msg64 |> equal json64strings
+        , test "JSON decode numbers to 64-bit ints" <| \() -> decode I.sixtyFourDecoder json64numbers |> equal (Ok msg64)
+        , test "JSON decode numeric strings to 64-bit ints" <| \() -> decode I.sixtyFourDecoder json64strings |> equal (Ok msg64)
+
+        -- TODO: Should fail.
         , test "JSON decode wrong type" <| \() -> decode T.simpleDecoder wrongTypeJson |> equal (Ok msgDefault)
         , test "JSON decode null" <| \() -> decode T.simpleDecoder nullJson |> equal (Ok msgDefault)
         , describe "oneof"
@@ -436,9 +444,9 @@ wrappersJsonSet =
     String.trim """
 {
   "int32ValueField": 111,
-  "int64ValueField": 222,
+  "int64ValueField": "222",
   "uInt32ValueField": 333,
-  "uInt64ValueField": 444,
+  "uInt64ValueField": "444",
   "doubleValueField": 5.5,
   "floatValueField": 6.6,
   "boolValueField": true,
@@ -482,5 +490,77 @@ mapJson =
       "value": "bar"
     }
   ]
+}
+"""
+
+
+msg32 : I.ThirtyTwo
+msg32 =
+    { int32Field = -103
+    , uint32Field = 106
+    , sint32Field = -103
+    , fixed32Field = 106
+    , sfixed32Field = -103
+    }
+
+
+json32numbers : String
+json32numbers =
+    String.trim """
+{
+  "int32Field": -103,
+  "uint32Field": 106,
+  "sint32Field": -103,
+  "fixed32Field": 106,
+  "sfixed32Field": -103
+}
+"""
+
+
+json32strings : String
+json32strings =
+    String.trim """
+{
+  "int32Field": "-103",
+  "uint32Field": "106",
+  "sint32Field": "-103",
+  "fixed32Field": "106",
+  "sfixed32Field": "-103"
+}
+"""
+
+
+msg64 : I.SixtyFour
+msg64 =
+    { int64Field = -903
+    , uint64Field = 906
+    , sint64Field = -903
+    , fixed64Field = 906
+    , sfixed64Field = -903
+    }
+
+
+json64numbers : String
+json64numbers =
+    String.trim """
+{
+  "int64Field": -903,
+  "uint64Field": 906,
+  "sint64Field": -903,
+  "fixed64Field": 906,
+  "sfixed64Field": -903
+}
+"""
+
+
+json64strings : String
+json64strings =
+    String.trim """
+{
+  "int64Field": "-903",
+  "uint64Field": "906",
+  "sint64Field": "-903",
+  "fixed64Field": "906",
+  "sfixed64Field": "-903"
 }
 """

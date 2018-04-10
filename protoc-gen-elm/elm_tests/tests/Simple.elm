@@ -76,7 +76,7 @@ type alias Simple =
 simpleDecoder : JD.Decoder Simple
 simpleDecoder =
     JD.lazy <| \_ -> decode Simple
-        |> required "int32Field" JD.int 0
+        |> required "int32Field" intDecoder 0
 
 
 simpleEncoder : Simple -> JE.Value
@@ -111,7 +111,7 @@ type Oo
 ooDecoder : JD.Decoder Oo
 ooDecoder =
     JD.lazy <| \_ -> JD.oneOf
-        [ JD.map Oo1 (JD.field "oo1" JD.int)
+        [ JD.map Oo1 (JD.field "oo1" intDecoder)
         , JD.map Oo2 (JD.field "oo2" JD.bool)
         , JD.succeed OoUnspecified
         ]
@@ -135,8 +135,8 @@ fooDecoder =
         |> repeated "ss" simpleDecoder
         |> required "colour" colourDecoder colourDefault
         |> repeated "colours" colourDecoder
-        |> required "singleIntField" JD.int 0
-        |> repeated "repeatedIntField" JD.int
+        |> required "singleIntField" intDecoder 0
+        |> repeated "repeatedIntField" intDecoder
         |> required "bytesField" bytesFieldDecoder []
         |> optional "stringValueField" stringValueDecoder
         |> optional "otherField" otherDecoder

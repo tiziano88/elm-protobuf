@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message ThirtyTwo {
+    int32 int_32_field = 1;
+    uint32 uint_32_field = 2;
+    sint32 sint_32_field = 3;
+    fixed32 fixed_32_field = 4;
+    sfixed32 sfixed_32_field = 5;
+}
+
+message SixtyFour {
+    int64 int_64_field = 1;
+    uint64 uint_64_field = 2;
+    sint64 sint_64_field = 3;
+    fixed64 fixed_64_field = 4;
+    sfixed64 sfixed_64_field = 5;
+}

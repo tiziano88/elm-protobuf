@@ -32,20 +32,20 @@ type alias Keywords =
 keywordsDecoder : JD.Decoder Keywords
 keywordsDecoder =
     JD.lazy <| \_ -> decode Keywords
-        |> required "module" JD.int 0
-        |> required "exposing" JD.int 0
-        |> required "import" JD.int 0
-        |> required "type" JD.int 0
-        |> required "let" JD.int 0
-        |> required "in" JD.int 0
-        |> required "if" JD.int 0
-        |> required "then" JD.int 0
-        |> required "else" JD.int 0
-        |> required "where" JD.int 0
-        |> required "case" JD.int 0
-        |> required "of" JD.int 0
-        |> required "port" JD.int 0
-        |> required "as" JD.int 0
+        |> required "module" intDecoder 0
+        |> required "exposing" intDecoder 0
+        |> required "import" intDecoder 0
+        |> required "type" intDecoder 0
+        |> required "let" intDecoder 0
+        |> required "in" intDecoder 0
+        |> required "if" intDecoder 0
+        |> required "then" intDecoder 0
+        |> required "else" intDecoder 0
+        |> required "where" intDecoder 0
+        |> required "case" intDecoder 0
+        |> required "of" intDecoder 0
+        |> required "port" intDecoder 0
+        |> required "as" intDecoder 0
 
 
 keywordsEncoder : Keywords -> JE.Value
