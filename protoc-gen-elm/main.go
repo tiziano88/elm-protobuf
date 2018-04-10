@@ -53,9 +53,9 @@ var (
 	excludedEncoders = map[string]string{
 		".google.protobuf.Timestamp":   "timestampEncoder",
 		".google.protobuf.Int32Value":  "intValueEncoder",
-		".google.protobuf.Int64Value":  "intValueEncoder",
+		".google.protobuf.Int64Value":  "numericStringEncoder",
 		".google.protobuf.UInt32Value": "intValueEncoder",
-		".google.protobuf.UInt64Value": "intValueEncoder",
+		".google.protobuf.UInt64Value": "numericStringEncoder",
 		".google.protobuf.DoubleValue": "floatValueEncoder",
 		".google.protobuf.FloatValue":  "floatValueEncoder",
 		".google.protobuf.StringValue": "stringValueEncoder",

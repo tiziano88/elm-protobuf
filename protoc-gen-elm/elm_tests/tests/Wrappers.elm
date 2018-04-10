@@ -42,9 +42,9 @@ wrappersEncoder : Wrappers -> JE.Value
 wrappersEncoder v =
     JE.object <| List.filterMap identity <|
         [ (optionalEncoder "int32ValueField" intValueEncoder v.int32ValueField)
-        , (optionalEncoder "int64ValueField" intValueEncoder v.int64ValueField)
+        , (optionalEncoder "int64ValueField" numericStringEncoder v.int64ValueField)
         , (optionalEncoder "uInt32ValueField" intValueEncoder v.uInt32ValueField)
-        , (optionalEncoder "uInt64ValueField" intValueEncoder v.uInt64ValueField)
+        , (optionalEncoder "uInt64ValueField" numericStringEncoder v.uInt64ValueField)
         , (optionalEncoder "doubleValueField" floatValueEncoder v.doubleValueField)
         , (optionalEncoder "floatValueField" floatValueEncoder v.floatValueField)
         , (optionalEncoder "boolValueField" boolValueEncoder v.boolValueField)

@@ -24,7 +24,7 @@ fuzzDecoder : JD.Decoder Fuzz
 fuzzDecoder =
     JD.lazy <| \_ -> decode Fuzz
         |> required "stringField" JD.string ""
-        |> required "int32Field" JD.int 0
+        |> required "int32Field" intDecoder 0
         |> optional "stringValueField" stringValueDecoder
         |> optional "int32ValueField" intValueDecoder
         |> optional "timestampField" timestampDecoder

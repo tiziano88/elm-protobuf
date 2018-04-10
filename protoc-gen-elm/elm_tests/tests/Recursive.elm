@@ -43,7 +43,7 @@ rEncoder v =
 recDecoder : JD.Decoder Rec
 recDecoder =
     JD.lazy <| \_ -> decode Rec
-        |> required "int32Field" JD.int 0
+        |> required "int32Field" intDecoder 0
         |> required "stringField" JD.string ""
         |> field rDecoder
 

@@ -210,17 +210,17 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) string {
 func fieldEncoderName(inField *descriptor.FieldDescriptorProto) string {
 	switch inField.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_INT32,
-		descriptor.FieldDescriptorProto_TYPE_INT64,
 		descriptor.FieldDescriptorProto_TYPE_UINT32,
-		descriptor.FieldDescriptorProto_TYPE_UINT64,
 		descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT64,
 		descriptor.FieldDescriptorProto_TYPE_FIXED32,
-		descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		// TODO: Handle parsing from string (for 64 bit types).
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32:
 		return "JE.int"
+	case descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		return "numericStringEncoder"
 	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
 		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		return "JE.float"
@@ -259,8 +259,7 @@ func fieldDecoderName(inField *descriptor.FieldDescriptorProto) string {
 		descriptor.FieldDescriptorProto_TYPE_FIXED64,
 		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
 		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		// TODO: Handle parsing from string (for 64 bit types).
-		return "JD.int"
+		return "intDecoder"
 	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
 		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		return "JD.float"
