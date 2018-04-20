@@ -10,7 +10,7 @@ Buffer compiler](https://github.com/tiziano88/elm-protobuf).
 
 @docs decode, required, optional, repeated, field
 
-@docs withDefault, intDecoder
+@docs withDefault, intDecoder, fromResult
 
 
 # Encoder Helpers
@@ -200,6 +200,8 @@ intDecoder =
     JD.oneOf [ JD.int, JD.string |> JD.andThen (String.toInt >> fromResult) ]
 
 
+{-| Encodes an Int as a JSON string, for emitting to int64 proto3 fields
+-}
 numericStringEncoder : Int -> JE.Value
 numericStringEncoder =
     toString >> JE.string
