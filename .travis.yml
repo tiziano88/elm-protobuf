@@ -8,7 +8,7 @@ addons:
       - nodejs
 
 env:
-  - TRAVIS_NODE_VERSION="v7.2.1"
+  - TRAVIS_NODE_VERSION="v8.11.0"
 
 before_install:
   - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
