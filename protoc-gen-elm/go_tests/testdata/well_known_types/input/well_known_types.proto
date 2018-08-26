@@ -1,7 +1,9 @@
 syntax = "proto3";
 
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
 
 message Message {
   google.protobuf.DoubleValue double_value_field = 1;
+  google.protobuf.Empty empty = 2;
 }

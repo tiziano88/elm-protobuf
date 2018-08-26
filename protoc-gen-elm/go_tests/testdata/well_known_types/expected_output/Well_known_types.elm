@@ -9,10 +9,12 @@ import Protobuf exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
+import Google.Protobuf.Empty exposing (..)
 
 
 type alias Message =
     { doubleValueField : Maybe Float -- 1
+    , empty : Maybe Empty -- 2
     }
 
 
@@ -20,10 +22,12 @@ messageDecoder : JD.Decoder Message
 messageDecoder =
     JD.lazy <| \_ -> decode Message
         |> optional "doubleValueField" floatValueDecoder
+        |> optional "empty" emptyDecoder
 
 
 messageEncoder : Message -> JE.Value
 messageEncoder v =
     JE.object <| List.filterMap identity <|
         [ (optionalEncoder "doubleValueField" floatValueEncoder v.doubleValueField)
+        , (optionalEncoder "empty" emptyEncoder v.empty)
         ]

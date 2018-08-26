@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -21,21 +22,23 @@ func TestDiff(t *testing.T) {
 			continue
 		}
 
-		dir := filepath.Join(td, fi.Name())
-		actualOutputDir := filepath.Join(dir, "actual_output")
+		t.Run(fmt.Sprintf("generating in directory %s", fi.Name()), func (t *testing.T) {
+			dir := filepath.Join(td, fi.Name())
+			actualOutputDir := filepath.Join(dir, "actual_output")
 
-		err := os.RemoveAll(actualOutputDir)
-		if err != nil {
-			t.Fatal(err)
-		}
+			err := os.RemoveAll(actualOutputDir)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		err = os.MkdirAll(actualOutputDir, 0777)
-		if err != nil {
-			t.Fatal(err)
-		}
+			err = os.MkdirAll(actualOutputDir, 0777)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		runProto(t, dir)
-		runDiff(t, dir)
+			runProto(t, dir)
+			runDiff(t, dir)
+		})
 	}
 
 }
