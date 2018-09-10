@@ -6,7 +6,7 @@ node_js: node
 addons:
   apt:
     packages:
-      - go
+      - golang-go
 
 os:
   - linux
