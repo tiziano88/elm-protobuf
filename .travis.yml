@@ -1,14 +1,19 @@
-language: go
-
 sudo: false
+
+language: node_js
+node_js: node
 
 addons:
   apt:
     packages:
-      - nodejs
+      - go
+
+os:
+  - linux
 
 env:
   - TRAVIS_NODE_VERSION="v8.11.0"
+  - TRAVIS_ELM_VERSION="0.19.0"
 
 before_install:
   - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
@@ -20,7 +25,7 @@ install:
   - protoc --version
   - node --version
   - npm --version
-  - npm install -g elm
+  - npm install -g elm@$TRAVIS_ELM_VERSION
   - npm install -g elm-test
 
 script: ./run_tests
