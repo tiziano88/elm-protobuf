@@ -19,6 +19,8 @@ before_install:
 
 install:
   - ./install_protobuf
+  - export GOPATH=$TRAVIS_BUILD_DIR/go
+  - export PATH=$PATH:$GOPATH/bin
   - export PATH=$PATH:$PWD/protoc/bin
   - go get -t -v ./protoc-gen-elm
   - protoc --version
