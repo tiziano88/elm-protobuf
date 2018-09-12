@@ -1,0 +1,7 @@
+#!/bin/sh
+
+set -ex
+
+protoc --proto_path=./tests/proto --elm_out=./tests ./tests/proto/*.proto
+
+elm-test

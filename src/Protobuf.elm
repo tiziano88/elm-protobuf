@@ -1,4 +1,15 @@
-module Protobuf exposing (..)
+module Protobuf exposing
+    ( decode, required, optional, repeated, field
+    , withDefault, intDecoder, fromResult
+    , requiredFieldEncoder, optionalEncoder, repeatedFieldEncoder, numericStringEncoder
+    , Bytes, bytesFieldDecoder, bytesFieldEncoder
+    , Timestamp, timestampDecoder, timestampEncoder
+    , intValueDecoder, intValueEncoder
+    , stringValueDecoder, stringValueEncoder
+    , boolValueDecoder, boolValueEncoder
+    , bytesValueDecoder, bytesValueEncoder
+    , floatValueDecoder, floatValueEncoder
+    )
 
 {-| Runtime library for Google Protocol Buffers.
 
@@ -39,11 +50,10 @@ Buffer compiler](https://github.com/tiziano88/elm-protobuf).
 
 -}
 
-import Date
-import Time
+import ISO8601
 import Json.Decode as JD
 import Json.Encode as JE
-import ISO8601
+import Time
 
 
 {-| Decodes a message.
@@ -109,6 +119,7 @@ requiredFieldEncoder : String -> (a -> JE.Value) -> a -> a -> Maybe ( String, JE
 requiredFieldEncoder name encoder default v =
     if v == default then
         Nothing
+
     else
         Just ( name, encoder v )
 
@@ -122,7 +133,7 @@ repeatedFieldEncoder name encoder v =
             Nothing
 
         _ ->
-            Just ( name, JE.list <| List.map encoder v )
+            Just ( name, JE.list encoder v )
 
 
 {-| Bytes field.
@@ -144,7 +155,7 @@ TODO: Implement.
 -}
 bytesFieldEncoder : Bytes -> JE.Value
 bytesFieldEncoder v =
-    JE.list []
+    JE.list JE.int []
 
 
 
@@ -154,7 +165,7 @@ bytesFieldEncoder v =
 {-| Timestamp.
 -}
 type alias Timestamp =
-    Date.Date
+    Time.Posix
 
 
 {-| Decodes a Timestamp.
@@ -165,8 +176,8 @@ timestampDecoder =
         |> JD.andThen
             (\v ->
                 case v of
-                    Ok v ->
-                        JD.succeed <| Date.fromTime <| Time.millisecond * (toFloat (ISO8601.toTime v))
+                    Ok v1 ->
+                        JD.succeed <| ISO8601.toPosix v1
 
                     Err e ->
                         JD.fail e
@@ -177,15 +188,15 @@ timestampDecoder =
 -}
 timestampEncoder : Timestamp -> JE.Value
 timestampEncoder v =
-    JE.string <| ISO8601.toString <| ISO8601.fromTime <| round <| Time.inMilliseconds <| Date.toTime <| v
+    JE.string <| ISO8601.toString <| ISO8601.fromPosix v
 
 
 {-| Turns a Result in to a Decoder
 Taken from <https://github.com/elm-community/json-extra/blob/2.7.0/src/Json/Decode/Extra.elm#L388>
 -}
 fromResult : Result String a -> JD.Decoder a
-fromResult result =
-    case result of
+fromResult v =
+    case v of
         Ok successValue ->
             JD.succeed successValue
 
@@ -193,18 +204,30 @@ fromResult result =
             JD.fail errorMessage
 
 
+{-| Turns a Maybe in to a Decoder
+-}
+fromMaybe : Maybe a -> JD.Decoder a
+fromMaybe v =
+    case v of
+        Just v1 ->
+            JD.succeed v1
+
+        Nothing ->
+            JD.fail "error"
+
+
 {-| Decodes an Int from either a string or numeric.
 -}
 intDecoder : JD.Decoder Int
 intDecoder =
-    JD.oneOf [ JD.int, JD.string |> JD.andThen (String.toInt >> fromResult) ]
+    JD.oneOf [ JD.int, JD.string |> JD.andThen (String.toInt >> fromMaybe) ]
 
 
 {-| Encodes an Int as a JSON string, for emitting to int64 proto3 fields
 -}
 numericStringEncoder : Int -> JE.Value
 numericStringEncoder =
-    toString >> JE.string
+    String.fromInt >> JE.string
 
 
 {-| Decodes an IntValue.

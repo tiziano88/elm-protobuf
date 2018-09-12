@@ -1,23 +1,23 @@
-module Main exposing (..)
+module Main exposing (assertEncodeDecode, decode, emptyJson, encode, foo, fooDefault, fooJson, fuzz, genFuzz, json32numbers, json32strings, json64numbers, json64strings, map, mapJson, msg, msg32, msg64, msgDefault, msgEmpty, msgExtraFieldJson, msgJson, nullJson, oo1Set, oo1SetJson, oo2Set, oo2SetJson, rec1, rec2, recDefault, recJson1, recJson2, suite, timestampFoo, timestampJson, wrappersEmpty, wrappersJsonEmpty, wrappersJsonNull, wrappersJsonSet, wrappersJsonZero, wrappersSet, wrappersZero, wrongTypeJson)
 
+import Expect exposing (..)
+import Fuzz exposing (..)
+import Fuzzer as F
+import ISO8601
+import Integers as I
 import Json.Decode as JD
 import Json.Encode as JE
-import Date
-import Fuzzer as F
+import Keywords as K
 import Map as M
+import Protobuf exposing (..)
+import Recursive as R
 import Result
+import Simple as T
 import String
 import Task
 import Test exposing (..)
-import Fuzz exposing (..)
-import Expect exposing (..)
-import Simple as T
-import Integers as I
+import Time
 import Wrappers as W
-import Keywords as K
-import Recursive as R
-import Protobuf exposing (..)
-import ISO8601
 
 
 suite : Test
@@ -71,9 +71,8 @@ suite =
                 ]
             ]
         , describe "encode / decode"
-            [ fuzz (tuple5 ( string, int, maybe string, maybe int, maybe float )) "fuzzer" <|
+            [ fuzz (map5 genFuzz string int (maybe string) (maybe int) (maybe int)) "fuzzer" <|
                 assertEncodeDecode F.fuzzEncoder F.fuzzDecoder
-                    << genFuzz
             ]
         ]
 
@@ -84,34 +83,34 @@ fuzz =
 
 
 encode : (a -> JE.Value) -> a -> String
-encode encoder msg =
-    JE.encode 2 (encoder msg)
+encode encoder m =
+    JE.encode 2 (encoder m)
 
 
-decode : JD.Decoder a -> String -> Result String a
+decode : JD.Decoder a -> String -> Result JD.Error a
 decode decoder json =
     JD.decodeString decoder json
 
 
 assertEncodeDecode : (a -> JE.Value) -> JD.Decoder a -> a -> Expectation
-assertEncodeDecode encoder decoder msg =
+assertEncodeDecode encoder decoder m =
     let
         encoded =
-            encode encoder msg
+            encode encoder m
 
         decoded =
             decode decoder encoded
     in
-        decoded |> equal (Ok msg)
+    decoded |> equal (Ok m)
 
 
-genFuzz : ( String, Int, Maybe String, Maybe Int, Maybe Float ) -> F.Fuzz
-genFuzz ( s1, i1, s2, i2, t ) =
+genFuzz : String -> Int -> Maybe String -> Maybe Int -> Maybe Int -> F.Fuzz
+genFuzz s1 i1 s2 i2 t =
     { stringField = s1
     , int32Field = i1
     , stringValueField = s2
     , int32ValueField = i2
-    , timestampField = Maybe.map Date.fromTime t
+    , timestampField = Maybe.map Time.millisToPosix t
     }
 
 
@@ -126,10 +125,11 @@ msgDefault =
     { int32Field = 0
     }
 
+
 msgEmpty : T.Empty
 msgEmpty =
-    { 
-    }
+    {}
+
 
 fooDefault : T.Foo
 fooDefault =
@@ -370,7 +370,7 @@ timestampFoo : T.Foo
 timestampFoo =
     { fooDefault
         | timestampField =
-            Result.toMaybe <| Date.fromString "1988-12-14T01:23:45.678Z"
+            Result.toMaybe <| Result.map ISO8601.toPosix <| ISO8601.fromString "1988-12-14T01:23:45.678Z"
     }
 
 
