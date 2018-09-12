@@ -27,7 +27,7 @@ install:
   - npm --version
   - npm install -g elm@$TRAVIS_ELM_VERSION
   - elm --version
-  - npm install -g elm-test@TRAVIS_ELM_TEST_VERSION
+  - npm install -g elm-test@$TRAVIS_ELM_TEST_VERSION
   - elm-test --version
 
 script: ./run_tests
