@@ -3,7 +3,7 @@
     "name": "tiziano88/elm-protobuf",
     "summary": "Google Protocol Buffers runtime library",
     "license": "MIT",
-    "version": "2.1.0",
+    "version": "3.0.0",
     "exposed-modules": [
         "Protobuf"
     ],
