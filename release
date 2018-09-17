@@ -4,6 +4,9 @@ set -x
 
 readonly BIN=protoc-gen-elm
 
+# Disable cgo in order to ensure static binaries.
+export CGO_ENABLED=0
+
 # Make sure the current commit is tagged, using the following command:
 # git tag -a v0.0.2 -m 'release'
 
