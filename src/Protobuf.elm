@@ -206,21 +206,21 @@ fromResult v =
 
 {-| Turns a Maybe in to a Decoder
 -}
-fromMaybe : Maybe a -> JD.Decoder a
-fromMaybe v =
-    case v of
+fromMaybe : String -> Maybe a -> JD.Decoder a
+fromMaybe error maybe =
+    case maybe of
         Just v1 ->
             JD.succeed v1
 
         Nothing ->
-            JD.fail "error"
+            JD.fail error
 
 
 {-| Decodes an Int from either a string or numeric.
 -}
 intDecoder : JD.Decoder Int
 intDecoder =
-    JD.oneOf [ JD.int, JD.string |> JD.andThen (String.toInt >> fromMaybe) ]
+    JD.oneOf [ JD.int, JD.string |> JD.andThen (String.toInt >> fromMaybe "could not convert string to integer") ]
 
 
 {-| Encodes an Int as a JSON string, for emitting to int64 proto3 fields
