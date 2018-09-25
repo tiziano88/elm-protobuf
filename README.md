@@ -75,7 +75,7 @@ and use it to generate the output elm code.
 
 Then, in your project, add a dependency on the runtime library:
 
-`elm package install tiziano88/elm-protobuf`
+`elm install tiziano88/elm-protobuf`
 
 ## References
 
