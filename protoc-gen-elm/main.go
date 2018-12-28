@@ -117,7 +117,9 @@ func main() {
 		if err != nil {
 			log.Fatalf("Could not process file: %v", err)
 		}
-		resp.File = append(resp.File, outFile)
+		if outFile != nil {
+			resp.File = append(resp.File, outFile)
+		}
 	}
 
 	data, err = proto.Marshal(resp)
@@ -133,7 +135,7 @@ func main() {
 
 func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
 	if inFile.GetSyntax() != "proto3" {
-		return nil, fmt.Errorf("Only proto3 syntax is supported")
+		return nil, nil
 	}
 
 	outFile := &plugin.CodeGeneratorResponse_File{}
