@@ -270,6 +270,13 @@ func (fg *FileGenerator) GenerateImports() {
 	fg.P("")
 	fg.P("import Json.Decode as JD")
 	fg.P("import Json.Encode as JE")
+	o := fg.FileOptions()
+	if len(o.Imports) != 0 {
+		fg.P("")
+		for _, name := range o.Imports {
+			fg.P("import " + name)
+		}
+	}
 }
 
 func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor.DescriptorProto) error {
