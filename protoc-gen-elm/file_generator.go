@@ -7,17 +7,32 @@ import (
 )
 
 type FileGenerator struct {
-	w io.Writer
+	options Options
+	w       io.Writer
 	// Used to avoid qualifying names in the same file.
 	inFileName string
 	indent     uint
 }
 
-func NewFileGenerator(w io.Writer, inFileName string) *FileGenerator {
+func NewFileGenerator(options Options, w io.Writer, inFileName string) *FileGenerator {
 	return &FileGenerator{
+		options:    options,
 		w:          w,
 		inFileName: inFileName,
 	}
+}
+
+func (fg *FileGenerator) FileOptions() FileOptions {
+	o, _ := fg.options.Files[fg.inFileName]
+	return o
+}
+
+func (fg *FileGenerator) FieldOptions(name string) *FieldOptions {
+	o := fg.FileOptions()
+	if fo, ok := o.Fields[name]; ok {
+		return &fo
+	}
+	return nil
 }
 
 func (fg *FileGenerator) In() {
