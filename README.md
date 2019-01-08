@@ -77,6 +77,18 @@ Then, in your project, add a dependency on the runtime library:
 
 `elm install tiziano88/elm-protobuf`
 
+## Options
+
+Options can be passed to the plugin in the --elm_out value, with the following
+syntax:
+
+`protoc "--elm_out=option=value;option=value1,value2:."`
+
+The valid options are:
+
+- `excludeFile`: A list of files that should be ignored. Usefull to ignore a
+  proto2 file that is a dependency of the compiled file.
+
 ## References
 
 https://developers.google.com/protocol-buffers/
