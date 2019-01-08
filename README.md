@@ -77,6 +77,63 @@ Then, in your project, add a dependency on the runtime library:
 
 `elm install tiziano88/elm-protobuf`
 
+
+## Options
+
+Options can be passed to the plugin in the --elm_out value, with the following
+syntax:
+
+`protoc "--elm_out=option=value;option=value1,value2:."`
+
+The valid options are:
+
+- `excludeFile`: A list of files that should be ignored. Usefull to ignore a
+  proto2 file that is a dependency of the compiled file.
+
+- `options`: A file to customize the output, see below
+
+## Customize the output
+
+The elm type used for each field is automatically determined, but can be
+overridden by passing an option file to the plugin.
+
+For example, if a message has a Uuid field, the proto definition will probably
+be something like this:
+
+```proto
+message MyObject {
+    string id = 1;
+    string name = 2;
+}
+```
+
+By adding an option file, it is possible to get a 'Maybe Uuid' field instead
+of a string.
+
+Write a yaml file with all the options, 'elm-proto-options.yaml':
+
+```yaml
+types:
+  Uuid.Uuid:
+    json:
+      encoder: Uuid.encode
+      decoder: Uuid.decoder
+
+files:
+  my_proto_file.proto:
+    imports:
+    - Uuid
+    fields:
+      MyObject.id:
+        type: Uuid.Uuid
+        required: false
+```
+
+Pass the option file as a parameter to the plugin:
+
+```
+`protoc --elm_out='options=./elm-proto-options.yaml:.' my_proto_file.proto`
+```
 ## References
 
 https://developers.google.com/protocol-buffers/

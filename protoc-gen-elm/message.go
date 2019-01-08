@@ -6,6 +6,15 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
+func (fg *FileGenerator) isOptional(
+	msgName string, inField *descriptor.FieldDescriptorProto, fieldOptions *FieldOptions,
+) bool {
+	return (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
+		(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE) ||
+		(fieldOptions != nil && !fieldOptions.Required)
+
+}
+
 func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *descriptor.DescriptorProto) error {
 	typeName := prefix + inMessage.GetName()
 
@@ -26,12 +35,15 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 				// Handled in the oneof only.
 				continue
 			}
+			fieldOptions := fg.FieldOptions(typeName + "." + inField.GetName())
 
-			optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
-				(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+			optional := fg.isOptional(inMessage.GetName(), inField, fieldOptions)
 			repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 
 			fType := fieldElmType(inField)
+			if fieldOptions != nil {
+				fType = fieldOptions.Type
+			}
 
 			fName := elmFieldName(inField.GetName())
 			fNumber := inField.GetNumber()
@@ -90,11 +102,19 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 					continue
 				}
 
-				optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
-					(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+				fieldOptions := fg.FieldOptions(typeName + "." + inField.GetName())
+
+				optional := fg.isOptional(inMessage.GetName(), inField, fieldOptions)
+
 				repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 				d := fieldDecoderName(inField)
 				def := fieldDefaultValue(inField)
+
+				if fieldOptions != nil {
+					if t, ok := fg.options.Types[fieldOptions.Type]; ok && t.JSON.Decoder != "" {
+						d = t.JSON.Decoder
+					}
+				}
 
 				if repeated {
 					fg.P("|> repeated %q %s", jsonFieldName(inField), d)
@@ -145,10 +165,16 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 					continue
 				}
 
-				optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
-					(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
+				fieldOptions := fg.FieldOptions(typeName + "." + inField.GetName())
+
+				optional := fg.isOptional(inMessage.GetName(), inField, fieldOptions)
 				repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 				d := fieldEncoderName(inField)
+				if fieldOptions != nil {
+					if t, ok := fg.options.Types[fieldOptions.Type]; ok && t.JSON.Encoder != "" {
+						d = t.JSON.Encoder
+					}
+				}
 				val := argName + "." + elmFieldName(inField.GetName())
 				def := fieldDefaultValue(inField)
 				if repeated {

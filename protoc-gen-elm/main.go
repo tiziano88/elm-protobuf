@@ -15,6 +15,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -102,6 +103,38 @@ func main() {
 		inFile.SourceCodeInfo = nil
 	}
 
+	var options Options
+
+	if parameter := req.GetParameter(); parameter != "" {
+		list := strings.Split(parameter, ";")
+		for _, item := range list {
+			splitted := strings.Split(item, "=")
+			if len(splitted) != 2 {
+				log.Fatalf("Invalid parameter. Expected 'variable=value', got: '%s'", item)
+			}
+			switch splitted[0] {
+			case "excludeFile":
+				fileList := strings.Split(splitted[1], ",")
+				for _, name := range fileList {
+					excludedFiles[name] = true
+				}
+			case "options":
+				b, err := ioutil.ReadFile(splitted[1])
+				if err != nil {
+					log.Fatalf("Could not ready option file: %s", err)
+				}
+				if err := yaml.Unmarshal(b, &options); err != nil {
+					log.Fatalf("Could not decode the option file: %s", err)
+				}
+				log.Printf("Loaded options file: %s", splitted[1])
+
+			default:
+				log.Fatalf("Unknow parameter: %s", splitted[0])
+
+			}
+		}
+	}
+
 	log.Printf("Input data: %v", proto.MarshalTextString(req))
 
 	resp := &plugin.CodeGeneratorResponse{}
@@ -113,7 +146,7 @@ func main() {
 			log.Printf("Skipping well known type")
 			continue
 		}
-		outFile, err := processFile(inFile)
+		outFile, err := processFile(options, inFile)
 		if err != nil {
 			log.Fatalf("Could not process file: %v", err)
 		}
@@ -131,7 +164,7 @@ func main() {
 	}
 }
 
-func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
+func processFile(options Options, inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
 	if inFile.GetSyntax() != "proto3" {
 		return nil, fmt.Errorf("Only proto3 syntax is supported")
 	}
@@ -158,7 +191,7 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 	outFile.Name = proto.String(outFileName)
 
 	b := &bytes.Buffer{}
-	fg := NewFileGenerator(b, inFileName)
+	fg := NewFileGenerator(options, b, inFileName)
 
 	fg.GenerateModule(fullModuleName)
 	fg.GenerateComments(inFile)
@@ -237,6 +270,13 @@ func (fg *FileGenerator) GenerateImports() {
 	fg.P("")
 	fg.P("import Json.Decode as JD")
 	fg.P("import Json.Encode as JE")
+	o := fg.FileOptions()
+	if len(o.Imports) != 0 {
+		fg.P("")
+		for _, name := range o.Imports {
+			fg.P("import " + name)
+		}
+	}
 }
 
 func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor.DescriptorProto) error {
