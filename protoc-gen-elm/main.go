@@ -102,6 +102,26 @@ func main() {
 		inFile.SourceCodeInfo = nil
 	}
 
+	if parameter := req.GetParameter(); parameter != "" {
+		list := strings.Split(parameter, ";")
+		for _, item := range list {
+			splitted := strings.Split(item, "=")
+			if len(splitted) != 2 {
+				log.Fatalf("Invalid parameter. Expected 'variable=value', got: '%s'", item)
+			}
+			switch splitted[0] {
+			case "excludeFile":
+				fileList := strings.Split(splitted[1], ",")
+				for _, name := range fileList {
+					excludedFiles[name] = true
+				}
+			default:
+				log.Fatalf("Unknow parameter: %s", splitted[0])
+
+			}
+		}
+	}
+
 	log.Printf("Input data: %v", proto.MarshalTextString(req))
 
 	resp := &plugin.CodeGeneratorResponse{}
