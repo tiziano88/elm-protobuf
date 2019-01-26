@@ -131,6 +131,30 @@ func main() {
 	}
 }
 
+func hasMapEntries(inFile *descriptor.FileDescriptorProto) bool {
+	for _, m := range inFile.GetMessageType() {
+		if hasMapEntriesInMessage(m) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func hasMapEntriesInMessage(inMessage *descriptor.DescriptorProto) bool {
+	if inMessage.GetOptions().GetMapEntry() {
+		return true
+	}
+
+	for _, m := range inMessage.GetNestedType() {
+		if hasMapEntriesInMessage(m) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
 	if inFile.GetSyntax() != "proto3" {
 		return nil, fmt.Errorf("Only proto3 syntax is supported")
@@ -162,7 +186,9 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 
 	fg.GenerateModule(fullModuleName)
 	fg.GenerateComments(inFile)
-	fg.GenerateImports()
+
+	includeDictImport := hasMapEntries(inFile)
+	fg.GenerateImports(includeDictImport)
 
 	// Generate additional imports.
 	for _, d := range inFile.GetDependency() {
@@ -231,12 +257,15 @@ func (fg *FileGenerator) GenerateComments(inFile *descriptor.FileDescriptorProto
 	fg.P("-- source file: %s", inFile.GetName())
 }
 
-func (fg *FileGenerator) GenerateImports() {
+func (fg *FileGenerator) GenerateImports(includeDictImport bool) {
 	fg.P("")
 	fg.P("import Protobuf exposing (..)")
 	fg.P("")
 	fg.P("import Json.Decode as JD")
 	fg.P("import Json.Encode as JE")
+	if includeDictImport {
+		fg.P("import Dict")
+	}
 }
 
 func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor.DescriptorProto) error {
