@@ -61,7 +61,7 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 			fNumber := inField.GetNumber()
 
 			if isMapEntries {
-				fg.P("%s %s : Dict %s %s -- %d", leading, fName, fieldElmType(mapKeyFieldDescriptor), fieldElmType(mapValueFieldDescriptor), fNumber)
+				fg.P("%s %s : Dict.Dict %s %s -- %d", leading, fName, fieldElmType(mapKeyFieldDescriptor), fieldElmType(mapValueFieldDescriptor), fNumber)
 			} else if repeated {
 				fg.P("%s %s : List %s -- %d", leading, fName, fType, fNumber)
 			} else {

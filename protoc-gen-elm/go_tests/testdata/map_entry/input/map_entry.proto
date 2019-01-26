@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message Bar {
+  bool field = 1;
+}
+
+message Foo {
+    map<string, Bar> stringToBars = 8;
+    map<string, string> stringToStrings = 7;
+    map<int32, string> intToStrings = 6;
+    map<int32, Bar> int32ToBars = 10;
+}
+
