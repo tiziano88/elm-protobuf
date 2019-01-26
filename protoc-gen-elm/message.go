@@ -2,9 +2,31 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
+
+func mapEntries(inField *descriptor.FieldDescriptorProto, inMessage *descriptor.DescriptorProto) (isMap bool, keyFieldDescriptor *descriptor.FieldDescriptorProto, valueFieldDescriptor *descriptor.FieldDescriptorProto) {
+	isRepeated :=
+		inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED &&
+			inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE
+
+	if !isRepeated {
+		return false, nil, nil
+	}
+
+	fullyQualifiedTypeName := inField.GetTypeName()
+	splitName := strings.Split(fullyQualifiedTypeName, ".")
+	localTypeName := splitName[len(splitName)-1]
+
+	for _, nested := range inMessage.GetNestedType() {
+		if nested.GetName() == localTypeName && nested.GetOptions().GetMapEntry() {
+			return true, nested.GetField()[0], nested.GetField()[1]
+		}
+	}
+	return false, nil, nil
+}
 
 func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *descriptor.DescriptorProto) error {
 	typeName := prefix + inMessage.GetName()
@@ -31,12 +53,16 @@ func (fg *FileGenerator) GenerateMessageDefinition(prefix string, inMessage *des
 				(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 			repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 
+			isMapEntries, mapKeyFieldDescriptor, mapValueFieldDescriptor := mapEntries(inField, inMessage)
+
 			fType := fieldElmType(inField)
 
 			fName := elmFieldName(inField.GetName())
 			fNumber := inField.GetNumber()
 
-			if repeated {
+			if isMapEntries {
+				fg.P("%s %s : Dict %s %s -- %d", leading, fName, fieldElmType(mapKeyFieldDescriptor), fieldElmType(mapValueFieldDescriptor), fNumber)
+			} else if repeated {
 				fg.P("%s %s : List %s -- %d", leading, fName, fType, fNumber)
 			} else {
 				if optional {
@@ -93,10 +119,13 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 				optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 					(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 				repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
+				isMapEntries, mapKeyFieldDescriptor, mapValueFieldDescriptor := mapEntries(inField, inMessage)
 				d := fieldDecoderName(inField)
 				def := fieldDefaultValue(inField)
 
-				if repeated {
+				if isMapEntries {
+					fg.P("|> mapEntries %q %s %s", jsonFieldName(inField), fieldDecoderName(mapKeyFieldDescriptor), fieldDecoderName(mapValueFieldDescriptor))
+				} else if repeated {
 					fg.P("|> repeated %q %s", jsonFieldName(inField), d)
 				} else {
 					if optional {
@@ -148,10 +177,14 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 				optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 					(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 				repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
+				isMapEntries, mapKeyFieldDescriptor, mapValueFieldDescriptor := mapEntries(inField, inMessage)
 				d := fieldEncoderName(inField)
 				val := argName + "." + elmFieldName(inField.GetName())
 				def := fieldDefaultValue(inField)
-				if repeated {
+
+				if isMapEntries {
+					fg.P("%s (mapEntriesFieldEncoder %q %s %s %s)", leading, jsonFieldName(inField), fieldEncoderName(mapKeyFieldDescriptor), fieldEncoderName(mapValueFieldDescriptor), val)
+				} else if repeated {
 					fg.P("%s (repeatedFieldEncoder %q %s %s)", leading, jsonFieldName(inField), d, val)
 				} else {
 					if optional {
