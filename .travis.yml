@@ -34,4 +34,4 @@ install:
 script: 
   - set -e
   - ./run_tests
-  - ./go_tests/run_go_tests
+  - ./protoc-gen-elm/go_tests/run_go_tests
