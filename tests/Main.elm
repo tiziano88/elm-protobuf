@@ -18,6 +18,7 @@ import Task
 import Test exposing (..)
 import Time
 import Wrappers as W
+import Dict
 
 
 suite : Test
@@ -30,8 +31,8 @@ suite =
         , test "JSON decode empty JSON" <| \() -> decode T.emptyDecoder emptyJson |> equal (Ok msgEmpty)
         , test "JSON encode message with repeated field" <| \() -> encode T.fooEncoder foo |> equal fooJson
         , test "JSON decode message with repeated field" <| \() -> decode T.fooDecoder fooJson |> equal (Ok foo)
-        , test "JSON encode message with map field" <| \() -> encode M.mapEncoder map |> equal mapJson
-        , test "JSON decode message with map field" <| \() -> decode M.mapDecoder mapJson |> equal (Ok map)
+        , test "JSON encode message with map field" <| \() -> encode M.messageWithMapsEncoder map |> equal mapJson
+        , test "JSON decode message with map field" <| \() -> decode M.messageWithMapsDecoder mapJson |> equal (Ok map)
         , test "JSON encode 32-bit ints as numbers" <| \() -> encode I.thirtyTwoEncoder msg32 |> equal json32numbers
         , test "JSON decode numbers to 32-bit ints" <| \() -> decode I.thirtyTwoDecoder json32numbers |> equal (Ok msg32)
         , test "JSON decode numeric strings to 32-bit ints" <| \() -> decode I.thirtyTwoDecoder json32strings |> equal (Ok msg32)
@@ -474,12 +475,16 @@ wrappersSet =
     }
 
 
-map : M.Map
+map : M.MessageWithMaps
 map =
-    { stringToString =
-        [ { key = "foo"
-          , value = "bar"
-          }
+    { stringToMessages = Dict.fromList 
+        [ ( "foo" ,  { field = True } ),
+        ( "bar" ,  { field = False } )
+        ],
+        stringToStrings = Dict.fromList
+        [
+            ("k1", "v1"),
+            ("k2", "v2")
         ]
     }
 
@@ -488,12 +493,16 @@ mapJson : String
 mapJson =
     String.trim """
 {
-  "stringToString": [
-    {
-      "key": "foo",
-      "value": "bar"
+  "stringToMessages": {
+    "bar": {},
+    "foo": {
+      "field": true
     }
-  ]
+  },
+  "stringToStrings": {
+    "k1": "v1",
+    "k2": "v2"
+  }
 }
 """
 

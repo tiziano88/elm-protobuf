@@ -119,12 +119,12 @@ func (fg *FileGenerator) GenerateMessageDecoder(prefix string, inMessage *descri
 				optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 					(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 				repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-				isMapEntries, mapKeyFieldDescriptor, mapValueFieldDescriptor := mapEntries(inField, inMessage)
+				isMapEntries, _, mapValueFieldDescriptor := mapEntries(inField, inMessage)
 				d := fieldDecoderName(inField)
 				def := fieldDefaultValue(inField)
 
 				if isMapEntries {
-					fg.P("|> mapEntries %q %s %s", jsonFieldName(inField), fieldDecoderName(mapKeyFieldDescriptor), fieldDecoderName(mapValueFieldDescriptor))
+					fg.P("|> mapEntries %q %s", jsonFieldName(inField), fieldDecoderName(mapValueFieldDescriptor))
 				} else if repeated {
 					fg.P("|> repeated %q %s", jsonFieldName(inField), d)
 				} else {
@@ -177,13 +177,13 @@ func (fg *FileGenerator) GenerateMessageEncoder(prefix string, inMessage *descri
 				optional := (inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL) &&
 					(inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE)
 				repeated := inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-				isMapEntries, mapKeyFieldDescriptor, mapValueFieldDescriptor := mapEntries(inField, inMessage)
+				isMapEntries, _, mapValueFieldDescriptor := mapEntries(inField, inMessage)
 				d := fieldEncoderName(inField)
 				val := argName + "." + elmFieldName(inField.GetName())
 				def := fieldDefaultValue(inField)
 
 				if isMapEntries {
-					fg.P("%s (mapEntriesFieldEncoder %q %s %s %s)", leading, jsonFieldName(inField), fieldEncoderName(mapKeyFieldDescriptor), fieldEncoderName(mapValueFieldDescriptor), val)
+					fg.P("%s (mapEntriesFieldEncoder %q %s %s)", leading, jsonFieldName(inField), fieldEncoderName(mapValueFieldDescriptor), val)
 				} else if repeated {
 					fg.P("%s (repeatedFieldEncoder %q %s %s)", leading, jsonFieldName(inField), d, val)
 				} else {

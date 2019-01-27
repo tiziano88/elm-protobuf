@@ -9,56 +9,51 @@ import Protobuf exposing (..)
 
 import Json.Decode as JD
 import Json.Encode as JE
+import Dict
 
 
-type alias MapEntry =
+type alias MapValue =
     { field : Bool -- 1
     }
 
 
-mapEntryDecoder : JD.Decoder MapEntry
-mapEntryDecoder =
-    JD.lazy <| \_ -> decode MapEntry
+mapValueDecoder : JD.Decoder MapValue
+mapValueDecoder =
+    JD.lazy <| \_ -> decode MapValue
         |> required "field" JD.bool False
 
 
-mapEntryEncoder : MapEntry -> JE.Value
-mapEntryEncoder v =
+mapValueEncoder : MapValue -> JE.Value
+mapValueEncoder v =
     JE.object <| List.filterMap identity <|
         [ (requiredFieldEncoder "field" JE.bool False v.field)
         ]
 
 
 type alias MessageWithMaps =
-    { stringToMessages : Dict.Dict String MapEntry -- 8
+    { stringToMessages : Dict.Dict String MapValue -- 8
     , stringToStrings : Dict.Dict String String -- 7
-    , intToStrings : Dict.Dict Int String -- 6
-    , int32ToMessages : Dict.Dict Int MapEntry -- 10
     }
 
 
 messageWithMapsDecoder : JD.Decoder MessageWithMaps
 messageWithMapsDecoder =
     JD.lazy <| \_ -> decode MessageWithMaps
-        |> mapEntries "stringToMessages" JD.string mapEntryDecoder
-        |> mapEntries "stringToStrings" JD.string JD.string
-        |> mapEntries "intToStrings" intDecoder JD.string
-        |> mapEntries "int32ToMessages" intDecoder mapEntryDecoder
+        |> mapEntries "stringToMessages" mapValueDecoder
+        |> mapEntries "stringToStrings" JD.string
 
 
 messageWithMapsEncoder : MessageWithMaps -> JE.Value
 messageWithMapsEncoder v =
     JE.object <| List.filterMap identity <|
-        [ (mapEntriesFieldEncoder "stringToMessages" JE.string mapEntryEncoder v.stringToMessages)
-        , (mapEntriesFieldEncoder "stringToStrings" JE.string JE.string v.stringToStrings)
-        , (mapEntriesFieldEncoder "intToStrings" JE.int JE.string v.intToStrings)
-        , (mapEntriesFieldEncoder "int32ToMessages" JE.int mapEntryEncoder v.int32ToMessages)
+        [ (mapEntriesFieldEncoder "stringToMessages" mapValueEncoder v.stringToMessages)
+        , (mapEntriesFieldEncoder "stringToStrings" JE.string v.stringToStrings)
         ]
 
 
 type alias MessageWithMaps_StringToMessagesEntry =
     { key : String -- 1
-    , value : Maybe MapEntry -- 2
+    , value : Maybe MapValue -- 2
     }
 
 
@@ -66,14 +61,14 @@ messageWithMaps_StringToMessagesEntryDecoder : JD.Decoder MessageWithMaps_String
 messageWithMaps_StringToMessagesEntryDecoder =
     JD.lazy <| \_ -> decode MessageWithMaps_StringToMessagesEntry
         |> required "key" JD.string ""
-        |> optional "value" mapEntryDecoder
+        |> optional "value" mapValueDecoder
 
 
 messageWithMaps_StringToMessagesEntryEncoder : MessageWithMaps_StringToMessagesEntry -> JE.Value
 messageWithMaps_StringToMessagesEntryEncoder v =
     JE.object <| List.filterMap identity <|
         [ (requiredFieldEncoder "key" JE.string "" v.key)
-        , (optionalEncoder "value" mapEntryEncoder v.value)
+        , (optionalEncoder "value" mapValueEncoder v.value)
         ]
 
 
@@ -95,46 +90,4 @@ messageWithMaps_StringToStringsEntryEncoder v =
     JE.object <| List.filterMap identity <|
         [ (requiredFieldEncoder "key" JE.string "" v.key)
         , (requiredFieldEncoder "value" JE.string "" v.value)
-        ]
-
-
-type alias MessageWithMaps_IntToStringsEntry =
-    { key : Int -- 1
-    , value : String -- 2
-    }
-
-
-messageWithMaps_IntToStringsEntryDecoder : JD.Decoder MessageWithMaps_IntToStringsEntry
-messageWithMaps_IntToStringsEntryDecoder =
-    JD.lazy <| \_ -> decode MessageWithMaps_IntToStringsEntry
-        |> required "key" intDecoder 0
-        |> required "value" JD.string ""
-
-
-messageWithMaps_IntToStringsEntryEncoder : MessageWithMaps_IntToStringsEntry -> JE.Value
-messageWithMaps_IntToStringsEntryEncoder v =
-    JE.object <| List.filterMap identity <|
-        [ (requiredFieldEncoder "key" JE.int 0 v.key)
-        , (requiredFieldEncoder "value" JE.string "" v.value)
-        ]
-
-
-type alias MessageWithMaps_Int32ToMessagesEntry =
-    { key : Int -- 1
-    , value : Maybe MapEntry -- 2
-    }
-
-
-messageWithMaps_Int32ToMessagesEntryDecoder : JD.Decoder MessageWithMaps_Int32ToMessagesEntry
-messageWithMaps_Int32ToMessagesEntryDecoder =
-    JD.lazy <| \_ -> decode MessageWithMaps_Int32ToMessagesEntry
-        |> required "key" intDecoder 0
-        |> optional "value" mapEntryDecoder
-
-
-messageWithMaps_Int32ToMessagesEntryEncoder : MessageWithMaps_Int32ToMessagesEntry -> JE.Value
-messageWithMaps_Int32ToMessagesEntryEncoder v =
-    JE.object <| List.filterMap identity <|
-        [ (requiredFieldEncoder "key" JE.int 0 v.key)
-        , (optionalEncoder "value" mapEntryEncoder v.value)
         ]
