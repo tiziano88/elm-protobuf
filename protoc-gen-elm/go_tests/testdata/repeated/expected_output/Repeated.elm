@@ -74,7 +74,7 @@ type alias SubMessage =
 subMessageDecoder : JD.Decoder SubMessage
 subMessageDecoder =
     JD.lazy <| \_ -> decode SubMessage
-        |> required "int32Field" JD.int 0
+        |> required "int32Field" intDecoder 0
 
 
 subMessageEncoder : SubMessage -> JE.Value
@@ -117,21 +117,21 @@ fooDecoder =
     JD.lazy <| \_ -> decode Foo
         |> required "doubleField" JD.float 0.0
         |> required "floatField" JD.float 0.0
-        |> required "int32Field" JD.int 0
-        |> required "int64Field" JD.int 0
-        |> required "uint32Field" JD.int 0
-        |> required "uint64Field" JD.int 0
-        |> required "sint32Field" JD.int 0
-        |> required "sint64Field" JD.int 0
-        |> required "fixed32Field" JD.int 0
-        |> required "fixed64Field" JD.int 0
-        |> required "sfixed32Field" JD.int 0
-        |> required "sfixed64Field" JD.int 0
+        |> required "int32Field" intDecoder 0
+        |> required "int64Field" intDecoder 0
+        |> required "uint32Field" intDecoder 0
+        |> required "uint64Field" intDecoder 0
+        |> required "sint32Field" intDecoder 0
+        |> required "sint64Field" intDecoder 0
+        |> required "fixed32Field" intDecoder 0
+        |> required "fixed64Field" intDecoder 0
+        |> required "sfixed32Field" intDecoder 0
+        |> required "sfixed64Field" intDecoder 0
         |> required "boolField" JD.bool False
         |> required "stringField" JD.string ""
         |> required "enumField" enumDecoder enumDefault
         |> optional "subMessage" subMessageDecoder
-        |> repeated "repeatedInt64Field" JD.int
+        |> repeated "repeatedInt64Field" intDecoder
         |> repeated "repeatedEnumField" enumDecoder
         |> optional "nestedMessageField" foo_NestedMessageDecoder
         |> required "nestedEnumField" foo_NestedEnumDecoder foo_NestedEnumDefault
@@ -161,20 +161,20 @@ fooEncoder v =
         [ (requiredFieldEncoder "doubleField" JE.float 0.0 v.doubleField)
         , (requiredFieldEncoder "floatField" JE.float 0.0 v.floatField)
         , (requiredFieldEncoder "int32Field" JE.int 0 v.int32Field)
-        , (requiredFieldEncoder "int64Field" JE.int 0 v.int64Field)
+        , (requiredFieldEncoder "int64Field" numericStringEncoder 0 v.int64Field)
         , (requiredFieldEncoder "uint32Field" JE.int 0 v.uint32Field)
-        , (requiredFieldEncoder "uint64Field" JE.int 0 v.uint64Field)
+        , (requiredFieldEncoder "uint64Field" numericStringEncoder 0 v.uint64Field)
         , (requiredFieldEncoder "sint32Field" JE.int 0 v.sint32Field)
-        , (requiredFieldEncoder "sint64Field" JE.int 0 v.sint64Field)
+        , (requiredFieldEncoder "sint64Field" numericStringEncoder 0 v.sint64Field)
         , (requiredFieldEncoder "fixed32Field" JE.int 0 v.fixed32Field)
-        , (requiredFieldEncoder "fixed64Field" JE.int 0 v.fixed64Field)
+        , (requiredFieldEncoder "fixed64Field" numericStringEncoder 0 v.fixed64Field)
         , (requiredFieldEncoder "sfixed32Field" JE.int 0 v.sfixed32Field)
-        , (requiredFieldEncoder "sfixed64Field" JE.int 0 v.sfixed64Field)
+        , (requiredFieldEncoder "sfixed64Field" numericStringEncoder 0 v.sfixed64Field)
         , (requiredFieldEncoder "boolField" JE.bool False v.boolField)
         , (requiredFieldEncoder "stringField" JE.string "" v.stringField)
         , (requiredFieldEncoder "enumField" enumEncoder enumDefault v.enumField)
         , (optionalEncoder "subMessage" subMessageEncoder v.subMessage)
-        , (repeatedFieldEncoder "repeatedInt64Field" JE.int v.repeatedInt64Field)
+        , (repeatedFieldEncoder "repeatedInt64Field" numericStringEncoder v.repeatedInt64Field)
         , (repeatedFieldEncoder "repeatedEnumField" enumEncoder v.repeatedEnumField)
         , (optionalEncoder "nestedMessageField" foo_NestedMessageEncoder v.nestedMessageField)
         , (requiredFieldEncoder "nestedEnumField" foo_NestedEnumEncoder foo_NestedEnumDefault v.nestedEnumField)
@@ -201,7 +201,7 @@ type alias Foo_NestedMessage =
 foo_NestedMessageDecoder : JD.Decoder Foo_NestedMessage
 foo_NestedMessageDecoder =
     JD.lazy <| \_ -> decode Foo_NestedMessage
-        |> required "int32Field" JD.int 0
+        |> required "int32Field" intDecoder 0
 
 
 foo_NestedMessageEncoder : Foo_NestedMessage -> JE.Value
@@ -219,7 +219,7 @@ type alias Foo_NestedMessage_NestedNestedMessage =
 foo_NestedMessage_NestedNestedMessageDecoder : JD.Decoder Foo_NestedMessage_NestedNestedMessage
 foo_NestedMessage_NestedNestedMessageDecoder =
     JD.lazy <| \_ -> decode Foo_NestedMessage_NestedNestedMessage
-        |> required "int32Field" JD.int 0
+        |> required "int32Field" intDecoder 0
 
 
 foo_NestedMessage_NestedNestedMessageEncoder : Foo_NestedMessage_NestedNestedMessage -> JE.Value
@@ -254,16 +254,16 @@ fooRepeatedDecoder =
     JD.lazy <| \_ -> decode FooRepeated
         |> repeated "doubleField" JD.float
         |> repeated "floatField" JD.float
-        |> repeated "int32Field" JD.int
-        |> repeated "int64Field" JD.int
-        |> repeated "uint32Field" JD.int
-        |> repeated "uint64Field" JD.int
-        |> repeated "sint32Field" JD.int
-        |> repeated "sint64Field" JD.int
-        |> repeated "fixed32Field" JD.int
-        |> repeated "fixed64Field" JD.int
-        |> repeated "sfixed32Field" JD.int
-        |> repeated "sfixed64Field" JD.int
+        |> repeated "int32Field" intDecoder
+        |> repeated "int64Field" intDecoder
+        |> repeated "uint32Field" intDecoder
+        |> repeated "uint64Field" intDecoder
+        |> repeated "sint32Field" intDecoder
+        |> repeated "sint64Field" intDecoder
+        |> repeated "fixed32Field" intDecoder
+        |> repeated "fixed64Field" intDecoder
+        |> repeated "sfixed32Field" intDecoder
+        |> repeated "sfixed64Field" intDecoder
         |> repeated "boolField" JD.bool
         |> repeated "stringField" JD.string
         |> repeated "enumField" enumDecoder
@@ -276,15 +276,15 @@ fooRepeatedEncoder v =
         [ (repeatedFieldEncoder "doubleField" JE.float v.doubleField)
         , (repeatedFieldEncoder "floatField" JE.float v.floatField)
         , (repeatedFieldEncoder "int32Field" JE.int v.int32Field)
-        , (repeatedFieldEncoder "int64Field" JE.int v.int64Field)
+        , (repeatedFieldEncoder "int64Field" numericStringEncoder v.int64Field)
         , (repeatedFieldEncoder "uint32Field" JE.int v.uint32Field)
-        , (repeatedFieldEncoder "uint64Field" JE.int v.uint64Field)
+        , (repeatedFieldEncoder "uint64Field" numericStringEncoder v.uint64Field)
         , (repeatedFieldEncoder "sint32Field" JE.int v.sint32Field)
-        , (repeatedFieldEncoder "sint64Field" JE.int v.sint64Field)
+        , (repeatedFieldEncoder "sint64Field" numericStringEncoder v.sint64Field)
         , (repeatedFieldEncoder "fixed32Field" JE.int v.fixed32Field)
-        , (repeatedFieldEncoder "fixed64Field" JE.int v.fixed64Field)
+        , (repeatedFieldEncoder "fixed64Field" numericStringEncoder v.fixed64Field)
         , (repeatedFieldEncoder "sfixed32Field" JE.int v.sfixed32Field)
-        , (repeatedFieldEncoder "sfixed64Field" JE.int v.sfixed64Field)
+        , (repeatedFieldEncoder "sfixed64Field" numericStringEncoder v.sfixed64Field)
         , (repeatedFieldEncoder "boolField" JE.bool v.boolField)
         , (repeatedFieldEncoder "stringField" JE.string v.stringField)
         , (repeatedFieldEncoder "enumField" enumEncoder v.enumField)

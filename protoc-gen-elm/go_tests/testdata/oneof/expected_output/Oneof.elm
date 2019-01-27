@@ -27,7 +27,7 @@ firstOneofDecoder : JD.Decoder FirstOneof
 firstOneofDecoder =
     JD.lazy <| \_ -> JD.oneOf
         [ JD.map StringField (JD.field "stringField" JD.string)
-        , JD.map IntField (JD.field "intField" JD.int)
+        , JD.map IntField (JD.field "intField" intDecoder)
         , JD.succeed FirstOneofUnspecified
         ]
 
