@@ -19,6 +19,7 @@ before_install:
   #- rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
 
 install:
+  - set -e
   - ./install_protobuf
   - export PATH=$PATH:$PWD/protoc/bin
   - go get -t -v ./protoc-gen-elm
@@ -30,4 +31,7 @@ install:
   - npm install -g elm-test@$TRAVIS_ELM_TEST_VERSION
   - elm-test --version
 
-script: ./run_tests
+script: 
+  - set -e
+  - ./run_tests
+  - ./go_tests/run_go_tests
