@@ -283,7 +283,7 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 		}
 		if keyField.GetType() != descriptor.FieldDescriptorProto_TYPE_STRING &&
 			keyField.GetType() != descriptor.FieldDescriptorProto_TYPE_INT32 {
-			return fmt.Errorf("map key must have type `string` or `int32`")
+			return fmt.Errorf("map key must have type `string`")
 		}
 
 		valueField := inMessage.Field[1]

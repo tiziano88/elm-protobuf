@@ -1,13 +1,11 @@
 syntax = "proto3";
 
-message MapEntry {
+message MapValue {
   bool field = 1;
 }
 
 message MessageWithMaps {
-    map<string, MapEntry> stringToMessages = 8;
+    map<string, MapValue> stringToMessages = 8;
     map<string, string> stringToStrings = 7;
-    map<int32, string> intToStrings = 6;
-    map<int32, MapEntry> int32ToMessages = 10;
 }
 

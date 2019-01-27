@@ -1,7 +1,7 @@
 module Protobuf exposing
     ( decode, required, optional, repeated, field
     , withDefault, intDecoder, fromResult
-    , requiredFieldEncoder, optionalEncoder, repeatedFieldEncoder, numericStringEncoder
+    , requiredFieldEncoder, optionalEncoder, repeatedFieldEncoder, numericStringEncoder, mapEntriesFieldEncoder, mapEntries
     , Bytes, bytesFieldDecoder, bytesFieldEncoder
     , Timestamp, timestampDecoder, timestampEncoder
     , intValueDecoder, intValueEncoder
@@ -54,6 +54,7 @@ import ISO8601
 import Json.Decode as JD
 import Json.Encode as JE
 import Time
+import Dict
 
 
 {-| Decodes a message.
@@ -82,6 +83,12 @@ optional name decoder d =
 repeated : String -> JD.Decoder a -> JD.Decoder (List a -> b) -> JD.Decoder b
 repeated name decoder d =
     field (withDefault [] <| JD.field name <| JD.list decoder) d
+
+{-| Decodes a Dict
+-}
+mapEntries : String -> JD.Decoder a -> JD.Decoder (Dict.Dict String a -> b) -> JD.Decoder b
+mapEntries name valueDecoder d =
+    field (withDefault Dict.empty <| JD.field name <| JD.dict valueDecoder) d
 
 
 {-| Decodes a field.
@@ -134,6 +141,19 @@ repeatedFieldEncoder name encoder v =
 
         _ ->
             Just ( name, JE.list encoder v )
+
+{-| Encodes dictionary field.
+-}
+mapEntriesFieldEncoder : String -> (a -> JE.Value) -> Dict.Dict String a -> Maybe ( String, JE.Value )
+mapEntriesFieldEncoder name valueEncoder v =
+    if Dict.isEmpty v then
+        Nothing
+    else
+        let
+            items = Dict.toList v 
+            encodedItems = List.map (\(key, val) -> (key, valueEncoder val)) items
+        in
+            Just ( name, JE.object encodedItems)
 
 
 {-| Bytes field.
