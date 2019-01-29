@@ -187,8 +187,14 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 	fg.GenerateModule(fullModuleName)
 	fg.GenerateComments(inFile)
 
+	fg.GenerateBaseImports()
+
+	// only `import Dict` if it's going to be used, in case
+	// any linters are watching
 	includeDictImport := hasMapEntries(inFile)
-	fg.GenerateImports(includeDictImport)
+	if includeDictImport {
+		fg.P("import Dict")
+	}
 
 	// Generate additional imports.
 	for _, d := range inFile.GetDependency() {
@@ -257,15 +263,12 @@ func (fg *FileGenerator) GenerateComments(inFile *descriptor.FileDescriptorProto
 	fg.P("-- source file: %s", inFile.GetName())
 }
 
-func (fg *FileGenerator) GenerateImports(includeDictImport bool) {
+func (fg *FileGenerator) GenerateBaseImports() {
 	fg.P("")
 	fg.P("import Protobuf exposing (..)")
 	fg.P("")
 	fg.P("import Json.Decode as JD")
 	fg.P("import Json.Encode as JE")
-	if includeDictImport {
-		fg.P("import Dict")
-	}
 }
 
 func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor.DescriptorProto) error {
@@ -281,8 +284,7 @@ func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor
 		if keyField.GetName() != "key" {
 			return fmt.Errorf("first map entry field must be called `key`")
 		}
-		if keyField.GetType() != descriptor.FieldDescriptorProto_TYPE_STRING &&
-			keyField.GetType() != descriptor.FieldDescriptorProto_TYPE_INT32 {
+		if keyField.GetType() != descriptor.FieldDescriptorProto_TYPE_STRING {
 			return fmt.Errorf("map key must have type `string`")
 		}
 
