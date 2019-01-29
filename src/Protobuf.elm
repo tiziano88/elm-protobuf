@@ -84,7 +84,7 @@ repeated : String -> JD.Decoder a -> JD.Decoder (List a -> b) -> JD.Decoder b
 repeated name decoder d =
     field (withDefault [] <| JD.field name <| JD.list decoder) d
 
-{-| Decodes a Dict
+{-| Decodes a Dict.
 -}
 mapEntries : String -> JD.Decoder a -> JD.Decoder (Dict.Dict String a -> b) -> JD.Decoder b
 mapEntries name valueDecoder d =
