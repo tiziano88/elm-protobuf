@@ -97,12 +97,16 @@ func main() {
 		log.Fatalf("Could not unmarshal request: %v", err)
 	}
 
+	opts := parseParam(req.GetParameter())
+
 	// Remove useless source code data.
 	for _, inFile := range req.GetProtoFile() {
 		inFile.SourceCodeInfo = nil
 	}
 
-	log.Printf("Input data: %v", proto.MarshalTextString(req))
+	if _, ok := opts["debug"]; ok {
+		log.Printf("Input data: %v", proto.MarshalTextString(req))
+	}
 
 	resp := &plugin.CodeGeneratorResponse{}
 
@@ -129,6 +133,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not write response to STDOUT: %v", err)
 	}
+}
+
+// parseParam parses the comma-separated list of key=value pairs in the
+// CodeGeneratorRequest's parameter into a map.
+func parseParam(parameter string) map[string]string {
+	opts := make(map[string]string)
+
+	for _, token := range strings.Split(parameter, ",") {
+		token = strings.TrimSpace(token)
+
+		if k := strings.Index(token, "="); k < 0 {
+			opts[token] = ""
+		} else {
+			opts[token[0:k]] = token[k+1:]
+		}
+	}
+
+	return opts
 }
 
 func hasMapEntries(inFile *descriptor.FileDescriptorProto) bool {
