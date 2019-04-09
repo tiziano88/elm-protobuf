@@ -11,6 +11,9 @@ import Json.Decode as JD
 import Json.Encode as JE
 
 
+uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
+
+
 type alias ThirtyTwo =
     { int32Field : Int -- 1
     , uint32Field : Int -- 2

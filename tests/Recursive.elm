@@ -11,6 +11,9 @@ import Json.Decode as JD
 import Json.Encode as JE
 
 
+uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
+
+
 type alias Rec =
     { int32Field : Int -- 1
     , stringField : String -- 4
