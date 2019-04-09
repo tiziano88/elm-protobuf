@@ -1,5 +1,6 @@
 module Main exposing (assertEncodeDecode, decode, emptyJson, encode, foo, fooDefault, fooJson, fuzz, genFuzz, json32numbers, json32strings, json64numbers, json64strings, map, mapJson, msg, msg32, msg64, msgDefault, msgEmpty, msgExtraFieldJson, msgJson, nullJson, oo1Set, oo1SetJson, oo2Set, oo2SetJson, rec1, rec2, recDefault, recJson1, recJson2, suite, timestampFoo, timestampJson, wrappersEmpty, wrappersJsonEmpty, wrappersJsonNull, wrappersJsonSet, wrappersJsonZero, wrappersSet, wrappersZero, wrongTypeJson)
 
+import Dir.Other_dir as OD
 import Expect exposing (..)
 import Fuzz exposing (..)
 import Fuzzer as F
@@ -9,6 +10,7 @@ import Json.Decode as JD
 import Json.Encode as JE
 import Keywords as K
 import Map as M
+import Other as O
 import Protobuf exposing (..)
 import Recursive as R
 import Result
@@ -185,14 +187,10 @@ emptyJson =
 foo : T.Foo
 foo =
     { s =
-        Just
-            { int32Field = 11
-            }
+        Just <| T.SimpleMessage { int32Field = 11 }
     , ss =
-        [ { int32Field = 111
-          }
-        , { int32Field = 222
-          }
+        [ T.SimpleMessage { int32Field = 111 }
+        , T.SimpleMessage { int32Field = 222 }
         ]
     , colour = T.Red
     , colours =
@@ -209,13 +207,9 @@ foo =
     , bytesField = []
     , stringValueField = Nothing
     , otherField =
-        Just
-            { stringField = "xxx"
-            }
+        Just <| O.OtherMessage { stringField = "xxx" }
     , otherDirField =
-        Just
-            { stringField = "yyy"
-            }
+        Just <| OD.OtherDirMessage { stringField = "yyy" }
     , timestampField = Nothing
     }
 
@@ -320,11 +314,12 @@ rec1 : R.Rec
 rec1 =
     { int32Field = 0
     , r =
-        R.RecField
-            { int32Field = 0
-            , r = R.RUnspecified
-            , stringField = ""
-            }
+        R.RecField <|
+            R.RecMessage
+                { int32Field = 0
+                , r = R.RUnspecified
+                , stringField = ""
+                }
     , stringField = ""
     }
 
@@ -344,16 +339,18 @@ rec2 : R.Rec
 rec2 =
     { int32Field = 0
     , r =
-        R.RecField
-            { int32Field = 0
-            , r =
-                R.RecField
-                    { int32Field = 0
-                    , r = R.RUnspecified
-                    , stringField = ""
-                    }
-            , stringField = ""
-            }
+        R.RecField <|
+            R.RecMessage
+                { int32Field = 0
+                , r =
+                    R.RecField <|
+                        R.RecMessage
+                            { int32Field = 0
+                            , r = R.RUnspecified
+                            , stringField = ""
+                            }
+                , stringField = ""
+                }
     , stringField = ""
     }
 
@@ -478,8 +475,8 @@ wrappersSet =
 map : M.MessageWithMaps
 map =
     { stringToMessages = Dict.fromList 
-        [ ( "foo" ,  { field = True } ),
-        ( "bar" ,  { field = False } )
+        [ ( "foo" ,  M.MapValueMessage { field = True } ),
+        ( "bar" ,  M.MapValueMessage { field = False } )
         ],
         stringToStrings = Dict.fromList
         [
