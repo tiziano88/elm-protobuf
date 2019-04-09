@@ -214,6 +214,10 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 		fg.P("import %s exposing (..)", fullModuleName)
 	}
 
+	fg.P("")
+	fg.P("")
+	fg.P("uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42")
+
 	var err error
 
 	// Top-level enums.

@@ -11,6 +11,9 @@ import Json.Decode as JD
 import Json.Encode as JE
 
 
+uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
+
+
 type alias Wrappers =
     { int32ValueField : Maybe Int -- 1
     , int64ValueField : Maybe Int -- 2

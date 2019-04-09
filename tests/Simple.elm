@@ -13,6 +13,9 @@ import Dir.Other_dir exposing (..)
 import Other exposing (..)
 
 
+uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
+
+
 type Colour
     = ColourUnspecified -- 0
     | Red -- 1

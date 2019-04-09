@@ -12,6 +12,9 @@ import Json.Encode as JE
 import Dict
 
 
+uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
+
+
 type alias Bar =
     { field : Bool -- 1
     }

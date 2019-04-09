@@ -11,6 +11,9 @@ import Json.Decode as JD
 import Json.Encode as JE
 
 
+uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
+
+
 type alias Message =
     { doubleValueField : Maybe Float -- 1
     }

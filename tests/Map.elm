@@ -12,6 +12,9 @@ import Json.Encode as JE
 import Dict
 
 
+uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
+
+
 type alias MapValue =
     { field : Bool -- 1
     }
