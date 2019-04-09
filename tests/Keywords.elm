@@ -30,6 +30,7 @@ type alias Keywords =
     , port_ : Int -- 13
     , as_ : Int -- 14
     }
+type KeywordsMessage = KeywordsMessage Keywords
 
 
 keywordsDecoder : JD.Decoder Keywords

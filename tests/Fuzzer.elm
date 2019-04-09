@@ -21,6 +21,7 @@ type alias Fuzz =
     , int32ValueField : Maybe Int -- 4
     , timestampField : Maybe Timestamp -- 5
     }
+type FuzzMessage = FuzzMessage Fuzz
 
 
 fuzzDecoder : JD.Decoder Fuzz

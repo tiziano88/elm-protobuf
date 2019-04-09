@@ -21,6 +21,7 @@ type alias ThirtyTwo =
     , fixed32Field : Int -- 4
     , sfixed32Field : Int -- 5
     }
+type ThirtyTwoMessage = ThirtyTwoMessage ThirtyTwo
 
 
 thirtyTwoDecoder : JD.Decoder ThirtyTwo
@@ -51,6 +52,7 @@ type alias SixtyFour =
     , fixed64Field : Int -- 4
     , sfixed64Field : Int -- 5
     }
+type SixtyFourMessage = SixtyFourMessage SixtyFour
 
 
 sixtyFourDecoder : JD.Decoder SixtyFour

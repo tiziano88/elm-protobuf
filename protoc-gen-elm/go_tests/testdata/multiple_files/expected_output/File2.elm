@@ -17,6 +17,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 type alias File2Message =
     { field : Bool -- 1
     }
+type File2MessageMessage = File2MessageMessage File2Message
 
 
 file2MessageDecoder : JD.Decoder File2Message

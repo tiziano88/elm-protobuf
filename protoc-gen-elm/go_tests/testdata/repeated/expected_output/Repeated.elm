@@ -72,6 +72,7 @@ enumEncoder v =
 type alias SubMessage =
     { int32Field : Int -- 1
     }
+type SubMessageMessage = SubMessageMessage SubMessage
 
 
 subMessageDecoder : JD.Decoder SubMessage
@@ -103,12 +104,13 @@ type alias Foo =
     , boolField : Bool -- 13
     , stringField : String -- 14
     , enumField : Enum -- 15
-    , subMessage : Maybe SubMessage -- 16
+    , subMessage : Maybe SubMessageMessage -- 16
     , repeatedInt64Field : List Int -- 17
     , repeatedEnumField : List Enum -- 18
-    , nestedMessageField : Maybe Foo_NestedMessage -- 19
+    , nestedMessageField : Maybe Foo_NestedMessageMessage -- 19
     , nestedEnumField : Foo_NestedEnum -- 20
     }
+type FooMessage = FooMessage Foo
 
 
 type Foo_NestedEnum
@@ -133,10 +135,10 @@ fooDecoder =
         |> required "boolField" JD.bool False
         |> required "stringField" JD.string ""
         |> required "enumField" enumDecoder enumDefault
-        |> optional "subMessage" subMessageDecoder
+        |> optional "subMessage" (JD.map SubMessageMessage subMessageDecoder)
         |> repeated "repeatedInt64Field" intDecoder
         |> repeated "repeatedEnumField" enumDecoder
-        |> optional "nestedMessageField" foo_NestedMessageDecoder
+        |> optional "nestedMessageField" (JD.map Foo_NestedMessageMessage foo_NestedMessageDecoder)
         |> required "nestedEnumField" foo_NestedEnumDecoder foo_NestedEnumDefault
 
 
@@ -176,10 +178,10 @@ fooEncoder v =
         , (requiredFieldEncoder "boolField" JE.bool False v.boolField)
         , (requiredFieldEncoder "stringField" JE.string "" v.stringField)
         , (requiredFieldEncoder "enumField" enumEncoder enumDefault v.enumField)
-        , (optionalEncoder "subMessage" subMessageEncoder v.subMessage)
+        , (optionalEncoder "subMessage" (\(SubMessageMessage f) -> subMessageEncoder f) v.subMessage)
         , (repeatedFieldEncoder "repeatedInt64Field" numericStringEncoder v.repeatedInt64Field)
         , (repeatedFieldEncoder "repeatedEnumField" enumEncoder v.repeatedEnumField)
-        , (optionalEncoder "nestedMessageField" foo_NestedMessageEncoder v.nestedMessageField)
+        , (optionalEncoder "nestedMessageField" (\(Foo_NestedMessageMessage f) -> foo_NestedMessageEncoder f) v.nestedMessageField)
         , (requiredFieldEncoder "nestedEnumField" foo_NestedEnumEncoder foo_NestedEnumDefault v.nestedEnumField)
         ]
 
@@ -199,6 +201,7 @@ foo_NestedEnumEncoder v =
 type alias Foo_NestedMessage =
     { int32Field : Int -- 1
     }
+type Foo_NestedMessageMessage = Foo_NestedMessageMessage Foo_NestedMessage
 
 
 foo_NestedMessageDecoder : JD.Decoder Foo_NestedMessage
@@ -217,6 +220,7 @@ foo_NestedMessageEncoder v =
 type alias Foo_NestedMessage_NestedNestedMessage =
     { int32Field : Int -- 1
     }
+type Foo_NestedMessage_NestedNestedMessageMessage = Foo_NestedMessage_NestedNestedMessageMessage Foo_NestedMessage_NestedNestedMessage
 
 
 foo_NestedMessage_NestedNestedMessageDecoder : JD.Decoder Foo_NestedMessage_NestedNestedMessage
@@ -248,8 +252,9 @@ type alias FooRepeated =
     , boolField : List Bool -- 13
     , stringField : List String -- 14
     , enumField : List Enum -- 15
-    , subMessage : List SubMessage -- 16
+    , subMessage : List SubMessageMessage -- 16
     }
+type FooRepeatedMessage = FooRepeatedMessage FooRepeated
 
 
 fooRepeatedDecoder : JD.Decoder FooRepeated
@@ -270,7 +275,7 @@ fooRepeatedDecoder =
         |> repeated "boolField" JD.bool
         |> repeated "stringField" JD.string
         |> repeated "enumField" enumDecoder
-        |> repeated "subMessage" subMessageDecoder
+        |> repeated "subMessage" (JD.map SubMessageMessage subMessageDecoder)
 
 
 fooRepeatedEncoder : FooRepeated -> JE.Value
@@ -291,5 +296,5 @@ fooRepeatedEncoder v =
         , (repeatedFieldEncoder "boolField" JE.bool v.boolField)
         , (repeatedFieldEncoder "stringField" JE.string v.stringField)
         , (repeatedFieldEncoder "enumField" enumEncoder v.enumField)
-        , (repeatedFieldEncoder "subMessage" subMessageEncoder v.subMessage)
+        , (repeatedFieldEncoder "subMessage" (\(SubMessageMessage f) -> subMessageEncoder f) v.subMessage)
         ]

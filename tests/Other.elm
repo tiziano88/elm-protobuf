@@ -17,6 +17,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 type alias Other =
     { stringField : String -- 1
     }
+type OtherMessage = OtherMessage Other
 
 
 otherDecoder : JD.Decoder Other

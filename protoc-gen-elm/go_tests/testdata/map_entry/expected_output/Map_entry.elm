@@ -18,6 +18,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 type alias Bar =
     { field : Bool -- 1
     }
+type BarMessage = BarMessage Bar
 
 
 barDecoder : JD.Decoder Bar
@@ -34,44 +35,46 @@ barEncoder v =
 
 
 type alias Foo =
-    { stringToBars : Dict.Dict String Bar -- 8
+    { stringToBars : Dict.Dict String BarMessage -- 8
     , stringToStrings : Dict.Dict String String -- 7
     }
+type FooMessage = FooMessage Foo
 
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
     JD.lazy <| \_ -> decode Foo
-        |> mapEntries "stringToBars" barDecoder
+        |> mapEntries "stringToBars" (JD.map BarMessage barDecoder)
         |> mapEntries "stringToStrings" JD.string
 
 
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
     JE.object <| List.filterMap identity <|
-        [ (mapEntriesFieldEncoder "stringToBars" barEncoder v.stringToBars)
+        [ (mapEntriesFieldEncoder "stringToBars" (\(BarMessage f) -> barEncoder f) v.stringToBars)
         , (mapEntriesFieldEncoder "stringToStrings" JE.string v.stringToStrings)
         ]
 
 
 type alias Foo_StringToBarsEntry =
     { key : String -- 1
-    , value : Maybe Bar -- 2
+    , value : Maybe BarMessage -- 2
     }
+type Foo_StringToBarsEntryMessage = Foo_StringToBarsEntryMessage Foo_StringToBarsEntry
 
 
 foo_StringToBarsEntryDecoder : JD.Decoder Foo_StringToBarsEntry
 foo_StringToBarsEntryDecoder =
     JD.lazy <| \_ -> decode Foo_StringToBarsEntry
         |> required "key" JD.string ""
-        |> optional "value" barDecoder
+        |> optional "value" (JD.map BarMessage barDecoder)
 
 
 foo_StringToBarsEntryEncoder : Foo_StringToBarsEntry -> JE.Value
 foo_StringToBarsEntryEncoder v =
     JE.object <| List.filterMap identity <|
         [ (requiredFieldEncoder "key" JE.string "" v.key)
-        , (optionalEncoder "value" barEncoder v.value)
+        , (optionalEncoder "value" (\(BarMessage f) -> barEncoder f) v.value)
         ]
 
 
@@ -79,6 +82,7 @@ type alias Foo_StringToStringsEntry =
     { key : String -- 1
     , value : String -- 2
     }
+type Foo_StringToStringsEntryMessage = Foo_StringToStringsEntryMessage Foo_StringToStringsEntry
 
 
 foo_StringToStringsEntryDecoder : JD.Decoder Foo_StringToStringsEntry

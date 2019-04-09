@@ -74,6 +74,7 @@ colourEncoder v =
 type alias Empty =
     {
     }
+type EmptyMessage = EmptyMessage Empty
 
 
 emptyDecoder : JD.Decoder Empty
@@ -91,6 +92,7 @@ emptyEncoder v =
 type alias Simple =
     { int32Field : Int -- 1
     }
+type SimpleMessage = SimpleMessage Simple
 
 
 simpleDecoder : JD.Decoder Simple
@@ -107,16 +109,16 @@ simpleEncoder v =
 
 
 type alias Foo =
-    { s : Maybe Simple -- 1
-    , ss : List Simple -- 2
+    { s : Maybe SimpleMessage -- 1
+    , ss : List SimpleMessage -- 2
     , colour : Colour -- 3
     , colours : List Colour -- 4
     , singleIntField : Int -- 5
     , repeatedIntField : List Int -- 6
     , bytesField : Bytes -- 9
     , stringValueField : Maybe String -- 10
-    , otherField : Maybe Other -- 11
-    , otherDirField : Maybe OtherDir -- 12
+    , otherField : Maybe OtherMessage -- 11
+    , otherDirField : Maybe OtherDirMessage -- 12
     , timestampField : Maybe Timestamp -- 13
     , oo : Oo
     }
@@ -146,21 +148,22 @@ ooEncoder v =
             Just ( "oo1", JE.int x )
         Oo2 x ->
             Just ( "oo2", JE.bool x )
+type FooMessage = FooMessage Foo
 
 
 fooDecoder : JD.Decoder Foo
 fooDecoder =
     JD.lazy <| \_ -> decode Foo
-        |> optional "s" simpleDecoder
-        |> repeated "ss" simpleDecoder
+        |> optional "s" (JD.map SimpleMessage simpleDecoder)
+        |> repeated "ss" (JD.map SimpleMessage simpleDecoder)
         |> required "colour" colourDecoder colourDefault
         |> repeated "colours" colourDecoder
         |> required "singleIntField" intDecoder 0
         |> repeated "repeatedIntField" intDecoder
         |> required "bytesField" bytesFieldDecoder []
         |> optional "stringValueField" stringValueDecoder
-        |> optional "otherField" otherDecoder
-        |> optional "otherDirField" otherDirDecoder
+        |> optional "otherField" (JD.map OtherMessage otherDecoder)
+        |> optional "otherDirField" (JD.map OtherDirMessage otherDirDecoder)
         |> optional "timestampField" timestampDecoder
         |> field ooDecoder
 
@@ -168,16 +171,16 @@ fooDecoder =
 fooEncoder : Foo -> JE.Value
 fooEncoder v =
     JE.object <| List.filterMap identity <|
-        [ (optionalEncoder "s" simpleEncoder v.s)
-        , (repeatedFieldEncoder "ss" simpleEncoder v.ss)
+        [ (optionalEncoder "s" (\(SimpleMessage f) -> simpleEncoder f) v.s)
+        , (repeatedFieldEncoder "ss" (\(SimpleMessage f) -> simpleEncoder f) v.ss)
         , (requiredFieldEncoder "colour" colourEncoder colourDefault v.colour)
         , (repeatedFieldEncoder "colours" colourEncoder v.colours)
         , (requiredFieldEncoder "singleIntField" JE.int 0 v.singleIntField)
         , (repeatedFieldEncoder "repeatedIntField" JE.int v.repeatedIntField)
         , (requiredFieldEncoder "bytesField" bytesFieldEncoder [] v.bytesField)
         , (optionalEncoder "stringValueField" stringValueEncoder v.stringValueField)
-        , (optionalEncoder "otherField" otherEncoder v.otherField)
-        , (optionalEncoder "otherDirField" otherDirEncoder v.otherDirField)
+        , (optionalEncoder "otherField" (\(OtherMessage f) -> otherEncoder f) v.otherField)
+        , (optionalEncoder "otherDirField" (\(OtherDirMessage f) -> otherDirEncoder f) v.otherDirField)
         , (optionalEncoder "timestampField" timestampEncoder v.timestampField)
         , (ooEncoder v.oo)
         ]

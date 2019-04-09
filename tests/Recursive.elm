@@ -23,13 +23,13 @@ type alias Rec =
 
 type R
     = RUnspecified
-    | RecField Rec
+    | RecField RecMessage
 
 
 rDecoder : JD.Decoder R
 rDecoder =
     JD.lazy <| \_ -> JD.oneOf
-        [ JD.map RecField (JD.field "recField" recDecoder)
+        [ JD.map RecField (JD.field "recField" (JD.map RecMessage recDecoder))
         , JD.succeed RUnspecified
         ]
 
@@ -40,7 +40,8 @@ rEncoder v =
         RUnspecified ->
             Nothing
         RecField x ->
-            Just ( "recField", recEncoder x )
+            Just ( "recField", (\(RecMessage f) -> recEncoder f) x )
+type RecMessage = RecMessage Rec
 
 
 recDecoder : JD.Decoder Rec

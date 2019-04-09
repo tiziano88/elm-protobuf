@@ -17,6 +17,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 type alias OtherDir =
     { stringField : String -- 1
     }
+type OtherDirMessage = OtherDirMessage OtherDir
 
 
 otherDirDecoder : JD.Decoder OtherDir
