@@ -22,6 +22,7 @@ type alias Wrappers =
     , stringValueField : Maybe String -- 8
     , bytesValueField : Maybe Bytes -- 9
     }
+type WrappersMessage = WrappersMessage Wrappers
 
 
 wrappersDecoder : JD.Decoder Wrappers

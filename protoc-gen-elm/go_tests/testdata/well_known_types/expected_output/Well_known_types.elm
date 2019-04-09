@@ -14,6 +14,7 @@ import Json.Encode as JE
 type alias Message =
     { doubleValueField : Maybe Float -- 1
     }
+type MessageMessage = MessageMessage Message
 
 
 messageDecoder : JD.Decoder Message

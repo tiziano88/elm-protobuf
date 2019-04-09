@@ -67,6 +67,7 @@ secondOneofEncoder v =
             Just ( "boolField", JE.bool x )
         OtherStringField x ->
             Just ( "otherStringField", JE.string x )
+type FooMessage = FooMessage Foo
 
 
 fooDecoder : JD.Decoder Foo

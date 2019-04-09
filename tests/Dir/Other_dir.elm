@@ -14,6 +14,7 @@ import Json.Encode as JE
 type alias OtherDir =
     { stringField : String -- 1
     }
+type OtherDirMessage = OtherDirMessage OtherDir
 
 
 otherDirDecoder : JD.Decoder OtherDir
