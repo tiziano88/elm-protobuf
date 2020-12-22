@@ -16,6 +16,7 @@ func TestDiff(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, fi := range dirs {
 		if !fi.IsDir() {
 			continue
@@ -34,8 +35,10 @@ func TestDiff(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		runProto(t, dir)
-		runDiff(t, dir)
+		t.Run(fi.Name(), func(t *testing.T) {
+			runProto(t, dir)
+			runDiff(t, dir)
+		})
 	}
 
 }
