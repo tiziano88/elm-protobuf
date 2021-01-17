@@ -23,17 +23,13 @@ type alias Rec =
 
 type R
     = RUnspecified
-    | Int32Field Int
     | RecField Rec
-    | StringField String
 
 
 rDecoder : JD.Decoder R
 rDecoder =
     JD.lazy <| \_ -> JD.oneOf
-        [ JD.map Int32Field (JD.field "int32Field" intDecoder)
-        , JD.map RecField (JD.field "recField" recDecoder)
-        , JD.map StringField (JD.field "stringField" JD.string)
+        [ JD.map RecField (JD.field "recField" recDecoder)
         , JD.succeed RUnspecified
         ]
 
@@ -43,12 +39,8 @@ rEncoder v =
     case v of
         RUnspecified ->
             Nothing
-        Int32Field x ->
-            Just ( "int32Field", JE.int x )
         RecField x ->
             Just ( "recField", recEncoder x )
-        StringField x ->
-            Just ( "stringField", JE.string x )
 
 
 recDecoder : JD.Decoder Rec

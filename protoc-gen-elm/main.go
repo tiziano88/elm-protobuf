@@ -623,7 +623,7 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 
 			var oneOfFields []oneOfField
 			for _, inField := range messagePb.GetField() {
-				if inField.GetOneofIndex() == int32(oneofIndex) {
+				if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
 					fieldDecoder, err := fieldDecoderName(inField)
 					if err != nil {
 						return nil, err

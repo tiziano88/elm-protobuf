@@ -2,6 +2,10 @@
 
 set -ex
 
+pushd protoc-gen-elm
+go build .
+popd
+
 protoc \
     --proto_path=./tests/proto \
     --elm_out=./tests \
