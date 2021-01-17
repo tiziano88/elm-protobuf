@@ -16,6 +16,7 @@ func TestDiff(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, fi := range dirs {
 		if !fi.IsDir() {
 			continue
