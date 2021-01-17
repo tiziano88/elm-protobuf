@@ -16,6 +16,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 var (
@@ -142,7 +143,7 @@ func main() {
 		}
 
 		name := fileName(inFile.GetName())
-		content, err := templateFile(inFile)
+		content, err := templateFile(inFile, parameters)
 		if err != nil {
 			log.Fatalf("Could not template file: %v", err)
 		}
@@ -188,7 +189,7 @@ func hasMapEntriesInMessage(inMessage *descriptor.DescriptorProto) bool {
 	return false
 }
 
-func templateFile(inFile *descriptor.FileDescriptorProto) (string, error) {
+func templateFile(inFile *descriptor.FileDescriptorProto, p parameters) (string, error) {
 	t := template.New("t")
 
 	t, err := t.Parse(`
@@ -209,17 +210,17 @@ type {{ .Name }}
         lookup s =
             case s of
 {{- range .Values }}
-                "{{ .FullName }}" ->
+                "{{ .JSONName }}" ->
                     {{ .ElmName }}
 {{ end }}
                 _ ->
-                    {{ .DefaultEnumValue.ElmName }}
+                    {{ .DefaultEnumValue }}
     in
         JD.map lookup JD.string
 
 
 {{ .DefaultValueName }} : {{ .Name }}
-{{ .DefaultValueName }} = {{ .DefaultEnumValue.ElmName }}
+{{ .DefaultValueName }} = {{ .DefaultEnumValue }}
 {{- end }}
 {{- define "enum-encoder" }}
 
@@ -231,7 +232,7 @@ type {{ .Name }}
             case s of
 {{- range .Values }}
                 {{ .ElmName }} ->
-                    "{{ .FullName }}"
+                    "{{ .JSONName }}"
 {{ end }}
     in
         JE.string <| lookup v
@@ -326,7 +327,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 		return "", err
 	}
 
-	messages, err := messages([]string{}, inFile.GetMessageType())
+	messages, err := messages([]string{}, inFile.GetMessageType(), p)
 	if err != nil {
 		return "", err
 	}
@@ -344,7 +345,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 		ModuleName:        moduleName(inFile.GetName()),
 		ImportDict:        hasMapEntries(inFile),
 		AdditionalImports: getAdditionalImports(inFile.GetDependency()),
-		TopEnums:          enums([]string{}, inFile.GetEnumType()),
+		TopEnums:          enums([]string{}, inFile.GetEnumType(), p),
 		Messages:          messages,
 	}); err != nil {
 		return "", err
@@ -383,9 +384,11 @@ const (
 	EnumFieldDecoderHelper     FieldDecoderHelper = "field"
 )
 
+type ElmEnumName string
+
 type enumValue struct {
-	FullName string
-	ElmName  string
+	JSONName string
+	ElmName  ElmEnumName
 	Number   FieldNumber
 }
 
@@ -394,7 +397,7 @@ type enum struct {
 	DecoderName      DecoderName
 	EncoderName      string
 	DefaultValueName string
-	DefaultEnumValue enumValue
+	DefaultEnumValue ElmEnumName
 	Values           []enumValue
 }
 
@@ -405,7 +408,6 @@ type fieldDecoder struct {
 	DefaultValue    string
 }
 
-// TODO: oneOf field has no JSONName which affects field decoder
 type field struct {
 	Name     string
 	JSONName string
@@ -417,16 +419,7 @@ type field struct {
 
 type enumField struct {
 	Name    string
-	Type    string
 	Decoder fieldDecoder
-	Encoder string
-}
-
-type oneOfField struct {
-	Name    string
-	Type    CustomElmType
-	ElmType string
-	Decoder DecoderName
 	Encoder string
 }
 
@@ -435,6 +428,14 @@ type oneOf struct {
 	DecoderName DecoderName
 	EncoderName string
 	Fields      []oneOfField
+}
+
+type oneOfField struct {
+	Name    string
+	Type    CustomElmType
+	ElmType string
+	Decoder DecoderName
+	Encoder string
 }
 
 type nestedField struct {
@@ -456,21 +457,46 @@ type message struct {
 	NestedMessages []message
 }
 
-func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto) []enum {
+func fullElmEnumName(preface []string, value *descriptorpb.EnumValueDescriptorProto) ElmEnumName {
+	name := camelCase(strings.ToLower(value.GetName()))
+	for _, p := range preface {
+		name = fmt.Sprintf("%s_%s", camelCase(strings.ToLower(p)), name)
+	}
+
+	return ElmEnumName(name)
+}
+
+func isDeprecated(options interface{}) bool {
+	switch v := options.(type) {
+	case *descriptorpb.MessageOptions:
+		return v != nil && v.Deprecated != nil && *v.Deprecated
+	case *descriptorpb.FieldOptions:
+		return v != nil && v.Deprecated != nil && *v.Deprecated
+	case *descriptorpb.EnumOptions:
+		return v != nil && v.Deprecated != nil && *v.Deprecated
+	case *descriptorpb.EnumValueOptions:
+		return v != nil && v.Deprecated != nil && *v.Deprecated
+	default:
+		return false
+	}
+}
+
+func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto, p parameters) []enum {
 	var result []enum
 	for _, enumPb := range enumPbs {
+		if isDeprecated(enumPb.Options) && p.RemoveDeprecated {
+			continue
+		}
 
 		var values []enumValue
 		for _, value := range enumPb.GetValue() {
-
-			fullValueName := elmEnumValueName(value.GetName())
-			for _, p := range preface {
-				fullValueName = fmt.Sprintf("%s_%s", elmEnumValueName(p), fullValueName)
+			if isDeprecated(value.Options) && p.RemoveDeprecated {
+				continue
 			}
 
 			values = append(values, enumValue{
-				FullName: value.GetName(),
-				ElmName:  fullValueName,
+				JSONName: value.GetName(),
+				ElmName:  fullElmEnumName(preface, value),
 				Number:   FieldNumber(value.GetNumber()),
 			})
 		}
@@ -485,7 +511,7 @@ func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto) []enum {
 			DecoderName:      decoderName(fullName),
 			EncoderName:      encoderName(fullName),
 			DefaultValueName: defaultEnumValue(fullName),
-			DefaultEnumValue: values[0],
+			DefaultEnumValue: values[0].ElmName,
 			Values:           values,
 		})
 	}
@@ -493,12 +519,20 @@ func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto) []enum {
 	return result
 }
 
-func messages(preface []string, messagePbs []*descriptor.DescriptorProto) ([]message, error) {
+func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p parameters) ([]message, error) {
 	var result []message
 	for _, messagePb := range messagePbs {
 
+		if isDeprecated(messagePb.Options) && p.RemoveDeprecated {
+			continue
+		}
+
 		var fields []field
 		for _, fieldPb := range messagePb.GetField() {
+			if isDeprecated(fieldPb.Options) && p.RemoveDeprecated {
+				continue
+			}
+
 			if fieldPb.OneofIndex != nil {
 				continue
 			}
@@ -620,19 +654,19 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto) ([]mes
 		}
 
 		newPreface := append([]string{messagePb.GetName()}, preface...)
-		nestedMessages, err := messages(newPreface, messagePb.GetNestedType())
+		nestedMessages, err := messages(newPreface, messagePb.GetNestedType(), p)
 		if err != nil {
 			return nil, err
 		}
 
 		result = append(result, message{
-			Name:           elmEnumValueName(fullName),
+			Name:           camelCase(strings.ToLower(fullName)),
 			Type:           customElmType(preface, messagePb.GetName()),
 			DecoderName:    decoderName(fullName),
 			EncoderName:    encoderName(fullName),
 			Fields:         fields,
 			OneOfs:         oneOfs,
-			NestedEnums:    enums(newPreface, messagePb.GetEnumType()),
+			NestedEnums:    enums(newPreface, messagePb.GetEnumType(), p),
 			NestedMessages: nestedMessages,
 		})
 	}
@@ -763,10 +797,6 @@ func elmFieldName(in string) string {
 	return appendUnderscoreToReservedKeywords(firstLower(camelCase(in)))
 }
 
-func elmEnumValueName(in string) string {
-	return camelCase(strings.ToLower(in))
-}
-
 func defaultEnumValue(typeName string) string {
 	return firstLower(typeName) + "Default"
 }
@@ -870,8 +900,6 @@ func fieldDecoderName(inField *descriptor.FieldDescriptorProto) (DecoderName, er
 }
 
 func enumDecoderName(inField *descriptor.FieldDescriptorProto) DecoderName {
-	// TODO: Default enum value.
-	// Remove leading ".".
 	_, messageName := convert(inField.GetTypeName())
 	return decoderName(messageName)
 }
@@ -897,18 +925,9 @@ func decoderName(typeName string) DecoderName {
 
 func elmFieldType(field *descriptor.FieldDescriptorProto) string {
 	inFieldName := field.GetTypeName()
-	packageName, messageName := convert(inFieldName)
+	_, messageName := convert(inFieldName)
 
-	// Since we are exposing everything from imported modules, we do not use the package name at
-	// all here.
-	// TODO: Change this.
-	packageName = ""
-
-	if packageName == "" {
-		return messageName
-	} else {
-		return packageName + "." + messageName
-	}
+	return messageName
 }
 
 // Returns package name and message name.
@@ -955,4 +974,9 @@ func firstUpper(in string) string {
 func camelCase(in string) string {
 	// Remove any additional underscores, e.g. convert `foo_1` into `foo1`.
 	return strings.Replace(generator.CamelCase(in), "_", "", -1)
+}
+
+func oneofEncoderName(inOneof *descriptor.OneofDescriptorProto) string {
+	typeName := elmTypeName(inOneof.GetName())
+	return encoderName(typeName)
 }

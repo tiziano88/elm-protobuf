@@ -48,7 +48,7 @@ func runProto(t *testing.T, dir string) {
 
 	args := []string{
 		"--elm_out=../actual_output",
-		"--plugin=protoc-gen-elm=../../../../protoc-gen-elm",
+		"--plugin=protoc-gen-elm=../../../protoc-gen-elm",
 		"--elm_opt=remove-deprecated",
 	}
 	files, err := ioutil.ReadDir(inputDir)

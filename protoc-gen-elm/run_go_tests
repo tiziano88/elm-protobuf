@@ -5,4 +5,5 @@ set -ex
 readonly ROOT="$(dirname "$0")"
 cd "$ROOT"
 
+go build .
 go test -v
