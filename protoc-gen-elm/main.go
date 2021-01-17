@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"unicode"
 	"unicode/utf8"
 
@@ -18,9 +19,6 @@ import (
 )
 
 var (
-	// Maps each type to the file in which it was defined.
-	typeToFile = map[string]string{}
-
 	// Well Known Types.
 	excludedFiles = map[string]bool{
 		"google/protobuf/timestamp.proto": true,
@@ -38,7 +36,7 @@ var (
 		".google.protobuf.BytesValue":  "Bytes",
 		".google.protobuf.BoolValue":   "Bool",
 	}
-	excludedDecoders = map[string]string{
+	excludedDecoders = map[string]DecoderName{
 		".google.protobuf.Timestamp":   "timestampDecoder",
 		".google.protobuf.Int32Value":  "intValueDecoder",
 		".google.protobuf.Int64Value":  "intValueDecoder",
@@ -84,6 +82,33 @@ var (
 	}
 )
 
+type parameters struct {
+	Debug            bool
+	RemoveDeprecated bool
+}
+
+func parseParameters(input *string) (parameters, error) {
+	var result parameters
+	var err error
+
+	if input == nil {
+		return result, nil
+	}
+
+	for _, i := range strings.Split(*input, ",") {
+		switch i {
+		case "remove-deprecated":
+			result.RemoveDeprecated = true
+		case "debug":
+			result.Debug = true
+		default:
+			err = fmt.Errorf("Unknown parameter: \"%s\"", i)
+		}
+	}
+
+	return result, err
+}
+
 func main() {
 	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
@@ -97,12 +122,14 @@ func main() {
 		log.Fatalf("Could not unmarshal request: %v", err)
 	}
 
-	// Remove useless source code data.
-	for _, inFile := range req.GetProtoFile() {
-		inFile.SourceCodeInfo = nil
+	parameters, err := parseParameters(req.Parameter)
+	if err != nil {
+		log.Fatalf("Failed to parse parameters: %v", err)
 	}
 
-	log.Printf("Input data: %v", proto.MarshalTextString(req))
+	if parameters.Debug {
+		log.Printf("Input data: %v", proto.MarshalTextString(req))
+	}
 
 	resp := &plugin.CodeGeneratorResponse{}
 
@@ -113,11 +140,17 @@ func main() {
 			log.Printf("Skipping well known type")
 			continue
 		}
-		outFile, err := processFile(inFile)
+
+		name := fileName(inFile.GetName())
+		content, err := templateFile(inFile)
 		if err != nil {
-			log.Fatalf("Could not process file: %v", err)
+			log.Fatalf("Could not template file: %v", err)
 		}
-		resp.File = append(resp.File, outFile)
+
+		resp.File = append(resp.File, &plugin.CodeGeneratorResponse_File{
+			Name:    &name,
+			Content: &content,
+		})
 	}
 
 	data, err = proto.Marshal(resp)
@@ -155,53 +188,539 @@ func hasMapEntriesInMessage(inMessage *descriptor.DescriptorProto) bool {
 	return false
 }
 
-func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
-	if inFile.GetSyntax() != "proto3" {
-		return nil, fmt.Errorf("Only proto3 syntax is supported")
+func templateFile(inFile *descriptor.FileDescriptorProto) (string, error) {
+	t := template.New("t")
+
+	t, err := t.Parse(`
+{{- define "enum-type" }}
+
+
+type {{ .Name }}
+{{- range $i, $v := .Values }}
+    {{ if not $i }}={{ else }}|{{ end }} {{ $v.ElmName }} -- {{ $v.Number }}
+{{- end }}
+{{- end }}
+{{- define "enum-decoder" }}
+
+
+{{ .DecoderName }} : JD.Decoder {{ .Name }}
+{{ .DecoderName }} =
+    let
+        lookup s =
+            case s of
+{{- range .Values }}
+                "{{ .FullName }}" ->
+                    {{ .ElmName }}
+{{ end }}
+                _ ->
+                    {{ .DefaultEnumValue.ElmName }}
+    in
+        JD.map lookup JD.string
+
+
+{{ .DefaultValueName }} : {{ .Name }}
+{{ .DefaultValueName }} = {{ .DefaultEnumValue.ElmName }}
+{{- end }}
+{{- define "enum-encoder" }}
+
+
+{{ .EncoderName }} : {{ .Name }} -> JE.Value
+{{ .EncoderName }} v =
+    let
+        lookup s =
+            case s of
+{{- range .Values }}
+                {{ .ElmName }} ->
+                    "{{ .FullName }}"
+{{ end }}
+    in
+        JE.string <| lookup v
+{{- end }}
+{{- define "oneof-type" }}
+
+
+type {{ .Name }}
+    = {{ .Name }}Unspecified
+{{- range .Fields }}
+    | {{ .Type }} {{ .ElmType }}
+{{- end }}
+
+
+{{ .DecoderName }} : JD.Decoder {{ .Name }}
+{{ .DecoderName }} =
+    JD.lazy <| \_ -> JD.oneOf
+        [{{ range $i, $v := .Fields }}{{ if $i }},{{ end }} JD.map {{ .Type }} (JD.field "{{ .Name }}" {{ .Decoder }})
+        {{ end }}, JD.succeed {{ .Name }}Unspecified
+        ]
+
+
+{{ .EncoderName }} : {{ .Name }} -> Maybe ( String, JE.Value )
+{{ .EncoderName }} v =
+    case v of
+        {{ .Name }}Unspecified ->
+            Nothing
+        {{- range .Fields }}
+        {{ .Type }} x ->
+            Just ( "{{ .Name }}", {{ .Encoder }} x )
+        {{- end }}
+{{- end }}
+{{- define "enum" }}
+{{- template "enum-type" . }}
+{{- template "enum-decoder" . }}
+{{- template "enum-encoder" . }}
+{{- end }}
+{{- define "message" }}
+
+
+type alias {{ .Type }} =
+    { {{ range $i, $v := .Fields }}
+        {{- if $i }}, {{ end }}{{ .Name }} : {{ .Type }}{{ if .Number }} -- {{ .Number }}{{ end }}
+    {{ end }}}
+{{- range .NestedEnums }}{{ template "enum-type" . }}{{ end }}
+{{- range .OneOfs }}{{ template "oneof-type" . }}{{ end }}
+
+
+{{ .DecoderName }} : JD.Decoder {{ .Type }}
+{{ .DecoderName }} =
+    JD.lazy <| \_ -> decode {{ .Type }}{{ range .Fields }}
+        |> {{ .Decoder.Preface }}
+			{{- if .JSONName }} "{{ .JSONName }}"{{ end }} {{ .Decoder.Name }}
+			{{- if .Decoder.HasDefaultValue }} {{ .Decoder.DefaultValue }}{{ end }}
+        {{- end }}
+{{- range .NestedEnums }}{{ template "enum-decoder" . }}{{ end }}
+
+
+{{ .EncoderName }} : {{ .Type }} -> JE.Value
+{{ .EncoderName }} v =
+    JE.object <| List.filterMap identity <|
+        [{{ range $i, $v := .Fields }}
+            {{- if $i }},{{ end }} ({{ .Encoder }})
+        {{ end }}]
+{{- range .NestedEnums }}{{ template "enum-encoder" . }}{{ end }}
+{{- range .NestedMessages }}{{ template "message" . }}{{ end }}
+{{- end -}}
+module {{ .ModuleName }} exposing (..)
+
+-- DO NOT EDIT
+-- AUTOGENERATED BY THE ELM PROTOCOL BUFFER COMPILER
+-- https://github.com/tiziano88/elm-protobuf
+-- source file: {{ .SourceFile }}
+
+import Protobuf exposing (..)
+
+import Json.Decode as JD
+import Json.Encode as JE
+{{- if .ImportDict }}
+import Dict
+{{- end }}
+{{- range .AdditionalImports }}
+import {{ . }} exposing (..)
+{{ end }}
+
+
+uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
+{{- range .TopEnums }}{{ template "enum" . }}{{ end }}
+{{- range .Messages }}{{ template "message" . }}{{ end }}
+`)
+	if err != nil {
+		return "", err
 	}
 
-	outFile := &plugin.CodeGeneratorResponse_File{}
+	messages, err := messages([]string{}, inFile.GetMessageType())
+	if err != nil {
+		return "", err
+	}
 
-	inFilePath := inFile.GetName()
+	buff := &bytes.Buffer{}
+	if err = t.Execute(buff, struct {
+		SourceFile        string
+		ModuleName        string
+		ImportDict        bool
+		AdditionalImports []string
+		TopEnums          []enum
+		Messages          []message
+	}{
+		SourceFile:        inFile.GetName(),
+		ModuleName:        moduleName(inFile.GetName()),
+		ImportDict:        hasMapEntries(inFile),
+		AdditionalImports: getAdditionalImports(inFile.GetDependency()),
+		TopEnums:          enums([]string{}, inFile.GetEnumType()),
+		Messages:          messages,
+	}); err != nil {
+		return "", err
+	}
+
+	return buff.String(), nil
+}
+
+// FieldNumber is a number assigned to each message, enum, and oneof fields that is unique to that element.
+type FieldNumber int32
+
+// CustomElmType is the type alias for custom message, enum, and oneof elements.
+// This value is camel case with the first letter capitalized.
+type CustomElmType string
+
+// DecoderName is the Elm decoder for the FieldDescriptorProto_TYPE_****.
+// Simple custom decoders or prefaced with JD, the alias for `Json.Decode`.
+type DecoderName string
+
+const (
+	IntDecoder    DecoderName = "intDecoder"
+	BytesDecoder  DecoderName = "bytesFieldDecoder"
+	FloatDecoder  DecoderName = "JD.float"
+	BoolDecoder   DecoderName = "JD.bool"
+	StringDecoder DecoderName = "JD.string"
+)
+
+// FieldDecoderHelper is modifier for the field decoder based on properties of the field protobuf.
+type FieldDecoderHelper string
+
+const (
+	OptionalFieldDecoderHelper FieldDecoderHelper = "optional"
+	RepeatedFieldDecoderHelper FieldDecoderHelper = "repeated"
+	RequiredFieldDecoderHelper FieldDecoderHelper = "required"
+	MapFieldDecoderHelper      FieldDecoderHelper = "mapEntries"
+	EnumFieldDecoderHelper     FieldDecoderHelper = "field"
+)
+
+type enumValue struct {
+	FullName string
+	ElmName  string
+	Number   FieldNumber
+}
+
+type enum struct {
+	Name             string
+	DecoderName      DecoderName
+	EncoderName      string
+	DefaultValueName string
+	DefaultEnumValue enumValue
+	Values           []enumValue
+}
+
+type fieldDecoder struct {
+	Preface         FieldDecoderHelper
+	Name            DecoderName
+	HasDefaultValue bool
+	DefaultValue    string
+}
+
+// TODO: oneOf field has no JSONName which affects field decoder
+type field struct {
+	Name     string
+	JSONName string
+	Type     string
+	Number   FieldNumber
+	Decoder  fieldDecoder
+	Encoder  string
+}
+
+type enumField struct {
+	Name    string
+	Type    string
+	Decoder fieldDecoder
+	Encoder string
+}
+
+type oneOfField struct {
+	Name    string
+	Type    CustomElmType
+	ElmType string
+	Decoder DecoderName
+	Encoder string
+}
+
+type oneOf struct {
+	Name        string
+	DecoderName DecoderName
+	EncoderName string
+	Fields      []oneOfField
+}
+
+type nestedField struct {
+	Key         string
+	Value       string
+	DecoderName DecoderName
+	EncoderName string
+}
+
+type message struct {
+	Name           string
+	Type           CustomElmType
+	DecoderName    DecoderName
+	EncoderName    string
+	Fields         []field
+	EnumFields     []enumField
+	OneOfs         []oneOf
+	NestedEnums    []enum
+	NestedMessages []message
+}
+
+func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto) []enum {
+	var result []enum
+	for _, enumPb := range enumPbs {
+
+		var values []enumValue
+		for _, value := range enumPb.GetValue() {
+
+			fullValueName := elmEnumValueName(value.GetName())
+			for _, p := range preface {
+				fullValueName = fmt.Sprintf("%s_%s", elmEnumValueName(p), fullValueName)
+			}
+
+			values = append(values, enumValue{
+				FullName: value.GetName(),
+				ElmName:  fullValueName,
+				Number:   FieldNumber(value.GetNumber()),
+			})
+		}
+
+		fullName := enumPb.GetName()
+		for _, p := range preface {
+			fullName = fmt.Sprintf("%s_%s", p, fullName)
+		}
+
+		result = append(result, enum{
+			Name:             fullName,
+			DecoderName:      decoderName(fullName),
+			EncoderName:      encoderName(fullName),
+			DefaultValueName: defaultEnumValue(fullName),
+			DefaultEnumValue: values[0],
+			Values:           values,
+		})
+	}
+
+	return result
+}
+
+func messages(preface []string, messagePbs []*descriptor.DescriptorProto) ([]message, error) {
+	var result []message
+	for _, messagePb := range messagePbs {
+
+		var fields []field
+		for _, fieldPb := range messagePb.GetField() {
+			if fieldPb.OneofIndex != nil {
+				continue
+			}
+
+			basicType := fieldElmType(fieldPb)
+			nestedField, err := nested(fieldPb, messagePb)
+			if err != nil {
+				return nil, err
+			}
+
+			var fieldType string
+			var fieldDecoder fieldDecoder
+			var fieldEncoder string
+			if nestedField != nil {
+				fieldType = fmt.Sprintf("Dict.Dict %s %s", nestedField.Key, nestedField.Value)
+				fieldDecoder = mapFieldDecoder(*nestedField)
+				fieldEncoder = fmt.Sprintf(
+					"mapEntriesFieldEncoder %q %s v.%s",
+					jsonFieldName(fieldPb),
+					nestedField.EncoderName,
+					elmFieldName(fieldPb.GetName()),
+				)
+			} else if isOptional(fieldPb) {
+				fieldType = fmt.Sprintf("Maybe %s", basicType)
+				fieldDecoder, err = optionalFieldDecoder(fieldPb)
+				if err != nil {
+					return nil, err
+				}
+
+				fieldEncoder = fmt.Sprintf(
+					"optionalEncoder %q %s v.%s",
+					jsonFieldName(fieldPb),
+					fieldEncoderName(fieldPb),
+					elmFieldName(fieldPb.GetName()),
+				)
+			} else if isRepeated(fieldPb) {
+				fieldType = fmt.Sprintf("List %s", basicType)
+				fieldDecoder, err = repeatedFieldDecoder(fieldPb)
+				if err != nil {
+					return nil, err
+				}
+
+				fieldEncoder = fmt.Sprintf(
+					"repeatedFieldEncoder %q %s v.%s",
+					jsonFieldName(fieldPb),
+					fieldEncoderName(fieldPb),
+					elmFieldName(fieldPb.GetName()),
+				)
+			} else {
+				fieldType = basicType
+				fieldDecoder, err = requiredFieldDecoder(fieldPb)
+				if err != nil {
+					return nil, err
+				}
+
+				defaultValue, err := fieldDefaultValue(fieldPb)
+				if err != nil {
+					return nil, err
+				}
+
+				fieldEncoder = fmt.Sprintf(
+					"requiredFieldEncoder %q %s %s v.%s",
+					jsonFieldName(fieldPb),
+					fieldEncoderName(fieldPb),
+					defaultValue,
+					elmFieldName(fieldPb.GetName()),
+				)
+			}
+
+			fields = append(fields, field{
+				Name:     elmFieldName(fieldPb.GetName()),
+				JSONName: jsonFieldName(fieldPb),
+				Type:     fieldType,
+				Decoder:  fieldDecoder,
+				Encoder:  fieldEncoder,
+				Number:   FieldNumber(fieldPb.GetNumber()),
+			})
+		}
+
+		var oneOfs []oneOf
+		for oneofIndex, oneOfPb := range messagePb.GetOneofDecl() {
+			fields = append(fields, field{
+				Name:    elmFieldName(oneOfPb.GetName()),
+				Type:    elmTypeName(oneOfPb.GetName()),
+				Decoder: oneOfFieldDecoder(oneOfPb),
+				Encoder: fmt.Sprintf("%s v.%s", oneofEncoderName(oneOfPb), elmFieldName(oneOfPb.GetName())),
+			})
+
+			var oneOfFields []oneOfField
+			for _, inField := range messagePb.GetField() {
+				if inField.GetOneofIndex() == int32(oneofIndex) {
+					fieldDecoder, err := fieldDecoderName(inField)
+					if err != nil {
+						return nil, err
+					}
+
+					oneOfFields = append(oneOfFields, oneOfField{
+						Name:    elmFieldName(inField.GetName()),
+						Type:    customElmType(preface, inField.GetName()),
+						ElmType: fieldElmType(inField),
+						Decoder: fieldDecoder,
+						Encoder: fieldEncoderName(inField),
+					})
+
+				}
+			}
+
+			oneOfs = append(oneOfs, oneOf{
+				Name:        elmTypeName(oneOfPb.GetName()),
+				DecoderName: oneofDecoderName(oneOfPb),
+				EncoderName: oneofEncoderName(oneOfPb),
+				Fields:      oneOfFields,
+			})
+		}
+
+		fullName := messagePb.GetName()
+		for _, p := range preface {
+			fullName = fmt.Sprintf("%s_%s", p, fullName)
+		}
+
+		newPreface := append([]string{messagePb.GetName()}, preface...)
+		nestedMessages, err := messages(newPreface, messagePb.GetNestedType())
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, message{
+			Name:           elmEnumValueName(fullName),
+			Type:           customElmType(preface, messagePb.GetName()),
+			DecoderName:    decoderName(fullName),
+			EncoderName:    encoderName(fullName),
+			Fields:         fields,
+			OneOfs:         oneOfs,
+			NestedEnums:    enums(newPreface, messagePb.GetEnumType()),
+			NestedMessages: nestedMessages,
+		})
+	}
+
+	return result, nil
+}
+
+func isOptional(inField *descriptor.FieldDescriptorProto) bool {
+	return inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL &&
+		inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE
+}
+
+func isRepeated(inField *descriptor.FieldDescriptorProto) bool {
+	return inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
+}
+
+func nested(inField *descriptor.FieldDescriptorProto, inMessage *descriptor.DescriptorProto) (*nestedField, error) {
+	fullyQualifiedTypeName := inField.GetTypeName()
+	splitName := strings.Split(fullyQualifiedTypeName, ".")
+	localTypeName := splitName[len(splitName)-1]
+
+	for _, nested := range inMessage.GetNestedType() {
+		if nested.GetName() == localTypeName && nested.GetOptions().GetMapEntry() {
+			keyField := nested.GetField()[0]
+			valueField := nested.GetField()[1]
+
+			fieldDecoder, err := fieldDecoderName(valueField)
+			if err != nil {
+				return nil, err
+			}
+
+			nest := nestedField{
+				Key:         fieldElmType(keyField),
+				Value:       fieldElmType(valueField),
+				DecoderName: fieldDecoder,
+				EncoderName: fieldEncoderName(valueField),
+			}
+
+			return &nest, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func fileName(inFilePath string) string {
 	inFileDir, inFileName := filepath.Split(inFilePath)
 
-	shortModuleName := firstUpper(strings.TrimSuffix(inFileName, ".proto"))
+	trimmed := strings.TrimSuffix(inFileName, ".proto")
+	shortFileName := firstUpper(trimmed)
 
-	fullModuleName := ""
-	outFileName := ""
+	fullFileName := ""
 	for _, segment := range strings.Split(inFileDir, "/") {
 		if segment == "" {
 			continue
 		}
+
+		fullFileName += firstUpper(segment) + "/"
+	}
+
+	return fullFileName + shortFileName + ".elm"
+}
+
+func moduleName(inFilePath string) string {
+	inFileDir, inFileName := filepath.Split(inFilePath)
+
+	trimmed := strings.TrimSuffix(inFileName, ".proto")
+	shortModuleName := firstUpper(trimmed)
+
+	fullModuleName := ""
+	for _, segment := range strings.Split(inFileDir, "/") {
+		if segment == "" {
+			continue
+		}
+
 		fullModuleName += firstUpper(segment) + "."
-		outFileName += firstUpper(segment) + "/"
-	}
-	fullModuleName += shortModuleName
-	outFileName += shortModuleName + ".elm"
-
-	outFile.Name = proto.String(outFileName)
-
-	b := &bytes.Buffer{}
-	fg := NewFileGenerator(b, inFileName)
-
-	fg.GenerateModule(fullModuleName)
-	fg.GenerateComments(inFile)
-
-	fg.GenerateBaseImports()
-
-	// only `import Dict` if it's going to be used, in case
-	// any linters are watching
-	includeDictImport := hasMapEntries(inFile)
-	if includeDictImport {
-		fg.P("import Dict")
 	}
 
-	// Generate additional imports.
-	for _, d := range inFile.GetDependency() {
-		// Well Known Types.
+	return fullModuleName + shortModuleName
+}
+
+func getAdditionalImports(dependencies []string) []string {
+	var additions []string
+	for _, d := range dependencies {
 		if excludedFiles[d] {
 			continue
 		}
+
 		fullModuleName := ""
 		for _, segment := range strings.Split(strings.TrimSuffix(d, ".proto"), "/") {
 			if segment == "" {
@@ -209,140 +728,19 @@ func processFile(inFile *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorR
 			}
 			fullModuleName += firstUpper(segment) + "."
 		}
-		fullModuleName = strings.TrimSuffix(fullModuleName, ".")
-		// TODO: Do not expose everything.
-		fg.P("import %s exposing (..)", fullModuleName)
+
+		additions = append(additions, strings.TrimSuffix(fullModuleName, "."))
 	}
-
-	fg.P("")
-	fg.P("")
-	fg.P("uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42")
-
-	var err error
-
-	// Top-level enums.
-	for _, inEnum := range inFile.GetEnumType() {
-		typeToFile[strings.TrimPrefix(inFile.GetPackage()+"."+inEnum.GetName(), ".")] = inFile.GetName()
-
-		err = fg.GenerateEnumDefinition("", inEnum)
-		if err != nil {
-			return nil, err
-		}
-
-		err = fg.GenerateEnumDecoder("", inEnum)
-		if err != nil {
-			return nil, err
-		}
-
-		err = fg.GenerateEnumEncoder("", inEnum)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Top-level messages.
-	for _, inMessage := range inFile.GetMessageType() {
-		typeToFile[strings.TrimPrefix(inFile.GetPackage()+"."+inMessage.GetName(), ".")] = inFile.GetName()
-
-		err = fg.GenerateEverything("", inMessage)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	outFile.Content = proto.String(b.String())
-
-	return outFile, nil
+	return additions
 }
 
-func (fg *FileGenerator) GenerateModule(moduleName string) {
-	fg.P("module %s exposing (..)", moduleName)
-}
-
-func (fg *FileGenerator) GenerateComments(inFile *descriptor.FileDescriptorProto) {
-	fg.P("")
-	fg.P("-- DO NOT EDIT")
-	fg.P("-- AUTOGENERATED BY THE ELM PROTOCOL BUFFER COMPILER")
-	fg.P("-- https://github.com/tiziano88/elm-protobuf")
-	fg.P("-- source file: %s", inFile.GetName())
-}
-
-func (fg *FileGenerator) GenerateBaseImports() {
-	fg.P("")
-	fg.P("import Protobuf exposing (..)")
-	fg.P("")
-	fg.P("import Json.Decode as JD")
-	fg.P("import Json.Encode as JE")
-}
-
-func (fg *FileGenerator) GenerateEverything(prefix string, inMessage *descriptor.DescriptorProto) error {
-	newPrefix := prefix + inMessage.GetName() + "_"
-	var err error
-
-	if inMessage.Options.GetMapEntry() {
-		if len(inMessage.Field) != 2 {
-			return fmt.Errorf("map entry must have exactly two fields")
-		}
-
-		keyField := inMessage.Field[0]
-		if keyField.GetName() != "key" {
-			return fmt.Errorf("first map entry field must be called `key`")
-		}
-		if keyField.GetType() != descriptor.FieldDescriptorProto_TYPE_STRING {
-			return fmt.Errorf("map key must have type `string`")
-		}
-
-		valueField := inMessage.Field[1]
-		if valueField.GetName() != "value" {
-			return fmt.Errorf("second map entry field must be called `value`")
-		}
+func customElmType(preface []string, in string) CustomElmType {
+	fullType := camelCase(in)
+	for _, p := range preface {
+		fullType = fmt.Sprintf("%s_%s", camelCase(p), fullType)
 	}
 
-	err = fg.GenerateMessageDefinition(prefix, inMessage)
-	if err != nil {
-		return err
-	}
-
-	for _, inEnum := range inMessage.GetEnumType() {
-		err = fg.GenerateEnumDefinition(newPrefix, inEnum)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = fg.GenerateMessageDecoder(prefix, inMessage)
-	if err != nil {
-		return err
-	}
-
-	for _, inEnum := range inMessage.GetEnumType() {
-		err = fg.GenerateEnumDecoder(newPrefix, inEnum)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = fg.GenerateMessageEncoder(prefix, inMessage)
-	if err != nil {
-		return err
-	}
-
-	for _, inEnum := range inMessage.GetEnumType() {
-		err = fg.GenerateEnumEncoder(newPrefix, inEnum)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Nested messages.
-	for _, nested := range inMessage.GetNestedType() {
-		err = fg.GenerateEverything(newPrefix, nested)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return CustomElmType(appendUnderscoreToReservedKeywords(fullType))
 }
 
 func elmTypeName(in string) string {
@@ -353,12 +751,16 @@ func elmTypeName(in string) string {
 	return n
 }
 
-func elmFieldName(in string) string {
-	n := firstLower(camelCase(in))
-	if reservedKeywords[n] {
-		n += "_"
+func appendUnderscoreToReservedKeywords(in string) string {
+	if reservedKeywords[in] {
+		return fmt.Sprintf("%s_", in)
 	}
-	return n
+
+	return in
+}
+
+func elmFieldName(in string) string {
+	return appendUnderscoreToReservedKeywords(firstLower(camelCase(in)))
 }
 
 func elmEnumValueName(in string) string {
@@ -373,8 +775,124 @@ func encoderName(typeName string) string {
 	return firstLower(typeName) + "Encoder"
 }
 
-func decoderName(typeName string) string {
-	return firstLower(typeName) + "Decoder"
+func mapFieldDecoder(nestedField nestedField) fieldDecoder {
+	return fieldDecoder{
+		Preface:         MapFieldDecoderHelper,
+		Name:            nestedField.DecoderName,
+		HasDefaultValue: false,
+	}
+}
+
+func optionalFieldDecoder(fieldPb *descriptor.FieldDescriptorProto) (fieldDecoder, error) {
+	basicDecoder, err := fieldDecoderName(fieldPb)
+	if err != nil {
+		return fieldDecoder{}, err
+	}
+
+	return fieldDecoder{
+		Preface:         OptionalFieldDecoderHelper,
+		Name:            basicDecoder,
+		HasDefaultValue: false,
+	}, nil
+}
+
+func repeatedFieldDecoder(fieldPb *descriptor.FieldDescriptorProto) (fieldDecoder, error) {
+	basicDecoder, err := fieldDecoderName(fieldPb)
+	if err != nil {
+		return fieldDecoder{}, err
+	}
+
+	return fieldDecoder{
+		Preface:         RepeatedFieldDecoderHelper,
+		Name:            basicDecoder,
+		HasDefaultValue: false,
+	}, nil
+}
+
+func requiredFieldDecoder(fieldPb *descriptor.FieldDescriptorProto) (fieldDecoder, error) {
+	basicDecoder, err := fieldDecoderName(fieldPb)
+	if err != nil {
+		return fieldDecoder{}, err
+	}
+
+	defaultValue, err := fieldDefaultValue(fieldPb)
+	if err != nil {
+		return fieldDecoder{}, err
+	}
+
+	return fieldDecoder{
+		Preface:         RequiredFieldDecoderHelper,
+		Name:            basicDecoder,
+		HasDefaultValue: true,
+		DefaultValue:    defaultValue,
+	}, nil
+}
+
+func oneOfFieldDecoder(oneOfPb *descriptor.OneofDescriptorProto) fieldDecoder {
+	return fieldDecoder{
+		Preface:         EnumFieldDecoderHelper,
+		Name:            oneofDecoderName(oneOfPb),
+		HasDefaultValue: false,
+	}
+}
+
+func fieldDecoderName(inField *descriptor.FieldDescriptorProto) (DecoderName, error) {
+	switch inField.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		return IntDecoder, nil
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return FloatDecoder, nil
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return BoolDecoder, nil
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return StringDecoder, nil
+
+	// TODO: This is an unsupported stub (throw error)
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		return BytesDecoder, nil
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		return enumDecoderName(inField), nil
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		return messageDecoderName(inField), nil
+	default:
+		return "", fmt.Errorf("error generating decoder for field %s", inField.GetType())
+	}
+}
+
+func enumDecoderName(inField *descriptor.FieldDescriptorProto) DecoderName {
+	// TODO: Default enum value.
+	// Remove leading ".".
+	_, messageName := convert(inField.GetTypeName())
+	return decoderName(messageName)
+}
+
+func messageDecoderName(inField *descriptor.FieldDescriptorProto) DecoderName {
+	// Well Known Types.
+	if n, ok := excludedDecoders[inField.GetTypeName()]; ok {
+		return n
+	}
+
+	_, messageName := convert(inField.GetTypeName())
+	return decoderName(messageName)
+}
+
+func oneofDecoderName(inOneof *descriptor.OneofDescriptorProto) DecoderName {
+	typeName := elmTypeName(inOneof.GetName())
+	return decoderName(typeName)
+}
+
+func decoderName(typeName string) DecoderName {
+	return DecoderName(firstLower(typeName) + "Decoder")
 }
 
 func elmFieldType(field *descriptor.FieldDescriptorProto) string {
@@ -419,22 +937,18 @@ func jsonFieldName(field *descriptor.FieldDescriptorProto) string {
 }
 
 func firstLower(in string) string {
-	if in == "" {
-		return ""
-	}
-	if len(in) == 1 {
+	if len(in) < 2 {
 		return strings.ToLower(in)
 	}
+
 	return strings.ToLower(string(in[0])) + string(in[1:])
 }
 
 func firstUpper(in string) string {
-	if in == "" {
-		return ""
-	}
-	if len(in) == 1 {
+	if len(in) < 2 {
 		return strings.ToUpper(in)
 	}
+
 	return strings.ToUpper(string(in[0])) + string(in[1:])
 }
 

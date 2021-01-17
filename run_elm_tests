@@ -2,6 +2,10 @@
 
 set -ex
 
-protoc --proto_path=./tests/proto --elm_out=./tests ./tests/proto/*.proto
+protoc \
+    --proto_path=./tests/proto \
+    --elm_out=./tests \
+    --plugin=protoc-gen-elm=./protoc-gen-elm/protoc-gen-elm \
+    ./tests/proto/*.proto
 
 elm-test

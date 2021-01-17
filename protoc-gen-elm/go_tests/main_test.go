@@ -34,8 +34,10 @@ func TestDiff(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		runProto(t, dir)
-		runDiff(t, dir)
+		t.Run(fi.Name(), func(t *testing.T) {
+			runProto(t, dir)
+			runDiff(t, dir)
+		})
 	}
 
 }
@@ -43,7 +45,11 @@ func TestDiff(t *testing.T) {
 func runProto(t *testing.T, dir string) {
 	inputDir := filepath.Join(dir, "input")
 
-	args := []string{"--elm_out=../actual_output"}
+	args := []string{
+		"--elm_out=../actual_output",
+		"--plugin=protoc-gen-elm=../../../../protoc-gen-elm",
+		"--elm_opt=remove-deprecated",
+	}
 	files, err := ioutil.ReadDir(inputDir)
 	if err != nil {
 		t.Fatalf("Error: %v", err)

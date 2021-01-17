@@ -10,7 +10,9 @@ import Protobuf exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import Dir.Other_dir exposing (..)
+
 import Other exposing (..)
+
 
 
 uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
@@ -72,8 +74,7 @@ colourEncoder v =
 
 
 type alias Empty =
-    {
-    }
+    { }
 
 
 emptyDecoder : JD.Decoder Empty
@@ -84,8 +85,7 @@ emptyDecoder =
 emptyEncoder : Empty -> JE.Value
 emptyEncoder v =
     JE.object <| List.filterMap identity <|
-        [
-        ]
+        []
 
 
 type alias Simple =
@@ -124,15 +124,37 @@ type alias Foo =
 
 type Oo
     = OoUnspecified
+    | S Simple
+    | Ss Simple
+    | Colour Colour
+    | Colours Colour
+    | SingleIntField Int
+    | RepeatedIntField Int
     | Oo1 Int
     | Oo2 Bool
+    | BytesField Bytes
+    | StringValueField String
+    | OtherField Other
+    | OtherDirField OtherDir
+    | TimestampField Timestamp
 
 
 ooDecoder : JD.Decoder Oo
 ooDecoder =
     JD.lazy <| \_ -> JD.oneOf
-        [ JD.map Oo1 (JD.field "oo1" intDecoder)
+        [ JD.map S (JD.field "s" simpleDecoder)
+        , JD.map Ss (JD.field "ss" simpleDecoder)
+        , JD.map Colour (JD.field "colour" colourDecoder)
+        , JD.map Colours (JD.field "colours" colourDecoder)
+        , JD.map SingleIntField (JD.field "singleIntField" intDecoder)
+        , JD.map RepeatedIntField (JD.field "repeatedIntField" intDecoder)
+        , JD.map Oo1 (JD.field "oo1" intDecoder)
         , JD.map Oo2 (JD.field "oo2" JD.bool)
+        , JD.map BytesField (JD.field "bytesField" bytesFieldDecoder)
+        , JD.map StringValueField (JD.field "stringValueField" stringValueDecoder)
+        , JD.map OtherField (JD.field "otherField" otherDecoder)
+        , JD.map OtherDirField (JD.field "otherDirField" otherDirDecoder)
+        , JD.map TimestampField (JD.field "timestampField" timestampDecoder)
         , JD.succeed OoUnspecified
         ]
 
@@ -142,10 +164,32 @@ ooEncoder v =
     case v of
         OoUnspecified ->
             Nothing
+        S x ->
+            Just ( "s", simpleEncoder x )
+        Ss x ->
+            Just ( "ss", simpleEncoder x )
+        Colour x ->
+            Just ( "colour", colourEncoder x )
+        Colours x ->
+            Just ( "colours", colourEncoder x )
+        SingleIntField x ->
+            Just ( "singleIntField", JE.int x )
+        RepeatedIntField x ->
+            Just ( "repeatedIntField", JE.int x )
         Oo1 x ->
             Just ( "oo1", JE.int x )
         Oo2 x ->
             Just ( "oo2", JE.bool x )
+        BytesField x ->
+            Just ( "bytesField", bytesFieldEncoder x )
+        StringValueField x ->
+            Just ( "stringValueField", stringValueEncoder x )
+        OtherField x ->
+            Just ( "otherField", otherEncoder x )
+        OtherDirField x ->
+            Just ( "otherDirField", otherDirEncoder x )
+        TimestampField x ->
+            Just ( "timestampField", timestampEncoder x )
 
 
 fooDecoder : JD.Decoder Foo
