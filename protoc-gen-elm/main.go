@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"protoc-gen-elm/elm"
 	"strings"
 	"text/template"
 	"unicode"
@@ -193,45 +194,45 @@ func templateFile(inFile *descriptor.FileDescriptorProto, p parameters) (string,
 	t := template.New("t")
 
 	t, err := t.Parse(`
-{{- define "enum-type" }}
+{{- define "custom-type-definition" }}
 
 
 type {{ .Name }}
-{{- range $i, $v := .Values }}
-    {{ if not $i }}={{ else }}|{{ end }} {{ $v.ElmName }} -- {{ $v.Number }}
+{{- range $i, $v := .Variants }}
+    {{ if not $i }}={{ else }}|{{ end }} {{ $v.Name }} -- {{ $v.Number }}
 {{- end }}
 {{- end }}
-{{- define "enum-decoder" }}
+{{- define "custom-type-decoder" }}
 
 
-{{ .DecoderName }} : JD.Decoder {{ .Name }}
-{{ .DecoderName }} =
+{{ .Decoder }} : JD.Decoder {{ .Name }}
+{{ .Decoder }} =
     let
         lookup s =
             case s of
-{{- range .Values }}
+{{- range .Variants }}
                 "{{ .JSONName }}" ->
-                    {{ .ElmName }}
+                    {{ .Name }}
 {{ end }}
                 _ ->
-                    {{ .DefaultEnumValue }}
+                    {{ .DefaultVariantValue }}
     in
         JD.map lookup JD.string
 
 
-{{ .DefaultValueName }} : {{ .Name }}
-{{ .DefaultValueName }} = {{ .DefaultEnumValue }}
+{{ .DefaultVariantVariable }} : {{ .Name }}
+{{ .DefaultVariantVariable }} = {{ .DefaultVariantValue }}
 {{- end }}
-{{- define "enum-encoder" }}
+{{- define "custom-type-encoder" }}
 
 
-{{ .EncoderName }} : {{ .Name }} -> JE.Value
-{{ .EncoderName }} v =
+{{ .Encoder }} : {{ .Name }} -> JE.Value
+{{ .Encoder }} v =
     let
         lookup s =
             case s of
-{{- range .Values }}
-                {{ .ElmName }} ->
+{{- range .Variants }}
+                {{ .Name }} ->
                     "{{ .JSONName }}"
 {{ end }}
     in
@@ -265,10 +266,10 @@ type {{ .Name }}
             Just ( "{{ .Name }}", {{ .Encoder }} x )
         {{- end }}
 {{- end }}
-{{- define "enum" }}
-{{- template "enum-type" . }}
-{{- template "enum-decoder" . }}
-{{- template "enum-encoder" . }}
+{{- define "custom-type" }}
+{{- template "custom-type-definition" . }}
+{{- template "custom-type-decoder" . }}
+{{- template "custom-type-encoder" . }}
 {{- end }}
 {{- define "message" }}
 
@@ -277,7 +278,7 @@ type alias {{ .Type }} =
     { {{ range $i, $v := .Fields }}
         {{- if $i }}, {{ end }}{{ .Name }} : {{ .Type }}{{ if .Number }} -- {{ .Number }}{{ end }}
     {{ end }}}
-{{- range .NestedEnums }}{{ template "enum-type" . }}{{ end }}
+{{- range .NestedEnums }}{{ template "custom-type-definition" . }}{{ end }}
 {{- range .OneOfs }}{{ template "oneof-type" . }}{{ end }}
 
 
@@ -288,7 +289,7 @@ type alias {{ .Type }} =
 			{{- if .JSONName }} "{{ .JSONName }}"{{ end }} {{ .Decoder.Name }}
 			{{- if .Decoder.HasDefaultValue }} {{ .Decoder.DefaultValue }}{{ end }}
         {{- end }}
-{{- range .NestedEnums }}{{ template "enum-decoder" . }}{{ end }}
+{{- range .NestedEnums }}{{ template "custom-type-decoder" . }}{{ end }}
 
 
 {{ .EncoderName }} : {{ .Type }} -> JE.Value
@@ -297,7 +298,7 @@ type alias {{ .Type }} =
         [{{ range $i, $v := .Fields }}
             {{- if $i }},{{ end }} ({{ .Encoder }})
         {{ end }}]
-{{- range .NestedEnums }}{{ template "enum-encoder" . }}{{ end }}
+{{- range .NestedEnums }}{{ template "custom-type-encoder" . }}{{ end }}
 {{- range .NestedMessages }}{{ template "message" . }}{{ end }}
 {{- end -}}
 module {{ .ModuleName }} exposing (..)
@@ -320,7 +321,7 @@ import {{ . }} exposing (..)
 
 
 uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
-{{- range .TopEnums }}{{ template "enum" . }}{{ end }}
+{{- range .TopEnums }}{{ template "custom-type" . }}{{ end }}
 {{- range .Messages }}{{ template "message" . }}{{ end }}
 `)
 	if err != nil {
@@ -338,7 +339,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 		ModuleName        string
 		ImportDict        bool
 		AdditionalImports []string
-		TopEnums          []enum
+		TopEnums          []elm.CustomType
 		Messages          []message
 	}{
 		SourceFile:        inFile.GetName(),
@@ -383,23 +384,6 @@ const (
 	MapFieldDecoderHelper      FieldDecoderHelper = "mapEntries"
 	EnumFieldDecoderHelper     FieldDecoderHelper = "field"
 )
-
-type ElmEnumName string
-
-type enumValue struct {
-	JSONName string
-	ElmName  ElmEnumName
-	Number   FieldNumber
-}
-
-type enum struct {
-	Name             string
-	DecoderName      DecoderName
-	EncoderName      string
-	DefaultValueName string
-	DefaultEnumValue ElmEnumName
-	Values           []enumValue
-}
 
 type fieldDecoder struct {
 	Preface         FieldDecoderHelper
@@ -453,17 +437,8 @@ type message struct {
 	Fields         []field
 	EnumFields     []enumField
 	OneOfs         []oneOf
-	NestedEnums    []enum
+	NestedEnums    []elm.CustomType
 	NestedMessages []message
-}
-
-func fullElmEnumName(preface []string, value *descriptorpb.EnumValueDescriptorProto) ElmEnumName {
-	name := camelCase(strings.ToLower(value.GetName()))
-	for _, p := range preface {
-		name = fmt.Sprintf("%s_%s", camelCase(strings.ToLower(p)), name)
-	}
-
-	return ElmEnumName(name)
 }
 
 func isDeprecated(options interface{}) bool {
@@ -481,38 +456,35 @@ func isDeprecated(options interface{}) bool {
 	}
 }
 
-func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto, p parameters) []enum {
-	var result []enum
+func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto, p parameters) []elm.CustomType {
+	var result []elm.CustomType
 	for _, enumPb := range enumPbs {
 		if isDeprecated(enumPb.Options) && p.RemoveDeprecated {
 			continue
 		}
 
-		var values []enumValue
+		var values []elm.CustomTypeVariant
 		for _, value := range enumPb.GetValue() {
 			if isDeprecated(value.Options) && p.RemoveDeprecated {
 				continue
 			}
 
-			values = append(values, enumValue{
-				JSONName: value.GetName(),
-				ElmName:  fullElmEnumName(preface, value),
-				Number:   FieldNumber(value.GetNumber()),
+			values = append(values, elm.CustomTypeVariant{
+				Name:     elm.NestedVariantName(value.GetName(), preface),
+				Number:   elm.ProtobufFieldNumber(value.GetNumber()),
+				JSONName: elm.GetVariantJSONName(value),
 			})
 		}
 
-		fullName := enumPb.GetName()
-		for _, p := range preface {
-			fullName = fmt.Sprintf("%s_%s", p, fullName)
-		}
+		enumVariableName := elm.NestedVariableName(enumPb.GetName(), preface)
 
-		result = append(result, enum{
-			Name:             fullName,
-			DecoderName:      decoderName(fullName),
-			EncoderName:      encoderName(fullName),
-			DefaultValueName: defaultEnumValue(fullName),
-			DefaultEnumValue: values[0].ElmName,
-			Values:           values,
+		result = append(result, elm.CustomType{
+			Name:                   enumVariableName,
+			Decoder:                elm.DecoderName(enumVariableName),
+			Encoder:                elm.EncoderName(enumVariableName),
+			DefaultVariantVariable: elm.DefaultVariantVariableName(enumPb.GetName(), preface),
+			DefaultVariantValue:    values[0].Name,
+			Variants:               values,
 		})
 	}
 
@@ -814,10 +786,6 @@ func appendUnderscoreToReservedKeywords(in string) string {
 
 func elmFieldName(in string) string {
 	return appendUnderscoreToReservedKeywords(firstLower(camelCase(in)))
-}
-
-func defaultEnumValue(typeName string) string {
-	return firstLower(typeName) + "Default"
 }
 
 func encoderName(typeName string) string {
@@ -1135,14 +1103,13 @@ func fieldDefaultValue(inField *descriptor.FieldDescriptorProto) (string, error)
 		return "False", nil
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		return "\"\"", nil
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		// TODO: Default enum value.
-		_, messageName := convert(inField.GetTypeName())
-		return defaultEnumValue(messageName), nil
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		return "xxx", nil
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		return "[]", nil
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		_, messageName := convert(inField.GetTypeName())
+		return string(elm.DefaultVariantVariableName(messageName, []string{})), nil
 	default:
 		return "", fmt.Errorf("error generating decoder for field %s", inField.GetType())
 	}
