@@ -357,12 +357,9 @@ type field struct {
 	Encoder  string
 }
 
-type enumField struct {
-	Name    string
-	Decoder fieldDecoder
-	Encoder string
-}
-
+// TODO: Convert PB OneOf to an Elm custom type struct
+// For not, to avoid altering generated code in this first refactor,
+// this will remaing a separate type with its own template
 type oneOf struct {
 	Name        string
 	DecoderName DecoderName
@@ -391,7 +388,6 @@ type message struct {
 	DecoderName    DecoderName
 	EncoderName    string
 	Fields         []field
-	EnumFields     []enumField
 	OneOfs         []oneOf
 	NestedEnums    []elm.CustomType
 	NestedMessages []message
