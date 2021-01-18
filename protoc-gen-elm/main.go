@@ -234,7 +234,7 @@ type alias {{ .Type }} =
     { {{ range $i, $v := .Fields }}
         {{- if $i }}, {{ end }}{{ .Name }} : {{ .Type }}{{ if .Number }} -- {{ .Number }}{{ end }}
     {{ end }}}
-{{- range .NestedEnums }}{{ template "custom-type-definition" . }}{{ end }}
+{{- range .NestedCustomTypes }}{{ template "custom-type-definition" . }}{{ end }}
 {{- range .OneOfs }}{{ template "oneof-type" . }}{{ end }}
 
 
@@ -245,7 +245,7 @@ type alias {{ .Type }} =
 			{{- if .JSONName }} "{{ .JSONName }}"{{ end }} {{ .Decoder.Name }}
 			{{- if .Decoder.HasDefaultValue }} {{ .Decoder.DefaultValue }}{{ end }}
         {{- end }}
-{{- range .NestedEnums }}{{ template "custom-type-decoder" . }}{{ end }}
+{{- range .NestedCustomTypes }}{{ template "custom-type-decoder" . }}{{ end }}
 
 
 {{ .EncoderName }} : {{ .Type }} -> JE.Value
@@ -254,7 +254,7 @@ type alias {{ .Type }} =
         [{{ range $i, $v := .Fields }}
             {{- if $i }},{{ end }} ({{ .Encoder }})
         {{ end }}]
-{{- range .NestedEnums }}{{ template "custom-type-encoder" . }}{{ end }}
+{{- range .NestedCustomTypes }}{{ template "custom-type-encoder" . }}{{ end }}
 {{- range .NestedMessages }}{{ template "message" . }}{{ end }}
 {{- end -}}
 module {{ .ModuleName }} exposing (..)
@@ -383,14 +383,14 @@ type nestedField struct {
 }
 
 type message struct {
-	Name           string
-	Type           CustomElmType
-	DecoderName    DecoderName
-	EncoderName    string
-	Fields         []field
-	OneOfs         []oneOf
-	NestedEnums    []elm.CustomType
-	NestedMessages []message
+	Name              string
+	Type              CustomElmType
+	DecoderName       DecoderName
+	EncoderName       string
+	Fields            []field
+	OneOfs            []oneOf
+	NestedCustomTypes []elm.CustomType
+	NestedMessages    []message
 }
 
 func isDeprecated(options interface{}) bool {
@@ -593,14 +593,14 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 		}
 
 		result = append(result, message{
-			Name:           camelCase(strings.ToLower(fullName)),
-			Type:           customElmType(preface, messagePb.GetName()),
-			DecoderName:    decoderName(fullName),
-			EncoderName:    encoderName(fullName),
-			Fields:         fields,
-			OneOfs:         oneOfs,
-			NestedEnums:    enums(newPreface, messagePb.GetEnumType(), p),
-			NestedMessages: nestedMessages,
+			Name:              camelCase(strings.ToLower(fullName)),
+			Type:              customElmType(preface, messagePb.GetName()),
+			DecoderName:       decoderName(fullName),
+			EncoderName:       encoderName(fullName),
+			Fields:            fields,
+			OneOfs:            oneOfs,
+			NestedCustomTypes: enums(newPreface, messagePb.GetEnumType(), p),
+			NestedMessages:    nestedMessages,
 		})
 	}
 

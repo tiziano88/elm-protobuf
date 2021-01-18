@@ -9,7 +9,6 @@ import (
 )
 
 // CustomType - defines an Elm custom type (sometimes called union type)
-// The default value is the variant with
 // https://guide.elm-lang.org/types/custom_types.html
 type CustomType struct {
 	Name                   VariableName
