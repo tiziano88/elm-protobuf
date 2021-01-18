@@ -3,6 +3,7 @@ package elm
 import (
 	"fmt"
 	"strings"
+	"text/template"
 
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -60,7 +61,63 @@ func DefaultVariantVariableName(name string, preface []string) VariableName {
 	return VariableName(firstLower(fmt.Sprintf("%sDefault", variableName)))
 }
 
-// GetVariantJSONName - JSON identifier for variant decoder/encoding
-func GetVariantJSONName(pb *descriptorpb.EnumValueDescriptorProto) VariantJSONName {
+// EnumVariantJSONName - JSON identifier for variant decoder/encoding
+func EnumVariantJSONName(pb *descriptorpb.EnumValueDescriptorProto) VariantJSONName {
 	return VariantJSONName(pb.GetName())
+}
+
+// CustomTypeTemplate - defines templates for custom types
+// For legacy code the definitions are split - reorganizing to reduce complexity is planned
+func CustomTypeTemplate(t *template.Template) (*template.Template, error) {
+	return t.Parse(`
+{{- define "custom-type-definition" }}
+
+
+type {{ .Name }}
+{{- range $i, $v := .Variants }}
+    {{ if not $i }}={{ else }}|{{ end }} {{ $v.Name }} -- {{ $v.Number }}
+{{- end }}
+{{- end }}
+{{- define "custom-type-decoder" }}
+
+
+{{ .Decoder }} : JD.Decoder {{ .Name }}
+{{ .Decoder }} =
+    let
+        lookup s =
+            case s of
+{{- range .Variants }}
+                "{{ .JSONName }}" ->
+                    {{ .Name }}
+{{ end }}
+                _ ->
+                    {{ .DefaultVariantValue }}
+    in
+        JD.map lookup JD.string
+
+
+{{ .DefaultVariantVariable }} : {{ .Name }}
+{{ .DefaultVariantVariable }} = {{ .DefaultVariantValue }}
+{{- end }}
+{{- define "custom-type-encoder" }}
+
+
+{{ .Encoder }} : {{ .Name }} -> JE.Value
+{{ .Encoder }} v =
+    let
+        lookup s =
+            case s of
+{{- range .Variants }}
+                {{ .Name }} ->
+                    "{{ .JSONName }}"
+{{ end }}
+    in
+        JE.string <| lookup v
+{{- end }}
+{{- define "custom-type" }}
+{{- template "custom-type-definition" . }}
+{{- template "custom-type-decoder" . }}
+{{- template "custom-type-encoder" . }}
+{{- end }}
+`)
 }

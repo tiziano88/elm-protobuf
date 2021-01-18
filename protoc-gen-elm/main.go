@@ -193,51 +193,12 @@ func hasMapEntriesInMessage(inMessage *descriptor.DescriptorProto) bool {
 func templateFile(inFile *descriptor.FileDescriptorProto, p parameters) (string, error) {
 	t := template.New("t")
 
-	t, err := t.Parse(`
-{{- define "custom-type-definition" }}
+	t, err := elm.CustomTypeTemplate(t)
+	if err != nil {
+		return "", err
+	}
 
-
-type {{ .Name }}
-{{- range $i, $v := .Variants }}
-    {{ if not $i }}={{ else }}|{{ end }} {{ $v.Name }} -- {{ $v.Number }}
-{{- end }}
-{{- end }}
-{{- define "custom-type-decoder" }}
-
-
-{{ .Decoder }} : JD.Decoder {{ .Name }}
-{{ .Decoder }} =
-    let
-        lookup s =
-            case s of
-{{- range .Variants }}
-                "{{ .JSONName }}" ->
-                    {{ .Name }}
-{{ end }}
-                _ ->
-                    {{ .DefaultVariantValue }}
-    in
-        JD.map lookup JD.string
-
-
-{{ .DefaultVariantVariable }} : {{ .Name }}
-{{ .DefaultVariantVariable }} = {{ .DefaultVariantValue }}
-{{- end }}
-{{- define "custom-type-encoder" }}
-
-
-{{ .Encoder }} : {{ .Name }} -> JE.Value
-{{ .Encoder }} v =
-    let
-        lookup s =
-            case s of
-{{- range .Variants }}
-                {{ .Name }} ->
-                    "{{ .JSONName }}"
-{{ end }}
-    in
-        JE.string <| lookup v
-{{- end }}
+	t, err = t.Parse(`
 {{- define "oneof-type" }}
 
 
@@ -265,11 +226,6 @@ type {{ .Name }}
         {{ .Type }} x ->
             Just ( "{{ .Name }}", {{ .Encoder }} x )
         {{- end }}
-{{- end }}
-{{- define "custom-type" }}
-{{- template "custom-type-definition" . }}
-{{- template "custom-type-decoder" . }}
-{{- template "custom-type-encoder" . }}
 {{- end }}
 {{- define "message" }}
 
@@ -472,7 +428,7 @@ func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto, p parame
 			values = append(values, elm.CustomTypeVariant{
 				Name:     elm.NestedVariantName(value.GetName(), preface),
 				Number:   elm.ProtobufFieldNumber(value.GetNumber()),
-				JSONName: elm.GetVariantJSONName(value),
+				JSONName: elm.EnumVariantJSONName(value),
 			})
 		}
 
