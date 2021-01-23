@@ -130,6 +130,11 @@ func main() {
 	}
 
 	if parameters.Debug {
+		// Remove useless source code data.
+		for _, inFile := range req.GetProtoFile() {
+			inFile.SourceCodeInfo = nil
+		}
+
 		log.Printf("Input data: %v", proto.MarshalTextString(req))
 	}
 
@@ -212,7 +217,7 @@ type {{ .Name }}
 {{ .DecoderName }} : JD.Decoder {{ .Name }}
 {{ .DecoderName }} =
     JD.lazy <| \_ -> JD.oneOf
-        [{{ range $i, $v := .Fields }}{{ if $i }},{{ end }} JD.map {{ .Type }} (JD.field "{{ .Name }}" {{ .Decoder }})
+        [{{ range $i, $v := .Fields }}{{ if $i }},{{ end }} JD.map {{ .Type }} (JD.field "{{ .JSONName }}" {{ .Decoder }})
         {{ end }}, JD.succeed {{ .Name }}Unspecified
         ]
 
@@ -224,7 +229,7 @@ type {{ .Name }}
             Nothing
         {{- range .Fields }}
         {{ .Type }} x ->
-            Just ( "{{ .Name }}", {{ .Encoder }} x )
+            Just ( "{{ .JSONName }}", {{ .Encoder }} x )
         {{- end }}
 {{- end }}
 {{- define "message" }}
@@ -302,7 +307,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 		ModuleName:        moduleName(inFile.GetName()),
 		ImportDict:        hasMapEntries(inFile),
 		AdditionalImports: getAdditionalImports(inFile.GetDependency()),
-		TopEnums:          enums([]string{}, inFile.GetEnumType(), p),
+		TopEnums:          enumsToCustomTypes([]string{}, inFile.GetEnumType(), p),
 		Messages:          messages,
 	}); err != nil {
 		return "", err
@@ -358,8 +363,7 @@ type field struct {
 }
 
 // TODO: Convert PB OneOf to an Elm custom type struct
-// For not, to avoid altering generated code in this first refactor,
-// this will remaing a separate type with its own template
+// This will result in non-breaking changes to the generated code and will be implemented in a later refactor.
 type oneOf struct {
 	Name        string
 	DecoderName DecoderName
@@ -368,11 +372,11 @@ type oneOf struct {
 }
 
 type oneOfField struct {
-	Name    string
-	Type    CustomElmType
-	ElmType string
-	Decoder DecoderName
-	Encoder string
+	JSONName string
+	Type     CustomElmType
+	ElmType  string
+	Decoder  DecoderName
+	Encoder  string
 }
 
 type nestedField struct {
@@ -383,12 +387,15 @@ type nestedField struct {
 }
 
 type message struct {
-	Name              string
-	Type              CustomElmType
-	DecoderName       DecoderName
-	EncoderName       string
-	Fields            []field
-	OneOfs            []oneOf
+	Name        string
+	Type        CustomElmType
+	DecoderName DecoderName
+	EncoderName string
+	Fields      []field
+	OneOfs      []oneOf
+
+	// TODO: The concept of nested messages can be dropped
+	// This will result in non-breaking changes to the generated code and will be implemented in a later refactor.
 	NestedCustomTypes []elm.CustomType
 	NestedMessages    []message
 }
@@ -408,7 +415,7 @@ func isDeprecated(options interface{}) bool {
 	}
 }
 
-func enums(preface []string, enumPbs []*descriptor.EnumDescriptorProto, p parameters) []elm.CustomType {
+func enumsToCustomTypes(preface []string, enumPbs []*descriptor.EnumDescriptorProto, p parameters) []elm.CustomType {
 	var result []elm.CustomType
 	for _, enumPb := range enumPbs {
 		if isDeprecated(enumPb.Options) && p.RemoveDeprecated {
@@ -551,26 +558,27 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 
 			var oneOfFields []oneOfField
 			for _, inField := range messagePb.GetField() {
-				if inField.OneofIndex != nil && inField.GetOneofIndex() == int32(oneofIndex) {
-					fieldDecoder, err := fieldDecoderName(inField)
-					if err != nil {
-						return nil, err
-					}
-
-					oneOfElmType, err := fieldElmType(inField)
-					if err != nil {
-						return nil, err
-					}
-
-					oneOfFields = append(oneOfFields, oneOfField{
-						Name:    elmFieldName(inField.GetName()),
-						Type:    customElmType(preface, inField.GetName()),
-						ElmType: oneOfElmType,
-						Decoder: fieldDecoder,
-						Encoder: fieldEncoderName(inField),
-					})
-
+				if inField.OneofIndex == nil || inField.GetOneofIndex() != int32(oneofIndex) {
+					continue
 				}
+
+				fieldDecoder, err := fieldDecoderName(inField)
+				if err != nil {
+					return nil, err
+				}
+
+				oneOfElmType, err := fieldElmType(inField)
+				if err != nil {
+					return nil, err
+				}
+
+				oneOfFields = append(oneOfFields, oneOfField{
+					JSONName: inField.GetJsonName(),
+					Type:     customElmType(preface, inField.GetName()),
+					ElmType:  oneOfElmType,
+					Decoder:  fieldDecoder,
+					Encoder:  fieldEncoderName(inField),
+				})
 			}
 
 			oneOfs = append(oneOfs, oneOf{
@@ -599,7 +607,7 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 			EncoderName:       encoderName(fullName),
 			Fields:            fields,
 			OneOfs:            oneOfs,
-			NestedCustomTypes: enums(newPreface, messagePb.GetEnumType(), p),
+			NestedCustomTypes: enumsToCustomTypes(newPreface, messagePb.GetEnumType(), p),
 			NestedMessages:    nestedMessages,
 		})
 	}
@@ -641,14 +649,12 @@ func nested(inField *descriptor.FieldDescriptorProto, inMessage *descriptor.Desc
 				return nil, err
 			}
 
-			nest := nestedField{
+			return &nestedField{
 				Key:         keyType,
 				Value:       valueType,
 				DecoderName: fieldDecoder,
 				EncoderName: fieldEncoderName(valueField),
-			}
-
-			return &nest, nil
+			}, nil
 		}
 	}
 
@@ -721,11 +727,7 @@ func customElmType(preface []string, in string) CustomElmType {
 }
 
 func elmTypeName(in string) string {
-	n := camelCase(in)
-	if reservedKeywords[n] {
-		n += "_"
-	}
-	return n
+	return appendUnderscoreToReservedKeywords(camelCase(in))
 }
 
 func appendUnderscoreToReservedKeywords(in string) string {

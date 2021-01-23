@@ -66,7 +66,7 @@ func EnumVariantJSONName(pb *descriptorpb.EnumValueDescriptorProto) VariantJSONN
 }
 
 // CustomTypeTemplate - defines templates for custom types
-// For legacy code the definitions are split - reorganizing to reduce complexity is planned
+// TODO: For legacy code the definitions are split - reorganizing to reduce complexity is planned
 func CustomTypeTemplate(t *template.Template) (*template.Template, error) {
 	return t.Parse(`
 {{- define "custom-type-definition" }}
