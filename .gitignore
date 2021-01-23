@@ -29,6 +29,7 @@ _testmain.go
 
 /protoc/
 /protoc*.zip
+/protoc-gen-elm/protoc-gen-elm
 
 /bin/
 
