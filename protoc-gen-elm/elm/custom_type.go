@@ -145,6 +145,7 @@ type {{ .Name }}
         {{ .Name }}Unspecified ->
             Nothing
         {{- range .Variants }}
+
         {{ .Name }} x ->
             Just ( "{{ .JSONName }}", {{ .Encoder }} x )
         {{- end }}

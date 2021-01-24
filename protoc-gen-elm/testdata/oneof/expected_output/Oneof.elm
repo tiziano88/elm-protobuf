@@ -55,8 +55,10 @@ firstOneofEncoder v =
     case v of
         FirstOneofUnspecified ->
             Nothing
+
         StringField x ->
             Just ( "stringField", JE.string x )
+
         IntField x ->
             Just ( "intField", JE.int x )
 
@@ -81,7 +83,9 @@ secondOneofEncoder v =
     case v of
         SecondOneofUnspecified ->
             Nothing
+
         BoolField x ->
             Just ( "boolField", JE.bool x )
+
         OtherStringField x ->
             Just ( "otherStringField", JE.string x )
