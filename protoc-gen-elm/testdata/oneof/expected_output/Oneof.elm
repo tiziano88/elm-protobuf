@@ -20,6 +20,21 @@ type alias Foo =
     }
 
 
+fooDecoder : JD.Decoder Foo
+fooDecoder =
+    JD.lazy <| \_ -> decode Foo
+        |> field firstOneofDecoder
+        |> field secondOneofDecoder
+
+
+fooEncoder : Foo -> JE.Value
+fooEncoder v =
+    JE.object <| List.filterMap identity <|
+        [ (firstOneofEncoder v.firstOneof)
+        , (secondOneofEncoder v.secondOneof)
+        ]
+
+
 type FirstOneof
     = FirstOneofUnspecified
     | StringField String
@@ -70,18 +85,3 @@ secondOneofEncoder v =
             Just ( "boolField", JE.bool x )
         OtherStringField x ->
             Just ( "otherStringField", JE.string x )
-
-
-fooDecoder : JD.Decoder Foo
-fooDecoder =
-    JD.lazy <| \_ -> decode Foo
-        |> field firstOneofDecoder
-        |> field secondOneofDecoder
-
-
-fooEncoder : Foo -> JE.Value
-fooEncoder v =
-    JE.object <| List.filterMap identity <|
-        [ (firstOneofEncoder v.firstOneof)
-        , (secondOneofEncoder v.secondOneof)
-        ]

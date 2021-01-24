@@ -21,6 +21,23 @@ type alias Rec =
     }
 
 
+recDecoder : JD.Decoder Rec
+recDecoder =
+    JD.lazy <| \_ -> decode Rec
+        |> required "int32Field" intDecoder 0
+        |> required "stringField" JD.string ""
+        |> field rDecoder
+
+
+recEncoder : Rec -> JE.Value
+recEncoder v =
+    JE.object <| List.filterMap identity <|
+        [ (requiredFieldEncoder "int32Field" JE.int 0 v.int32Field)
+        , (requiredFieldEncoder "stringField" JE.string "" v.stringField)
+        , (rEncoder v.r)
+        ]
+
+
 type R
     = RUnspecified
     | RecField Rec
@@ -41,20 +58,3 @@ rEncoder v =
             Nothing
         RecField x ->
             Just ( "recField", recEncoder x )
-
-
-recDecoder : JD.Decoder Rec
-recDecoder =
-    JD.lazy <| \_ -> decode Rec
-        |> required "int32Field" intDecoder 0
-        |> required "stringField" JD.string ""
-        |> field rDecoder
-
-
-recEncoder : Rec -> JE.Value
-recEncoder v =
-    JE.object <| List.filterMap identity <|
-        [ (requiredFieldEncoder "int32Field" JE.int 0 v.int32Field)
-        , (requiredFieldEncoder "stringField" JE.string "" v.stringField)
-        , (rEncoder v.r)
-        ]

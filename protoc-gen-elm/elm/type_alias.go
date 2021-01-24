@@ -68,6 +68,23 @@ var (
 			Encoder: "boolValueEncoder",
 		},
 	}
+
+	reservedKeywords = map[string]bool{
+		"module":   true,
+		"exposing": true,
+		"import":   true,
+		"type":     true,
+		"let":      true,
+		"in":       true,
+		"if":       true,
+		"then":     true,
+		"else":     true,
+		"where":    true,
+		"case":     true,
+		"of":       true,
+		"port":     true,
+		"as":       true,
+	}
 )
 
 // TypeAlias - defines an Elm type alias (somtimes called a record)
@@ -95,9 +112,17 @@ type TypeAliasField struct {
 	Encoder  FieldEncoder
 }
 
+func appendUnderscoreToReservedKeywords(in string) string {
+	if reservedKeywords[in] {
+		return fmt.Sprintf("%s_", in)
+	}
+
+	return in
+}
+
 // FieldName - simple camelcase variable name with first letter lower
 func FieldName(in string) VariableName {
-	return VariableName(firstLower(camelCase(in)))
+	return VariableName(appendUnderscoreToReservedKeywords(firstLower(camelCase(in))))
 }
 
 // FieldJSONName - JSON identifier for field decoder/encoding

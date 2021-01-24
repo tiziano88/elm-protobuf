@@ -122,32 +122,6 @@ type alias Foo =
     }
 
 
-type Oo
-    = OoUnspecified
-    | Oo1 Int
-    | Oo2 Bool
-
-
-ooDecoder : JD.Decoder Oo
-ooDecoder =
-    JD.lazy <| \_ -> JD.oneOf
-        [ JD.map Oo1 (JD.field "oo1" intDecoder)
-        , JD.map Oo2 (JD.field "oo2" JD.bool)
-        , JD.succeed OoUnspecified
-        ]
-
-
-ooEncoder : Oo -> Maybe ( String, JE.Value )
-ooEncoder v =
-    case v of
-        OoUnspecified ->
-            Nothing
-        Oo1 x ->
-            Just ( "oo1", JE.int x )
-        Oo2 x ->
-            Just ( "oo2", JE.bool x )
-
-
 fooDecoder : JD.Decoder Foo
 fooDecoder =
     JD.lazy <| \_ -> decode Foo
@@ -181,3 +155,29 @@ fooEncoder v =
         , (optionalEncoder "timestampField" timestampEncoder v.timestampField)
         , (ooEncoder v.oo)
         ]
+
+
+type Oo
+    = OoUnspecified
+    | Oo1 Int
+    | Oo2 Bool
+
+
+ooDecoder : JD.Decoder Oo
+ooDecoder =
+    JD.lazy <| \_ -> JD.oneOf
+        [ JD.map Oo1 (JD.field "oo1" intDecoder)
+        , JD.map Oo2 (JD.field "oo2" JD.bool)
+        , JD.succeed OoUnspecified
+        ]
+
+
+ooEncoder : Oo -> Maybe ( String, JE.Value )
+ooEncoder v =
+    case v of
+        OoUnspecified ->
+            Nothing
+        Oo1 x ->
+            Just ( "oo1", JE.int x )
+        Oo2 x ->
+            Just ( "oo2", JE.bool x )

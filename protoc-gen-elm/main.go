@@ -638,10 +638,6 @@ func appendUnderscoreToReservedKeywords(in string) string {
 	return in
 }
 
-func elmFieldName(in string) string {
-	return appendUnderscoreToReservedKeywords(firstLower(camelCase(in)))
-}
-
 func encoderName(typeName string) string {
 	return firstLower(typeName) + "Encoder"
 }
