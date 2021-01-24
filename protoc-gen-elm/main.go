@@ -922,42 +922,6 @@ func oneofEncoderName(inOneof *descriptor.OneofDescriptorProto) string {
 	return encoderName(typeName)
 }
 
-// mapEntries detects whether a field is implemented using a `map<,>` field or not.
-// In order for `map<,>` fields to be supported by proto2 format, they
-// get parsed as a backwards compatible form:
-//
-//     map<KeyType, ValueType> map_field = 1;
-// Gets parsed as:
-//     message MapFieldEntry {
-//         option map_entry = true;
-//         optional KeyType key = 1;
-//         optional ValueType value = 2;
-//     }
-//     repeated MapFieldEntry map_field = 1;
-//
-// our code looks for the `map_entry` option to detect `map<,>` fields, and generate Dict's for them
-// https://github.com/golang/protobuf/blob/882cf97a83ad205fd22af574246a3bc647d7a7d2/protoc-gen-go/descriptor/descriptor.proto#L474-L495
-func mapEntries(inField *descriptor.FieldDescriptorProto, inMessage *descriptor.DescriptorProto) (isMap bool, keyFieldDescriptor *descriptor.FieldDescriptorProto, valueFieldDescriptor *descriptor.FieldDescriptorProto) {
-	isRepeated :=
-		inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED &&
-			inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE
-
-	if !isRepeated {
-		return false, nil, nil
-	}
-
-	fullyQualifiedTypeName := inField.GetTypeName()
-	splitName := strings.Split(fullyQualifiedTypeName, ".")
-	localTypeName := splitName[len(splitName)-1]
-
-	for _, nested := range inMessage.GetNestedType() {
-		if nested.GetName() == localTypeName && nested.GetOptions().GetMapEntry() {
-			return true, nested.GetField()[0], nested.GetField()[1]
-		}
-	}
-	return false, nil, nil
-}
-
 func fieldElmType(inField *descriptor.FieldDescriptorProto) (string, error) {
 	switch inField.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_INT32,
