@@ -177,7 +177,9 @@ ooEncoder v =
     case v of
         OoUnspecified ->
             Nothing
+
         Oo1 x ->
             Just ( "oo1", JE.int x )
+
         Oo2 x ->
             Just ( "oo2", JE.bool x )

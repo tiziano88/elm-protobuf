@@ -55,7 +55,7 @@ type OneOfVariant struct {
 func NestedVariantName(name string, preface []string) VariantName {
 	fullName := stringextras.CamelCase(strings.ToLower(name))
 	for _, p := range preface {
-		fullName = fmt.Sprintf("%s_%s", stringextras.CamelCase(strings.ToLower(p)), fullName)
+		fullName = fmt.Sprintf("%s_%s", stringextras.CamelCase(p), fullName)
 	}
 
 	return VariantName(fullName)

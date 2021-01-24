@@ -56,5 +56,6 @@ rEncoder v =
     case v of
         RUnspecified ->
             Nothing
+
         RecField x ->
             Just ( "recField", recEncoder x )
