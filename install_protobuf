@@ -5,7 +5,7 @@ set -ex
 #git clone https://github.com/google/protobuf.git
 #cd protobuf && ./autogen.sh && ./configure && make && sudo make install
 
-readonly VERSION='3.3.0'
+readonly VERSION='3.14.0'
 
 wget https://github.com/google/protobuf/releases/download/v${VERSION}/protoc-${VERSION}-linux-x86_64.zip
 unzip ./protoc*.zip -d ./protoc
