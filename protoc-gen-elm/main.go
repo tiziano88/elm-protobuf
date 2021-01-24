@@ -10,11 +10,8 @@ import (
 	"protoc-gen-elm/elm"
 	"strings"
 	"text/template"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -25,42 +22,6 @@ var (
 	excludedFiles = map[string]bool{
 		"google/protobuf/timestamp.proto": true,
 		"google/protobuf/wrappers.proto":  true,
-	}
-	excludedTypes = map[string]string{
-		".google.protobuf.Timestamp":   "Timestamp",
-		".google.protobuf.Int32Value":  "Int",
-		".google.protobuf.Int64Value":  "Int",
-		".google.protobuf.UInt32Value": "Int",
-		".google.protobuf.UInt64Value": "Int",
-		".google.protobuf.DoubleValue": "Float",
-		".google.protobuf.FloatValue":  "Float",
-		".google.protobuf.StringValue": "String",
-		".google.protobuf.BytesValue":  "Bytes",
-		".google.protobuf.BoolValue":   "Bool",
-	}
-	excludedDecoders = map[string]DecoderName{
-		".google.protobuf.Timestamp":   "timestampDecoder",
-		".google.protobuf.Int32Value":  "intValueDecoder",
-		".google.protobuf.Int64Value":  "intValueDecoder",
-		".google.protobuf.UInt32Value": "intValueDecoder",
-		".google.protobuf.UInt64Value": "intValueDecoder",
-		".google.protobuf.DoubleValue": "floatValueDecoder",
-		".google.protobuf.FloatValue":  "floatValueDecoder",
-		".google.protobuf.StringValue": "stringValueDecoder",
-		".google.protobuf.BytesValue":  "bytesValueDecoder",
-		".google.protobuf.BoolValue":   "boolValueDecoder",
-	}
-	excludedEncoders = map[string]string{
-		".google.protobuf.Timestamp":   "timestampEncoder",
-		".google.protobuf.Int32Value":  "intValueEncoder",
-		".google.protobuf.Int64Value":  "numericStringEncoder",
-		".google.protobuf.UInt32Value": "intValueEncoder",
-		".google.protobuf.UInt64Value": "numericStringEncoder",
-		".google.protobuf.DoubleValue": "floatValueEncoder",
-		".google.protobuf.FloatValue":  "floatValueEncoder",
-		".google.protobuf.StringValue": "stringValueEncoder",
-		".google.protobuf.BytesValue":  "bytesValueEncoder",
-		".google.protobuf.BoolValue":   "boolValueEncoder",
 	}
 
 	// Avoid collisions with reserved keywords by appending a single underscore after the name.
@@ -198,9 +159,14 @@ func hasMapEntriesInMessage(inMessage *descriptorpb.DescriptorProto) bool {
 func templateFile(inFile *descriptorpb.FileDescriptorProto, p parameters) (string, error) {
 	t := template.New("t")
 
-	t, err := elm.CustomTypeTemplate(t)
+	t, err := elm.EnumCustomTypeTemplate(t)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to parse custom type template")
+		return "", errors.Wrap(err, "failed to parse enum custom type template")
+	}
+
+	t, err = elm.OneOfCustomTypeTemplate(t)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to parse one-of custom type template")
 	}
 
 	t, err = elm.TypeAliasTemplate(t)
@@ -209,49 +175,17 @@ func templateFile(inFile *descriptorpb.FileDescriptorProto, p parameters) (strin
 	}
 
 	t, err = t.Parse(`
-{{- define "oneof-type" -}}
-type {{ .Name }}
-    = {{ .Name }}Unspecified
-{{- range .Fields }}
-    | {{ .Type }} {{ .ElmType }}
-{{- end }}
-
-
-{{ .DecoderName }} : JD.Decoder {{ .Name }}
-{{ .DecoderName }} =
-    JD.lazy <| \_ -> JD.oneOf
-        [{{ range $i, $v := .Fields }}{{ if $i }},{{ end }} JD.map {{ .Type }} (JD.field "{{ .JSONName }}" {{ .Decoder }})
-        {{ end }}, JD.succeed {{ .Name }}Unspecified
-        ]
-
-
-{{ .EncoderName }} : {{ .Name }} -> Maybe ( String, JE.Value )
-{{ .EncoderName }} v =
-    case v of
-        {{ .Name }}Unspecified ->
-            Nothing
-        {{- range .Fields }}
-        {{ .Type }} x ->
-            Just ( "{{ .JSONName }}", {{ .Encoder }} x )
-        {{- end }}
-{{- end -}}
-`)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse one-of template")
-	}
-
-	t, err = t.Parse(`
 {{- define "nested-message" -}}
 {{ template "type-alias" .TypeAlias }}
-{{- range .OneOfs }}
+{{- range .OneOfCustomTypes }}
 
 
-{{ template "oneof-type" . }}
+{{ template "oneof-custom-type" . }}
 {{- end }}
-{{- range .NestedCustomTypes }}
+{{- range .EnumCustomTypes }}
 
 
-{{ template "custom-type" . }}
+{{ template "enum-custom-type" . }}
 {{- end }}
 {{- range .NestedMessages }}
 
@@ -288,7 +222,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 {{- range .TopEnums }}
 
 
-{{ template "custom-type" . }}
+{{ template "enum-custom-type" . }}
 {{- end }}
 {{- range .Messages }}
 
@@ -311,7 +245,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 		ModuleName        string
 		ImportDict        bool
 		AdditionalImports []string
-		TopEnums          []elm.CustomType
+		TopEnums          []elm.EnumCustomType
 		Messages          []pbMessage
 	}{
 		SourceFile:        inFile.GetName(),
@@ -327,44 +261,11 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 	return buff.String(), nil
 }
 
-// CustomElmType is the type alias for custom message, enum, and oneof elements.
-// This value is camel case with the first letter capitalized.
-type CustomElmType string
-
-// DecoderName is the Elm decoder for the FieldDescriptorProto_TYPE_****.
-// Simple custom decoders or prefaced with JD, the alias for `Json.Decode`.
-type DecoderName string
-
-const (
-	IntDecoder    DecoderName = "intDecoder"
-	BytesDecoder  DecoderName = "bytesFieldDecoder"
-	FloatDecoder  DecoderName = "JD.float"
-	BoolDecoder   DecoderName = "JD.bool"
-	StringDecoder DecoderName = "JD.string"
-)
-
-// TODO: Convert PB OneOf to an Elm custom type struct
-//       Differences in decoders/encoders will be an issue
-type oneOf struct {
-	Name        string
-	DecoderName DecoderName
-	EncoderName string
-	Fields      []oneOfField
-}
-
-type oneOfField struct {
-	JSONName string
-	Type     CustomElmType
-	ElmType  string
-	Decoder  DecoderName
-	Encoder  string
-}
-
 type pbMessage struct {
-	TypeAlias         elm.TypeAlias
-	OneOfs            []oneOf
-	NestedCustomTypes []elm.CustomType
-	NestedMessages    []pbMessage
+	TypeAlias        elm.TypeAlias
+	OneOfCustomTypes []elm.OneOfCustomType
+	EnumCustomTypes  []elm.EnumCustomType
+	NestedMessages   []pbMessage
 }
 
 func isDeprecated(options interface{}) bool {
@@ -382,20 +283,20 @@ func isDeprecated(options interface{}) bool {
 	}
 }
 
-func enumsToCustomTypes(preface []string, enumPbs []*descriptorpb.EnumDescriptorProto, p parameters) []elm.CustomType {
-	var result []elm.CustomType
+func enumsToCustomTypes(preface []string, enumPbs []*descriptorpb.EnumDescriptorProto, p parameters) []elm.EnumCustomType {
+	var result []elm.EnumCustomType
 	for _, enumPb := range enumPbs {
 		if isDeprecated(enumPb.Options) && p.RemoveDeprecated {
 			continue
 		}
 
-		var values []elm.CustomTypeVariant
+		var values []elm.EnumVariant
 		for _, value := range enumPb.GetValue() {
 			if isDeprecated(value.Options) && p.RemoveDeprecated {
 				continue
 			}
 
-			values = append(values, elm.CustomTypeVariant{
+			values = append(values, elm.EnumVariant{
 				Name:     elm.NestedVariantName(value.GetName(), preface),
 				Number:   elm.ProtobufFieldNumber(value.GetNumber()),
 				JSONName: elm.EnumVariantJSONName(value),
@@ -404,7 +305,7 @@ func enumsToCustomTypes(preface []string, enumPbs []*descriptorpb.EnumDescriptor
 
 		enumType := elm.NestedType(enumPb.GetName(), preface)
 
-		result = append(result, elm.CustomType{
+		result = append(result, elm.EnumCustomType{
 			Name:                   enumType,
 			Decoder:                elm.DecoderName(enumType),
 			Encoder:                elm.EncoderName(enumType),
@@ -417,10 +318,48 @@ func enumsToCustomTypes(preface []string, enumPbs []*descriptorpb.EnumDescriptor
 	return result
 }
 
+func oneOfsToCustomTypes(preface []string, messagePb *descriptorpb.DescriptorProto, p parameters) []elm.OneOfCustomType {
+	var result []elm.OneOfCustomType
+
+	if isDeprecated(messagePb.Options) && p.RemoveDeprecated {
+		return result
+	}
+
+	for oneofIndex, oneOfPb := range messagePb.GetOneofDecl() {
+		var variants []elm.OneOfVariant
+		for _, inField := range messagePb.GetField() {
+			if isDeprecated(inField.Options) && p.RemoveDeprecated {
+				continue
+			}
+
+			if inField.OneofIndex == nil || inField.GetOneofIndex() != int32(oneofIndex) {
+				continue
+			}
+
+			variants = append(variants, elm.OneOfVariant{
+				Name:     elm.NestedVariantName(inField.GetName(), preface),
+				JSONName: elm.OneOfVariantJSONName(inField),
+				Type:     elm.BasicFieldType(inField),
+				Decoder:  elm.BasicFieldDecoder(inField),
+				Encoder:  elm.BasicFieldEncoder(inField),
+			})
+		}
+
+		name := elm.NestedType(oneOfPb.GetName(), preface)
+		result = append(result, elm.OneOfCustomType{
+			Name:     name,
+			Decoder:  elm.DecoderName(name),
+			Encoder:  elm.EncoderName(name),
+			Variants: variants,
+		})
+	}
+
+	return result
+}
+
 func messages(preface []string, messagePbs []*descriptorpb.DescriptorProto, p parameters) ([]pbMessage, error) {
 	var result []pbMessage
 	for _, messagePb := range messagePbs {
-
 		if isDeprecated(messagePb.Options) && p.RemoveDeprecated {
 			continue
 		}
@@ -474,50 +413,10 @@ func messages(preface []string, messagePbs []*descriptorpb.DescriptorProto, p pa
 		for _, oneOfPb := range messagePb.GetOneofDecl() {
 			newFields = append(newFields, elm.TypeAliasField{
 				Name:    elm.FieldName(oneOfPb.GetName()),
-				Type:    elm.Type(reserveWordProtectedCamelCase(oneOfPb.GetName())),
+				Type:    elm.OneOfType(oneOfPb.GetName()),
 				Encoder: elm.OneOfEncoder(oneOfPb),
 				Decoder: elm.OneOfDecoder(oneOfPb),
 			})
-		}
-
-		var oneOfs []oneOf
-		for oneofIndex, oneOfPb := range messagePb.GetOneofDecl() {
-			var oneOfFields []oneOfField
-			for _, inField := range messagePb.GetField() {
-				if inField.OneofIndex == nil || inField.GetOneofIndex() != int32(oneofIndex) {
-					continue
-				}
-
-				fieldDecoder, err := fieldDecoderName(inField)
-				if err != nil {
-					return nil, err
-				}
-
-				oneOfElmType, err := fieldElmType(inField)
-				if err != nil {
-					return nil, err
-				}
-
-				oneOfFields = append(oneOfFields, oneOfField{
-					JSONName: inField.GetJsonName(),
-					Type:     customElmType(preface, inField.GetName()),
-					ElmType:  oneOfElmType,
-					Decoder:  fieldDecoder,
-					Encoder:  fieldEncoderName(inField),
-				})
-			}
-
-			oneOfs = append(oneOfs, oneOf{
-				Name:        reserveWordProtectedCamelCase(oneOfPb.GetName()),
-				DecoderName: oneofDecoderName(oneOfPb),
-				EncoderName: oneofEncoderName(oneOfPb),
-				Fields:      oneOfFields,
-			})
-		}
-
-		fullName := messagePb.GetName()
-		for _, p := range preface {
-			fullName = fmt.Sprintf("%s_%s", p, fullName)
 		}
 
 		newPreface := append([]string{messagePb.GetName()}, preface...)
@@ -534,9 +433,9 @@ func messages(preface []string, messagePbs []*descriptorpb.DescriptorProto, p pa
 				Encoder: elm.EncoderName(name),
 				Fields:  newFields,
 			},
-			OneOfs:            oneOfs,
-			NestedCustomTypes: enumsToCustomTypes(newPreface, messagePb.GetEnumType(), p),
-			NestedMessages:    nestedMessages,
+			OneOfCustomTypes: oneOfsToCustomTypes([]string{}, messagePb, p),
+			EnumCustomTypes:  enumsToCustomTypes(newPreface, messagePb.GetEnumType(), p),
+			NestedMessages:   nestedMessages,
 		})
 	}
 
@@ -624,206 +523,10 @@ func getAdditionalImports(dependencies []string) []string {
 	return additions
 }
 
-func customElmType(preface []string, in string) CustomElmType {
-	fullType := camelCase(in)
-	for _, p := range preface {
-		fullType = fmt.Sprintf("%s_%s", camelCase(p), fullType)
-	}
-
-	return CustomElmType(appendUnderscoreToReservedKeywords(fullType))
-}
-
-func reserveWordProtectedCamelCase(in string) string {
-	return appendUnderscoreToReservedKeywords(camelCase(in))
-}
-
-func appendUnderscoreToReservedKeywords(in string) string {
-	if reservedKeywords[in] {
-		return fmt.Sprintf("%s_", in)
-	}
-
-	return in
-}
-
-func encoderName(typeName string) string {
-	return firstLower(typeName) + "Encoder"
-}
-
-func fieldDecoderName(inField *descriptorpb.FieldDescriptorProto) (DecoderName, error) {
-	switch inField.GetType() {
-	case descriptorpb.FieldDescriptorProto_TYPE_INT32,
-		descriptorpb.FieldDescriptorProto_TYPE_INT64,
-		descriptorpb.FieldDescriptorProto_TYPE_UINT32,
-		descriptorpb.FieldDescriptorProto_TYPE_UINT64,
-		descriptorpb.FieldDescriptorProto_TYPE_SINT32,
-		descriptorpb.FieldDescriptorProto_TYPE_SINT64,
-		descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
-		descriptorpb.FieldDescriptorProto_TYPE_FIXED64,
-		descriptorpb.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
-		return IntDecoder, nil
-	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT,
-		descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
-		return FloatDecoder, nil
-	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
-		return BoolDecoder, nil
-	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
-		return StringDecoder, nil
-
-	// TODO: This is an unsupported stub (throw error)
-	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
-		return BytesDecoder, nil
-	case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
-		return enumDecoderName(inField), nil
-	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
-		return messageDecoderName(inField), nil
-	default:
-		return "", fmt.Errorf("error generating decoder for field %s", inField.GetType())
-	}
-}
-
-func enumDecoderName(inField *descriptorpb.FieldDescriptorProto) DecoderName {
-	_, messageName := convert(inField.GetTypeName())
-	return decoderName(messageName)
-}
-
-func messageDecoderName(inField *descriptorpb.FieldDescriptorProto) DecoderName {
-	// Well Known Types.
-	if n, ok := excludedDecoders[inField.GetTypeName()]; ok {
-		return n
-	}
-
-	_, messageName := convert(inField.GetTypeName())
-	return decoderName(messageName)
-}
-
-func oneofDecoderName(inOneof *descriptorpb.OneofDescriptorProto) DecoderName {
-	typeName := reserveWordProtectedCamelCase(inOneof.GetName())
-	return decoderName(typeName)
-}
-
-func decoderName(typeName string) DecoderName {
-	return DecoderName(firstLower(typeName) + "Decoder")
-}
-
-// Returns package name and message name.
-func convert(inType string) (string, string) {
-	segments := strings.Split(inType, ".")
-	outPackageSegments := []string{}
-	outMessageSegments := []string{}
-	for _, s := range segments {
-		if s == "" {
-			continue
-		}
-		r, _ := utf8.DecodeRuneInString(s)
-		if unicode.IsLower(r) {
-			// Package name.
-			outPackageSegments = append(outPackageSegments, firstUpper(s))
-		} else {
-			// Message name.
-			outMessageSegments = append(outMessageSegments, firstUpper(s))
-		}
-	}
-	return strings.Join(outPackageSegments, "."), strings.Join(outMessageSegments, "_")
-}
-
-func firstLower(in string) string {
-	if len(in) < 2 {
-		return strings.ToLower(in)
-	}
-
-	return strings.ToLower(string(in[0])) + string(in[1:])
-}
-
 func firstUpper(in string) string {
 	if len(in) < 2 {
 		return strings.ToUpper(in)
 	}
 
 	return strings.ToUpper(string(in[0])) + string(in[1:])
-}
-
-func camelCase(in string) string {
-	// Remove any additional underscores, e.g. convert `foo_1` into `foo1`.
-	return strings.Replace(generator.CamelCase(in), "_", "", -1)
-}
-
-func oneofEncoderName(inOneof *descriptorpb.OneofDescriptorProto) string {
-	typeName := reserveWordProtectedCamelCase(inOneof.GetName())
-	return encoderName(typeName)
-}
-
-func fieldElmType(inField *descriptorpb.FieldDescriptorProto) (string, error) {
-	switch inField.GetType() {
-	case descriptorpb.FieldDescriptorProto_TYPE_INT32,
-		descriptorpb.FieldDescriptorProto_TYPE_INT64,
-		descriptorpb.FieldDescriptorProto_TYPE_UINT32,
-		descriptorpb.FieldDescriptorProto_TYPE_UINT64,
-		descriptorpb.FieldDescriptorProto_TYPE_SINT32,
-		descriptorpb.FieldDescriptorProto_TYPE_SINT64,
-		descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
-		descriptorpb.FieldDescriptorProto_TYPE_FIXED64,
-		descriptorpb.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
-		return "Int", nil
-	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT,
-		descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
-		return "Float", nil
-	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
-		return "Bool", nil
-	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
-		return "String", nil
-	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
-		return "Bytes", nil
-	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE,
-		descriptorpb.FieldDescriptorProto_TYPE_ENUM:
-		// Well known types.
-		if n, ok := excludedTypes[inField.GetTypeName()]; ok {
-			return n, nil
-		}
-		_, messageName := convert(inField.GetTypeName())
-		return messageName, nil
-	default:
-		return "", fmt.Errorf("Error generating type for field %q %s", inField.GetName(), inField.GetType())
-	}
-}
-
-func fieldEncoderName(inField *descriptorpb.FieldDescriptorProto) string {
-	switch inField.GetType() {
-	case descriptorpb.FieldDescriptorProto_TYPE_INT32,
-		descriptorpb.FieldDescriptorProto_TYPE_UINT32,
-		descriptorpb.FieldDescriptorProto_TYPE_SINT32,
-		descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
-		descriptorpb.FieldDescriptorProto_TYPE_SFIXED32:
-		return "JE.int"
-	case descriptorpb.FieldDescriptorProto_TYPE_INT64,
-		descriptorpb.FieldDescriptorProto_TYPE_UINT64,
-		descriptorpb.FieldDescriptorProto_TYPE_SINT64,
-		descriptorpb.FieldDescriptorProto_TYPE_FIXED64,
-		descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
-		return "numericStringEncoder"
-	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT,
-		descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
-		return "JE.float"
-	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
-		return "JE.bool"
-	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
-		return "JE.string"
-	case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
-		// TODO: Default enum value.
-		// Remove leading ".".
-		_, messageName := convert(inField.GetTypeName())
-		return encoderName(messageName)
-	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
-		// Well Known Types.
-		if n, ok := excludedEncoders[inField.GetTypeName()]; ok {
-			return n
-		}
-		_, messageName := convert(inField.GetTypeName())
-		return encoderName(messageName)
-	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
-		return "bytesFieldEncoder"
-	default:
-		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
-	}
 }

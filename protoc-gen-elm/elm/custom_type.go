@@ -8,31 +8,46 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// CustomType - defines an Elm custom type (sometimes called union type)
+// EnumCustomType - defines an Elm custom type (sometimes called union type) for a PB enum
 // https://guide.elm-lang.org/types/custom_types.html
-type CustomType struct {
+type EnumCustomType struct {
 	Name                   Type
 	Decoder                VariableName
 	Encoder                VariableName
 	DefaultVariantVariable VariableName
 	DefaultVariantValue    VariantName
-	Variants               []CustomTypeVariant
+	Variants               []EnumVariant
 }
 
 // VariantName - unique camelcase identifier used for custom type variants
 // https://guide.elm-lang.org/types/custom_types.html
 type VariantName string
 
-// VariantData - data associated with custom type variant
-type VariantData []string
-
-// CustomTypeVariant - a possible variant of a CustomType
+// EnumVariant - a possible variant of an enum CustomType
 // https://guide.elm-lang.org/types/custom_types.html
-type CustomTypeVariant struct {
+type EnumVariant struct {
 	Name     VariantName
 	Number   ProtobufFieldNumber
 	JSONName VariantJSONName
-	Data     VariantData
+}
+
+// OneOfCustomType - defines an Elm custom type (sometimes called union type) for a PB one-of
+// https://guide.elm-lang.org/types/custom_types.html
+type OneOfCustomType struct {
+	Name     Type
+	Decoder  VariableName
+	Encoder  VariableName
+	Variants []OneOfVariant
+}
+
+// OneOfVariant - a possible variant of a one-of CustomType
+// https://guide.elm-lang.org/types/custom_types.html
+type OneOfVariant struct {
+	Name     VariantName
+	Type     Type
+	JSONName VariantJSONName
+	Decoder  VariableName
+	Encoder  VariableName
 }
 
 // NestedVariantName - Elm variant name for a possibly nested PB definition
@@ -60,15 +75,15 @@ func EnumVariantJSONName(pb *descriptorpb.EnumValueDescriptorProto) VariantJSONN
 	return VariantJSONName(pb.GetName())
 }
 
-// OneOfDefaultVariantName - convenient identifier for a one of custom types default variant
-func OneOfDefaultVariantName(name VariableName) VariableName {
-	return VariableName(firstLower(fmt.Sprintf("%sUnspecified", name)))
+// OneOfVariantJSONName - JSON identifier for variant decoder/encoding
+func OneOfVariantJSONName(pb *descriptorpb.FieldDescriptorProto) VariantJSONName {
+	return VariantJSONName(pb.GetJsonName())
 }
 
-// CustomTypeTemplate - defines templates for custom types
-func CustomTypeTemplate(t *template.Template) (*template.Template, error) {
+// EnumCustomTypeTemplate - defines template for an enum custom type
+func EnumCustomTypeTemplate(t *template.Template) (*template.Template, error) {
 	return t.Parse(`
-{{ define "custom-type" -}}
+{{- define "enum-custom-type" -}}
 type {{ .Name }}
 {{- range $i, $v := .Variants }}
     {{ if not $i }}={{ else }}|{{ end }} {{ $v.Name }} -- {{ $v.Number }}
@@ -105,6 +120,38 @@ type {{ .Name }}
 {{ end }}
     in
         JE.string <| lookup v
+{{- end -}}
+`)
+}
+
+// OneOfCustomTypeTemplate - defines template for a one-of custom type
+func OneOfCustomTypeTemplate(t *template.Template) (*template.Template, error) {
+	return t.Parse(`
+{{- define "oneof-custom-type" -}}
+type {{ .Name }}
+    = {{ .Name }}Unspecified
+{{- range .Variants }}
+    | {{ .Name }} {{ .Type }}
 {{- end }}
+
+
+{{ .Decoder }} : JD.Decoder {{ .Name }}
+{{ .Decoder }} =
+    JD.lazy <| \_ -> JD.oneOf
+        [{{ range $i, $v := .Variants }}{{ if $i }},{{ end }} JD.map {{ .Name }} (JD.field "{{ .JSONName }}" {{ .Decoder }})
+        {{ end }}, JD.succeed {{ .Name }}Unspecified
+        ]
+
+
+{{ .Encoder }} : {{ .Name }} -> Maybe ( String, JE.Value )
+{{ .Encoder }} v =
+    case v of
+        {{ .Name }}Unspecified ->
+            Nothing
+        {{- range .Variants }}
+        {{ .Name }} x ->
+            Just ( "{{ .JSONName }}", {{ .Encoder }} x )
+        {{- end }}
+{{- end -}}
 `)
 }
