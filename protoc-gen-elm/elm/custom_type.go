@@ -77,7 +77,7 @@ func OneOfDefaultVariantName(name VariableName) VariableName {
 // CustomTypeTemplate - defines templates for custom types
 func CustomTypeTemplate(t *template.Template) (*template.Template, error) {
 	return t.Parse(`
-{{- define "custom-type" }}
+{{ define "custom-type" -}}
 type {{ .Name }}
 {{- range $i, $v := .Variants }}
     {{ if not $i }}={{ else }}|{{ end }} {{ $v.Name }} -- {{ $v.Number }}

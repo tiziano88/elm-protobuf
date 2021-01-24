@@ -203,6 +203,11 @@ func templateFile(inFile *descriptor.FileDescriptorProto, p parameters) (string,
 		return "", err
 	}
 
+	t, err = elm.TypeAliasTemplate(t)
+	if err != nil {
+		return "", err
+	}
+
 	t, err = t.Parse(`
 {{- define "oneof-type" }}
 
@@ -231,37 +236,6 @@ type {{ .Name }}
         {{ .Type }} x ->
             Just ( "{{ .JSONName }}", {{ .Encoder }} x )
         {{- end }}
-{{- end }}
-{{- define "message" }}
-
-
-type alias {{ .Type }} =
-    { {{ range $i, $v := .Fields }}
-        {{- if $i }}, {{ end }}{{ .Name }} : {{ .Type }}{{ if .Number }} -- {{ .Number }}{{ end }}
-    {{ end }}}
-{{- range .OneOfs }}{{ template "oneof-type" . }}{{ end }}
-
-
-{{ .DecoderName }} : JD.Decoder {{ .Type }}
-{{ .DecoderName }} =
-    JD.lazy <| \_ -> decode {{ .Type }}{{ range .Fields }}
-        |> {{ .Decoder.Preface }}
-			{{- if .JSONName }} "{{ .JSONName }}"{{ end }} {{ .Decoder.Name }}
-			{{- if .Decoder.HasDefaultValue }} {{ .Decoder.DefaultValue }}{{ end }}
-        {{- end }}
-
-
-{{ .EncoderName }} : {{ .Type }} -> JE.Value
-{{ .EncoderName }} v =
-    JE.object <| List.filterMap identity <|
-        [{{ range $i, $v := .Fields }}
-            {{- if $i }},{{ end }} ({{ .Encoder }})
-        {{ end }}]
-{{- range .NestedCustomTypes }}
-
-
-{{ template "custom-type" . }}{{ end }}
-{{- range .NestedMessages }}{{ template "message" . }}{{ end }}
 {{- end -}}
 module {{ .ModuleName }} exposing (..)
 
@@ -285,8 +259,14 @@ import {{ . }} exposing (..)
 uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 {{- range .TopEnums }}
 
-{{ template "custom-type" . }}{{ end }}
-{{- range .Messages }}{{ template "message" . }}{{ end }}
+
+{{ template "custom-type" . }}
+{{- end }}
+{{- range .Messages }}
+
+
+{{ template "type-alias" . }}
+{{- end }}
 `)
 	if err != nil {
 		return "", err
@@ -395,10 +375,10 @@ type message struct {
 	DecoderName DecoderName
 	EncoderName string
 	Fields      []field
-	OneOfs      []oneOf
 
-	// TODO: The concept of nested messages can be dropped
-	//       Rather, traverse the PB file and collect all nested pieces to the top.
+	// TODO: Split up - alias type struct and a tree struct organizing code for the template
+	//       Its nice to organize nested definitions close together but model is messy.
+	OneOfs            []oneOf
 	NestedCustomTypes []elm.CustomType
 	NestedMessages    []message
 }

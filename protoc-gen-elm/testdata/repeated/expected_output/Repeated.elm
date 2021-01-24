@@ -162,7 +162,6 @@ fooEncoder v =
         ]
 
 
-
 type Foo_NestedEnum
     = Foo_EnumValueDefault -- 0
 

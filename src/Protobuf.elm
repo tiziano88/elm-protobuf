@@ -112,12 +112,8 @@ withDefault default decoder =
 -}
 optionalEncoder : String -> (a -> JE.Value) -> Maybe a -> Maybe ( String, JE.Value )
 optionalEncoder name encoder v =
-    case v of
-        Just x ->
-            Just ( name, encoder x )
+    Maybe.map (\x -> ( name, encoder x )) v
 
-        Nothing ->
-            Nothing
 
 
 {-| Encodes a required field.
@@ -174,7 +170,7 @@ bytesFieldDecoder =
 TODO: Implement.
 -}
 bytesFieldEncoder : Bytes -> JE.Value
-bytesFieldEncoder v =
+bytesFieldEncoder _ =
     JE.list JE.int []
 
 
