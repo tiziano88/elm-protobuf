@@ -23,8 +23,8 @@ type CustomType struct {
 // https://guide.elm-lang.org/types/custom_types.html
 type VariantName string
 
-// VariantJSONName - unique JSON identifier, uppercase snake case, for a custom type variant
-type VariantJSONName string
+// VariantData - data associated with custom type variant
+type VariantData []string
 
 // CustomTypeVariant - a possible variant of a CustomType
 // https://guide.elm-lang.org/types/custom_types.html
@@ -32,16 +32,7 @@ type CustomTypeVariant struct {
 	Name     VariantName
 	Number   ProtobufFieldNumber
 	JSONName VariantJSONName
-}
-
-// NestedType - top level Elm type for a possibly nested PB definition
-func NestedType(name string, preface []string) Type {
-	fullName := name
-	for _, p := range preface {
-		fullName = fmt.Sprintf("%s_%s", p, fullName)
-	}
-
-	return Type(fullName)
+	Data     VariantData
 }
 
 // NestedVariantName - Elm variant name for a possibly nested PB definition

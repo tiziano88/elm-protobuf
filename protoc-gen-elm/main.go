@@ -14,7 +14,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -171,7 +170,7 @@ func main() {
 	}
 }
 
-func hasMapEntries(inFile *descriptor.FileDescriptorProto) bool {
+func hasMapEntries(inFile *descriptorpb.FileDescriptorProto) bool {
 	for _, m := range inFile.GetMessageType() {
 		if hasMapEntriesInMessage(m) {
 			return true
@@ -181,7 +180,7 @@ func hasMapEntries(inFile *descriptor.FileDescriptorProto) bool {
 	return false
 }
 
-func hasMapEntriesInMessage(inMessage *descriptor.DescriptorProto) bool {
+func hasMapEntriesInMessage(inMessage *descriptorpb.DescriptorProto) bool {
 	if inMessage.GetOptions().GetMapEntry() {
 		return true
 	}
@@ -195,7 +194,7 @@ func hasMapEntriesInMessage(inMessage *descriptor.DescriptorProto) bool {
 	return false
 }
 
-func templateFile(inFile *descriptor.FileDescriptorProto, p parameters) (string, error) {
+func templateFile(inFile *descriptorpb.FileDescriptorProto, p parameters) (string, error) {
 	t := template.New("t")
 
 	t, err := elm.CustomTypeTemplate(t)
@@ -209,9 +208,7 @@ func templateFile(inFile *descriptor.FileDescriptorProto, p parameters) (string,
 	}
 
 	t, err = t.Parse(`
-{{- define "oneof-type" }}
-
-
+{{- define "oneof-type" -}}
 type {{ .Name }}
     = {{ .Name }}Unspecified
 {{- range .Fields }}
@@ -236,6 +233,24 @@ type {{ .Name }}
         {{ .Type }} x ->
             Just ( "{{ .JSONName }}", {{ .Encoder }} x )
         {{- end }}
+{{- end -}}
+{{- define "nested-message" -}}
+{{ template "type-alias" .TypeAlias }}
+{{- range .OneOfs }}
+
+
+{{ template "oneof-type" . }}
+{{- end }}
+{{- range .NestedCustomTypes }}
+
+
+{{ template "custom-type" . }}
+{{- end }}
+{{- range .NestedMessages }}
+
+
+{{ template "nested-message" . }}
+{{- end }}
 {{- end -}}
 module {{ .ModuleName }} exposing (..)
 
@@ -265,7 +280,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 {{- range .Messages }}
 
 
-{{ template "type-alias" . }}
+{{ template "nested-message" . }}
 {{- end }}
 `)
 	if err != nil {
@@ -284,7 +299,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 		ImportDict        bool
 		AdditionalImports []string
 		TopEnums          []elm.CustomType
-		Messages          []message
+		Messages          []pbMessage
 	}{
 		SourceFile:        inFile.GetName(),
 		ModuleName:        moduleName(inFile.GetName()),
@@ -318,33 +333,6 @@ const (
 	StringDecoder DecoderName = "JD.string"
 )
 
-// FieldDecoderHelper is modifier for the field decoder based on properties of the field protobuf.
-type FieldDecoderHelper string
-
-const (
-	OptionalFieldDecoderHelper FieldDecoderHelper = "optional"
-	RepeatedFieldDecoderHelper FieldDecoderHelper = "repeated"
-	RequiredFieldDecoderHelper FieldDecoderHelper = "required"
-	MapFieldDecoderHelper      FieldDecoderHelper = "mapEntries"
-	EnumFieldDecoderHelper     FieldDecoderHelper = "field"
-)
-
-type fieldDecoder struct {
-	Preface         FieldDecoderHelper
-	Name            DecoderName
-	HasDefaultValue bool
-	DefaultValue    string
-}
-
-type field struct {
-	Name     string
-	JSONName string
-	Type     string
-	Number   FieldNumber
-	Decoder  fieldDecoder
-	Encoder  string
-}
-
 // TODO: Convert PB OneOf to an Elm custom type struct
 //       Differences in decoders/encoders will be an issue
 type oneOf struct {
@@ -362,24 +350,14 @@ type oneOfField struct {
 	Encoder  string
 }
 
-type nestedField struct {
-	Key         string
-	Value       string
-	DecoderName DecoderName
-	EncoderName string
-}
-
-type message struct {
-	Type        CustomElmType
-	DecoderName DecoderName
-	EncoderName string
-	Fields      []field
+type pbMessage struct {
+	TypeAlias elm.TypeAlias
+	OneOfs    []oneOf
 
 	// TODO: Split up - alias type struct and a tree struct organizing code for the template
 	//       Its nice to organize nested definitions close together but model is messy.
-	OneOfs            []oneOf
 	NestedCustomTypes []elm.CustomType
-	NestedMessages    []message
+	NestedMessages    []pbMessage
 }
 
 func isDeprecated(options interface{}) bool {
@@ -397,7 +375,7 @@ func isDeprecated(options interface{}) bool {
 	}
 }
 
-func enumsToCustomTypes(preface []string, enumPbs []*descriptor.EnumDescriptorProto, p parameters) []elm.CustomType {
+func enumsToCustomTypes(preface []string, enumPbs []*descriptorpb.EnumDescriptorProto, p parameters) []elm.CustomType {
 	var result []elm.CustomType
 	for _, enumPb := range enumPbs {
 		if isDeprecated(enumPb.Options) && p.RemoveDeprecated {
@@ -432,15 +410,15 @@ func enumsToCustomTypes(preface []string, enumPbs []*descriptor.EnumDescriptorPr
 	return result
 }
 
-func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p parameters) ([]message, error) {
-	var result []message
+func messages(preface []string, messagePbs []*descriptorpb.DescriptorProto, p parameters) ([]pbMessage, error) {
+	var result []pbMessage
 	for _, messagePb := range messagePbs {
 
 		if isDeprecated(messagePb.Options) && p.RemoveDeprecated {
 			continue
 		}
 
-		var fields []field
+		var newFields []elm.TypeAliasField
 		for _, fieldPb := range messagePb.GetField() {
 			if isDeprecated(fieldPb.Options) && p.RemoveDeprecated {
 				continue
@@ -450,94 +428,53 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 				continue
 			}
 
-			basicType, err := fieldElmType(fieldPb)
-			if err != nil {
-				return nil, err
-			}
-
-			nestedField, err := nested(fieldPb, messagePb)
-			if err != nil {
-				return nil, err
-			}
-
-			var fieldType string
-			var fieldDecoder fieldDecoder
-			var fieldEncoder string
-			if nestedField != nil {
-				fieldType = fmt.Sprintf("Dict.Dict %s %s", nestedField.Key, nestedField.Value)
-				fieldDecoder = mapFieldDecoder(*nestedField)
-				fieldEncoder = fmt.Sprintf(
-					"mapEntriesFieldEncoder %q %s v.%s",
-					jsonFieldName(fieldPb),
-					nestedField.EncoderName,
-					elmFieldName(fieldPb.GetName()),
-				)
+			nested := getNestedType(fieldPb, messagePb)
+			if nested != nil {
+				newFields = append(newFields, elm.TypeAliasField{
+					Name:    elm.FieldName(fieldPb.GetName()),
+					Type:    elm.MapType(nested),
+					Number:  elm.ProtobufFieldNumber(fieldPb.GetNumber()),
+					Encoder: elm.MapEncoder(fieldPb, nested),
+					Decoder: elm.MapDecoder(fieldPb, nested),
+				})
 			} else if isOptional(fieldPb) {
-				fieldType = fmt.Sprintf("Maybe %s", basicType)
-				fieldDecoder, err = optionalFieldDecoder(fieldPb)
-				if err != nil {
-					return nil, err
-				}
-
-				fieldEncoder = fmt.Sprintf(
-					"optionalEncoder %q %s v.%s",
-					jsonFieldName(fieldPb),
-					fieldEncoderName(fieldPb),
-					elmFieldName(fieldPb.GetName()),
-				)
+				newFields = append(newFields, elm.TypeAliasField{
+					Name:    elm.FieldName(fieldPb.GetName()),
+					Type:    elm.MaybeType(elm.BasicFieldType(fieldPb)),
+					Number:  elm.ProtobufFieldNumber(fieldPb.GetNumber()),
+					Encoder: elm.MaybeEncoder(fieldPb),
+					Decoder: elm.MaybeDecoder(fieldPb),
+				})
 			} else if isRepeated(fieldPb) {
-				fieldType = fmt.Sprintf("List %s", basicType)
-				fieldDecoder, err = repeatedFieldDecoder(fieldPb)
-				if err != nil {
-					return nil, err
-				}
-
-				fieldEncoder = fmt.Sprintf(
-					"repeatedFieldEncoder %q %s v.%s",
-					jsonFieldName(fieldPb),
-					fieldEncoderName(fieldPb),
-					elmFieldName(fieldPb.GetName()),
-				)
+				newFields = append(newFields, elm.TypeAliasField{
+					Name:    elm.FieldName(fieldPb.GetName()),
+					Type:    elm.ListType(elm.BasicFieldType(fieldPb)),
+					Number:  elm.ProtobufFieldNumber(fieldPb.GetNumber()),
+					Encoder: elm.ListEncoder(fieldPb),
+					Decoder: elm.ListDecoder(fieldPb),
+				})
 			} else {
-				fieldType = basicType
-				fieldDecoder, err = requiredFieldDecoder(fieldPb)
-				if err != nil {
-					return nil, err
-				}
-
-				defaultValue, err := fieldDefaultValue(fieldPb)
-				if err != nil {
-					return nil, err
-				}
-
-				fieldEncoder = fmt.Sprintf(
-					"requiredFieldEncoder %q %s %s v.%s",
-					jsonFieldName(fieldPb),
-					fieldEncoderName(fieldPb),
-					defaultValue,
-					elmFieldName(fieldPb.GetName()),
-				)
+				newFields = append(newFields, elm.TypeAliasField{
+					Name:    elm.FieldName(fieldPb.GetName()),
+					Type:    elm.BasicFieldType(fieldPb),
+					Number:  elm.ProtobufFieldNumber(fieldPb.GetNumber()),
+					Encoder: elm.RequiredFieldEncoder(fieldPb),
+					Decoder: elm.RequiredFieldDecoder(fieldPb),
+				})
 			}
+		}
 
-			fields = append(fields, field{
-				Name:     elmFieldName(fieldPb.GetName()),
-				JSONName: jsonFieldName(fieldPb),
-				Type:     fieldType,
-				Decoder:  fieldDecoder,
-				Encoder:  fieldEncoder,
-				Number:   FieldNumber(fieldPb.GetNumber()),
+		for _, oneOfPb := range messagePb.GetOneofDecl() {
+			newFields = append(newFields, elm.TypeAliasField{
+				Name:    elm.FieldName(oneOfPb.GetName()),
+				Type:    elm.Type(reserveWordProtectedCamelCase(oneOfPb.GetName())),
+				Encoder: elm.OneOfEncoder(oneOfPb),
+				Decoder: elm.OneOfDecoder(oneOfPb),
 			})
 		}
 
 		var oneOfs []oneOf
 		for oneofIndex, oneOfPb := range messagePb.GetOneofDecl() {
-			fields = append(fields, field{
-				Name:    elmFieldName(oneOfPb.GetName()),
-				Type:    reserveWordProtectedCamelCase(oneOfPb.GetName()),
-				Decoder: oneOfFieldDecoder(oneOfPb),
-				Encoder: fmt.Sprintf("%s v.%s", oneofEncoderName(oneOfPb), elmFieldName(oneOfPb.GetName())),
-			})
-
 			var oneOfFields []oneOfField
 			for _, inField := range messagePb.GetField() {
 				if inField.OneofIndex == nil || inField.GetOneofIndex() != int32(oneofIndex) {
@@ -582,11 +519,14 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 			return nil, err
 		}
 
-		result = append(result, message{
-			Type:              customElmType(preface, messagePb.GetName()),
-			DecoderName:       decoderName(fullName),
-			EncoderName:       encoderName(fullName),
-			Fields:            fields,
+		name := elm.NestedType(messagePb.GetName(), preface)
+		result = append(result, pbMessage{
+			TypeAlias: elm.TypeAlias{
+				Name:    name,
+				Decoder: elm.DecoderName(name),
+				Encoder: elm.EncoderName(name),
+				Fields:  newFields,
+			},
 			OneOfs:            oneOfs,
 			NestedCustomTypes: enumsToCustomTypes(newPreface, messagePb.GetEnumType(), p),
 			NestedMessages:    nestedMessages,
@@ -596,50 +536,29 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 	return result, nil
 }
 
-func isOptional(inField *descriptor.FieldDescriptorProto) bool {
-	return inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL &&
-		inField.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE
+func isOptional(inField *descriptorpb.FieldDescriptorProto) bool {
+	return inField.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL &&
+		inField.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE
 }
 
-func isRepeated(inField *descriptor.FieldDescriptorProto) bool {
-	return inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
+func isRepeated(inField *descriptorpb.FieldDescriptorProto) bool {
+	return inField.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
 }
 
-func nested(inField *descriptor.FieldDescriptorProto, inMessage *descriptor.DescriptorProto) (*nestedField, error) {
+func getNestedType(inField *descriptorpb.FieldDescriptorProto, inMessage *descriptorpb.DescriptorProto) *descriptorpb.DescriptorProto {
+
+	// TODO: Is there a better way?  Convert to a function with descriptive name.
 	fullyQualifiedTypeName := inField.GetTypeName()
 	splitName := strings.Split(fullyQualifiedTypeName, ".")
 	localTypeName := splitName[len(splitName)-1]
 
 	for _, nested := range inMessage.GetNestedType() {
 		if nested.GetName() == localTypeName && nested.GetOptions().GetMapEntry() {
-			keyField := nested.GetField()[0]
-			valueField := nested.GetField()[1]
-
-			fieldDecoder, err := fieldDecoderName(valueField)
-			if err != nil {
-				return nil, err
-			}
-
-			keyType, err := fieldElmType(keyField)
-			if err != nil {
-				return nil, err
-			}
-
-			valueType, err := fieldElmType(valueField)
-			if err != nil {
-				return nil, err
-			}
-
-			return &nestedField{
-				Key:         keyType,
-				Value:       valueType,
-				DecoderName: fieldDecoder,
-				EncoderName: fieldEncoderName(valueField),
-			}, nil
+			return nested
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 func fileName(inFilePath string) string {
@@ -727,106 +646,45 @@ func encoderName(typeName string) string {
 	return firstLower(typeName) + "Encoder"
 }
 
-func mapFieldDecoder(nestedField nestedField) fieldDecoder {
-	return fieldDecoder{
-		Preface:         MapFieldDecoderHelper,
-		Name:            nestedField.DecoderName,
-		HasDefaultValue: false,
-	}
-}
-
-func optionalFieldDecoder(fieldPb *descriptor.FieldDescriptorProto) (fieldDecoder, error) {
-	basicDecoder, err := fieldDecoderName(fieldPb)
-	if err != nil {
-		return fieldDecoder{}, err
-	}
-
-	return fieldDecoder{
-		Preface:         OptionalFieldDecoderHelper,
-		Name:            basicDecoder,
-		HasDefaultValue: false,
-	}, nil
-}
-
-func repeatedFieldDecoder(fieldPb *descriptor.FieldDescriptorProto) (fieldDecoder, error) {
-	basicDecoder, err := fieldDecoderName(fieldPb)
-	if err != nil {
-		return fieldDecoder{}, err
-	}
-
-	return fieldDecoder{
-		Preface:         RepeatedFieldDecoderHelper,
-		Name:            basicDecoder,
-		HasDefaultValue: false,
-	}, nil
-}
-
-func requiredFieldDecoder(fieldPb *descriptor.FieldDescriptorProto) (fieldDecoder, error) {
-	basicDecoder, err := fieldDecoderName(fieldPb)
-	if err != nil {
-		return fieldDecoder{}, err
-	}
-
-	defaultValue, err := fieldDefaultValue(fieldPb)
-	if err != nil {
-		return fieldDecoder{}, err
-	}
-
-	return fieldDecoder{
-		Preface:         RequiredFieldDecoderHelper,
-		Name:            basicDecoder,
-		HasDefaultValue: true,
-		DefaultValue:    defaultValue,
-	}, nil
-}
-
-func oneOfFieldDecoder(oneOfPb *descriptor.OneofDescriptorProto) fieldDecoder {
-	return fieldDecoder{
-		Preface:         EnumFieldDecoderHelper,
-		Name:            oneofDecoderName(oneOfPb),
-		HasDefaultValue: false,
-	}
-}
-
-func fieldDecoderName(inField *descriptor.FieldDescriptorProto) (DecoderName, error) {
+func fieldDecoderName(inField *descriptorpb.FieldDescriptorProto) (DecoderName, error) {
 	switch inField.GetType() {
-	case descriptor.FieldDescriptorProto_TYPE_INT32,
-		descriptor.FieldDescriptorProto_TYPE_INT64,
-		descriptor.FieldDescriptorProto_TYPE_UINT32,
-		descriptor.FieldDescriptorProto_TYPE_UINT64,
-		descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT64,
-		descriptor.FieldDescriptorProto_TYPE_FIXED32,
-		descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+	case descriptorpb.FieldDescriptorProto_TYPE_INT32,
+		descriptorpb.FieldDescriptorProto_TYPE_INT64,
+		descriptorpb.FieldDescriptorProto_TYPE_UINT32,
+		descriptorpb.FieldDescriptorProto_TYPE_UINT64,
+		descriptorpb.FieldDescriptorProto_TYPE_SINT32,
+		descriptorpb.FieldDescriptorProto_TYPE_SINT64,
+		descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
+		descriptorpb.FieldDescriptorProto_TYPE_FIXED64,
+		descriptorpb.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
 		return IntDecoder, nil
-	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
-		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT,
+		descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
 		return FloatDecoder, nil
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
 		return BoolDecoder, nil
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
+	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
 		return StringDecoder, nil
 
 	// TODO: This is an unsupported stub (throw error)
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
 		return BytesDecoder, nil
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+	case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
 		return enumDecoderName(inField), nil
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
 		return messageDecoderName(inField), nil
 	default:
 		return "", fmt.Errorf("error generating decoder for field %s", inField.GetType())
 	}
 }
 
-func enumDecoderName(inField *descriptor.FieldDescriptorProto) DecoderName {
+func enumDecoderName(inField *descriptorpb.FieldDescriptorProto) DecoderName {
 	_, messageName := convert(inField.GetTypeName())
 	return decoderName(messageName)
 }
 
-func messageDecoderName(inField *descriptor.FieldDescriptorProto) DecoderName {
+func messageDecoderName(inField *descriptorpb.FieldDescriptorProto) DecoderName {
 	// Well Known Types.
 	if n, ok := excludedDecoders[inField.GetTypeName()]; ok {
 		return n
@@ -836,20 +694,13 @@ func messageDecoderName(inField *descriptor.FieldDescriptorProto) DecoderName {
 	return decoderName(messageName)
 }
 
-func oneofDecoderName(inOneof *descriptor.OneofDescriptorProto) DecoderName {
+func oneofDecoderName(inOneof *descriptorpb.OneofDescriptorProto) DecoderName {
 	typeName := reserveWordProtectedCamelCase(inOneof.GetName())
 	return decoderName(typeName)
 }
 
 func decoderName(typeName string) DecoderName {
 	return DecoderName(firstLower(typeName) + "Decoder")
-}
-
-func elmFieldType(field *descriptor.FieldDescriptorProto) string {
-	inFieldName := field.GetTypeName()
-	_, messageName := convert(inFieldName)
-
-	return messageName
 }
 
 // Returns package name and message name.
@@ -873,10 +724,6 @@ func convert(inType string) (string, string) {
 	return strings.Join(outPackageSegments, "."), strings.Join(outMessageSegments, "_")
 }
 
-func jsonFieldName(field *descriptor.FieldDescriptorProto) string {
-	return field.GetJsonName()
-}
-
 func firstLower(in string) string {
 	if len(in) < 2 {
 		return strings.ToLower(in)
@@ -898,35 +745,35 @@ func camelCase(in string) string {
 	return strings.Replace(generator.CamelCase(in), "_", "", -1)
 }
 
-func oneofEncoderName(inOneof *descriptor.OneofDescriptorProto) string {
+func oneofEncoderName(inOneof *descriptorpb.OneofDescriptorProto) string {
 	typeName := reserveWordProtectedCamelCase(inOneof.GetName())
 	return encoderName(typeName)
 }
 
-func fieldElmType(inField *descriptor.FieldDescriptorProto) (string, error) {
+func fieldElmType(inField *descriptorpb.FieldDescriptorProto) (string, error) {
 	switch inField.GetType() {
-	case descriptor.FieldDescriptorProto_TYPE_INT32,
-		descriptor.FieldDescriptorProto_TYPE_INT64,
-		descriptor.FieldDescriptorProto_TYPE_UINT32,
-		descriptor.FieldDescriptorProto_TYPE_UINT64,
-		descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT64,
-		descriptor.FieldDescriptorProto_TYPE_FIXED32,
-		descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+	case descriptorpb.FieldDescriptorProto_TYPE_INT32,
+		descriptorpb.FieldDescriptorProto_TYPE_INT64,
+		descriptorpb.FieldDescriptorProto_TYPE_UINT32,
+		descriptorpb.FieldDescriptorProto_TYPE_UINT64,
+		descriptorpb.FieldDescriptorProto_TYPE_SINT32,
+		descriptorpb.FieldDescriptorProto_TYPE_SINT64,
+		descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
+		descriptorpb.FieldDescriptorProto_TYPE_FIXED64,
+		descriptorpb.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
 		return "Int", nil
-	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
-		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT,
+		descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
 		return "Float", nil
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
 		return "Bool", nil
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
+	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
 		return "String", nil
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
 		return "Bytes", nil
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE,
-		descriptor.FieldDescriptorProto_TYPE_ENUM:
+	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE,
+		descriptorpb.FieldDescriptorProto_TYPE_ENUM:
 		// Well known types.
 		if n, ok := excludedTypes[inField.GetTypeName()]; ok {
 			return n, nil
@@ -938,78 +785,42 @@ func fieldElmType(inField *descriptor.FieldDescriptorProto) (string, error) {
 	}
 }
 
-func fieldEncoderName(inField *descriptor.FieldDescriptorProto) string {
+func fieldEncoderName(inField *descriptorpb.FieldDescriptorProto) string {
 	switch inField.GetType() {
-	case descriptor.FieldDescriptorProto_TYPE_INT32,
-		descriptor.FieldDescriptorProto_TYPE_UINT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_FIXED32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED32:
+	case descriptorpb.FieldDescriptorProto_TYPE_INT32,
+		descriptorpb.FieldDescriptorProto_TYPE_UINT32,
+		descriptorpb.FieldDescriptorProto_TYPE_SINT32,
+		descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
+		descriptorpb.FieldDescriptorProto_TYPE_SFIXED32:
 		return "JE.int"
-	case descriptor.FieldDescriptorProto_TYPE_INT64,
-		descriptor.FieldDescriptorProto_TYPE_UINT64,
-		descriptor.FieldDescriptorProto_TYPE_SINT64,
-		descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+	case descriptorpb.FieldDescriptorProto_TYPE_INT64,
+		descriptorpb.FieldDescriptorProto_TYPE_UINT64,
+		descriptorpb.FieldDescriptorProto_TYPE_SINT64,
+		descriptorpb.FieldDescriptorProto_TYPE_FIXED64,
+		descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
 		return "numericStringEncoder"
-	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
-		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT,
+		descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
 		return "JE.float"
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
 		return "JE.bool"
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
+	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
 		return "JE.string"
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+	case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
 		// TODO: Default enum value.
 		// Remove leading ".".
 		_, messageName := convert(inField.GetTypeName())
 		return encoderName(messageName)
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
 		// Well Known Types.
 		if n, ok := excludedEncoders[inField.GetTypeName()]; ok {
 			return n
 		}
 		_, messageName := convert(inField.GetTypeName())
 		return encoderName(messageName)
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
 		return "bytesFieldEncoder"
 	default:
 		return fmt.Sprintf("Error generating decoder for field %s", inField.GetType())
-	}
-}
-
-func fieldDefaultValue(inField *descriptor.FieldDescriptorProto) (string, error) {
-	if inField.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-		return "[]", nil
-	}
-
-	switch inField.GetType() {
-	case descriptor.FieldDescriptorProto_TYPE_INT32,
-		descriptor.FieldDescriptorProto_TYPE_INT64,
-		descriptor.FieldDescriptorProto_TYPE_UINT32,
-		descriptor.FieldDescriptorProto_TYPE_UINT64,
-		descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT64,
-		descriptor.FieldDescriptorProto_TYPE_FIXED32,
-		descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		return "0", nil
-	case descriptor.FieldDescriptorProto_TYPE_FLOAT,
-		descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return "0.0", nil
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		return "False", nil
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		return "\"\"", nil
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		return "xxx", nil
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		return "[]", nil
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		_, messageName := convert(inField.GetTypeName())
-		return string(elm.EnumDefaultVariantVariableName(messageName, []string{})), nil
-	default:
-		return "", fmt.Errorf("error generating decoder for field %s", inField.GetType())
 	}
 }
