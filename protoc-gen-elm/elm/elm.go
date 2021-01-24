@@ -7,6 +7,9 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 )
 
+// Type - Basic or custom Elm type
+type Type string
+
 // VariableName - unique camelcase identifier starting with lowercase letter.
 // Used for both constants and function declarations
 type VariableName string
@@ -16,13 +19,13 @@ type VariableName string
 type ProtobufFieldNumber int32
 
 // DecoderName - decoder function name for Elm variable
-func DecoderName(name VariableName) VariableName {
-	return VariableName(firstLower(fmt.Sprintf("%sDecoder", name)))
+func DecoderName(t Type) VariableName {
+	return VariableName(firstLower(fmt.Sprintf("%sDecoder", t)))
 }
 
 // EncoderName - encoder function name for Elm variable
-func EncoderName(name VariableName) VariableName {
-	return VariableName(firstLower(fmt.Sprintf("%sEncoder", name)))
+func EncoderName(t Type) VariableName {
+	return VariableName(firstLower(fmt.Sprintf("%sEncoder", t)))
 }
 
 func camelCase(in string) string {

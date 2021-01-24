@@ -11,7 +11,7 @@ import (
 // CustomType - defines an Elm custom type (sometimes called union type)
 // https://guide.elm-lang.org/types/custom_types.html
 type CustomType struct {
-	Name                   VariableName
+	Name                   Type
 	Decoder                VariableName
 	Encoder                VariableName
 	DefaultVariantVariable VariableName
@@ -34,14 +34,14 @@ type CustomTypeVariant struct {
 	JSONName VariantJSONName
 }
 
-// NestedVariableName - top level Elm variable name for a possibly nested PB definition
-func NestedVariableName(name string, preface []string) VariableName {
+// NestedType - top level Elm type for a possibly nested PB definition
+func NestedType(name string, preface []string) Type {
 	fullName := name
 	for _, p := range preface {
 		fullName = fmt.Sprintf("%s_%s", p, fullName)
 	}
 
-	return VariableName(fullName)
+	return Type(fullName)
 }
 
 // NestedVariantName - Elm variant name for a possibly nested PB definition
@@ -54,10 +54,14 @@ func NestedVariantName(name string, preface []string) VariantName {
 	return VariantName(fullName)
 }
 
-// DefaultVariantVariableName - convenient identifier for a custom types default variant
-func DefaultVariantVariableName(name string, preface []string) VariableName {
-	variableName := NestedVariableName(name, preface)
-	return VariableName(firstLower(fmt.Sprintf("%sDefault", variableName)))
+// EnumDefaultVariantVariableName - convenient identifier for a enum custom types default variant
+func EnumDefaultVariantVariableName(name string, preface []string) VariableName {
+	fullName := name
+	for _, p := range preface {
+		fullName = fmt.Sprintf("%s_%s", p, fullName)
+	}
+
+	return VariableName(firstLower(fmt.Sprintf("%sDefault", fullName)))
 }
 
 // EnumVariantJSONName - JSON identifier for variant decoder/encoding

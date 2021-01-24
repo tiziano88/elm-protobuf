@@ -435,13 +435,13 @@ func enumsToCustomTypes(preface []string, enumPbs []*descriptor.EnumDescriptorPr
 			})
 		}
 
-		enumVariableName := elm.NestedVariableName(enumPb.GetName(), preface)
+		enumType := elm.NestedType(enumPb.GetName(), preface)
 
 		result = append(result, elm.CustomType{
-			Name:                   enumVariableName,
-			Decoder:                elm.DecoderName(enumVariableName),
-			Encoder:                elm.EncoderName(enumVariableName),
-			DefaultVariantVariable: elm.DefaultVariantVariableName(enumPb.GetName(), preface),
+			Name:                   enumType,
+			Decoder:                elm.DecoderName(enumType),
+			Encoder:                elm.EncoderName(enumType),
+			DefaultVariantVariable: elm.EnumDefaultVariantVariableName(enumPb.GetName(), preface),
 			DefaultVariantValue:    values[0].Name,
 			Variants:               values,
 		})
@@ -551,7 +551,7 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 		for oneofIndex, oneOfPb := range messagePb.GetOneofDecl() {
 			fields = append(fields, field{
 				Name:    elmFieldName(oneOfPb.GetName()),
-				Type:    elmTypeName(oneOfPb.GetName()),
+				Type:    reserveWordProtectedCamelCase(oneOfPb.GetName()),
 				Decoder: oneOfFieldDecoder(oneOfPb),
 				Encoder: fmt.Sprintf("%s v.%s", oneofEncoderName(oneOfPb), elmFieldName(oneOfPb.GetName())),
 			})
@@ -582,7 +582,7 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 			}
 
 			oneOfs = append(oneOfs, oneOf{
-				Name:        elmTypeName(oneOfPb.GetName()),
+				Name:        reserveWordProtectedCamelCase(oneOfPb.GetName()),
 				DecoderName: oneofDecoderName(oneOfPb),
 				EncoderName: oneofEncoderName(oneOfPb),
 				Fields:      oneOfFields,
@@ -726,7 +726,7 @@ func customElmType(preface []string, in string) CustomElmType {
 	return CustomElmType(appendUnderscoreToReservedKeywords(fullType))
 }
 
-func elmTypeName(in string) string {
+func reserveWordProtectedCamelCase(in string) string {
 	return appendUnderscoreToReservedKeywords(camelCase(in))
 }
 
@@ -856,7 +856,7 @@ func messageDecoderName(inField *descriptor.FieldDescriptorProto) DecoderName {
 }
 
 func oneofDecoderName(inOneof *descriptor.OneofDescriptorProto) DecoderName {
-	typeName := elmTypeName(inOneof.GetName())
+	typeName := reserveWordProtectedCamelCase(inOneof.GetName())
 	return decoderName(typeName)
 }
 
@@ -918,7 +918,7 @@ func camelCase(in string) string {
 }
 
 func oneofEncoderName(inOneof *descriptor.OneofDescriptorProto) string {
-	typeName := elmTypeName(inOneof.GetName())
+	typeName := reserveWordProtectedCamelCase(inOneof.GetName())
 	return encoderName(typeName)
 }
 
@@ -1063,7 +1063,7 @@ func fieldDefaultValue(inField *descriptor.FieldDescriptorProto) (string, error)
 		return "[]", nil
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		_, messageName := convert(inField.GetTypeName())
-		return string(elm.DefaultVariantVariableName(messageName, []string{})), nil
+		return string(elm.EnumDefaultVariantVariableName(messageName, []string{})), nil
 	default:
 		return "", fmt.Errorf("error generating decoder for field %s", inField.GetType())
 	}
