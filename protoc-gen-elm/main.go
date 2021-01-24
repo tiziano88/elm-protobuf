@@ -7,10 +7,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"protoc-gen-elm/elm"
-	"protoc-gen-elm/stringextras"
 	"strings"
 	"text/template"
+
+	"protoc-gen-elm/stringextras"
+
+	"protoc-gen-elm/elm"
 
 	"github.com/golang/protobuf/proto"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"

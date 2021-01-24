@@ -1,4 +1,0 @@
-#!/bin/bash
-
-go get ./protoc-gen-elm
-go install ./protoc-gen-elm

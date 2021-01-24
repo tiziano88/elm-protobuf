@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -ex
+
+readonly ROOT="$(dirname "$0")"
+cd "$ROOT/protoc-gen-elm"
+
+GO111MODULE=on go build .
+go test -v ./...

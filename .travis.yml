@@ -22,7 +22,7 @@ install:
   - set -e
   - ./install_protobuf
   - export PATH=$PATH:$PWD/protoc/bin
-  - go get -t -v ./protoc-gen-elm
+  - $(cd ./protoc-gen-elm && go get -t -v .)
   - protoc --version
   - node --version
   - npm --version
@@ -33,5 +33,5 @@ install:
 
 script: 
   - set -e
-  - ./run_tests
-  - ./protoc-gen-elm/go_tests/run_go_tests
+  - ./run_elm_tests
+  - ./run_go_tests
