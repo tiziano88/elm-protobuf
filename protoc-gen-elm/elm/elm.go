@@ -7,7 +7,7 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 )
 
-// Type - Basic or custom Elm type
+// Type - Basic Elm type, custom type, or type alias
 type Type string
 
 // VariableName - unique camelcase identifier starting with lowercase letter.

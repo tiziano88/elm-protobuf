@@ -370,7 +370,6 @@ type nestedField struct {
 }
 
 type message struct {
-	Name        string
 	Type        CustomElmType
 	DecoderName DecoderName
 	EncoderName string
@@ -584,7 +583,6 @@ func messages(preface []string, messagePbs []*descriptor.DescriptorProto, p para
 		}
 
 		result = append(result, message{
-			Name:              camelCase(strings.ToLower(fullName)),
 			Type:              customElmType(preface, messagePb.GetName()),
 			DecoderName:       decoderName(fullName),
 			EncoderName:       encoderName(fullName),
