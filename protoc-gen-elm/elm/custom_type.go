@@ -69,19 +69,19 @@ func EnumVariantJSONName(pb *descriptorpb.EnumValueDescriptorProto) VariantJSONN
 	return VariantJSONName(pb.GetName())
 }
 
+// OneOfDefaultVariantName - convenient identifier for a one of custom types default variant
+func OneOfDefaultVariantName(name VariableName) VariableName {
+	return VariableName(firstLower(fmt.Sprintf("%sUnspecified", name)))
+}
+
 // CustomTypeTemplate - defines templates for custom types
-// TODO: For legacy code the definitions are split - reorganizing to reduce complexity is planned
 func CustomTypeTemplate(t *template.Template) (*template.Template, error) {
 	return t.Parse(`
-{{- define "custom-type-definition" }}
-
-
+{{- define "custom-type" }}
 type {{ .Name }}
 {{- range $i, $v := .Variants }}
     {{ if not $i }}={{ else }}|{{ end }} {{ $v.Name }} -- {{ $v.Number }}
 {{- end }}
-{{- end }}
-{{- define "custom-type-decoder" }}
 
 
 {{ .Decoder }} : JD.Decoder {{ .Name }}
@@ -101,8 +101,6 @@ type {{ .Name }}
 
 {{ .DefaultVariantVariable }} : {{ .Name }}
 {{ .DefaultVariantVariable }} = {{ .DefaultVariantValue }}
-{{- end }}
-{{- define "custom-type-encoder" }}
 
 
 {{ .Encoder }} : {{ .Name }} -> JE.Value
@@ -116,11 +114,6 @@ type {{ .Name }}
 {{ end }}
     in
         JE.string <| lookup v
-{{- end }}
-{{- define "custom-type" }}
-{{- template "custom-type-definition" . }}
-{{- template "custom-type-decoder" . }}
-{{- template "custom-type-encoder" . }}
 {{- end }}
 `)
 }

@@ -239,7 +239,6 @@ type alias {{ .Type }} =
     { {{ range $i, $v := .Fields }}
         {{- if $i }}, {{ end }}{{ .Name }} : {{ .Type }}{{ if .Number }} -- {{ .Number }}{{ end }}
     {{ end }}}
-{{- range .NestedCustomTypes }}{{ template "custom-type-definition" . }}{{ end }}
 {{- range .OneOfs }}{{ template "oneof-type" . }}{{ end }}
 
 
@@ -250,7 +249,6 @@ type alias {{ .Type }} =
 			{{- if .JSONName }} "{{ .JSONName }}"{{ end }} {{ .Decoder.Name }}
 			{{- if .Decoder.HasDefaultValue }} {{ .Decoder.DefaultValue }}{{ end }}
         {{- end }}
-{{- range .NestedCustomTypes }}{{ template "custom-type-decoder" . }}{{ end }}
 
 
 {{ .EncoderName }} : {{ .Type }} -> JE.Value
@@ -259,7 +257,10 @@ type alias {{ .Type }} =
         [{{ range $i, $v := .Fields }}
             {{- if $i }},{{ end }} ({{ .Encoder }})
         {{ end }}]
-{{- range .NestedCustomTypes }}{{ template "custom-type-encoder" . }}{{ end }}
+{{- range .NestedCustomTypes }}
+
+
+{{ template "custom-type" . }}{{ end }}
 {{- range .NestedMessages }}{{ template "message" . }}{{ end }}
 {{- end -}}
 module {{ .ModuleName }} exposing (..)
@@ -282,7 +283,9 @@ import {{ . }} exposing (..)
 
 
 uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
-{{- range .TopEnums }}{{ template "custom-type" . }}{{ end }}
+{{- range .TopEnums }}
+
+{{ template "custom-type" . }}{{ end }}
 {{- range .Messages }}{{ template "message" . }}{{ end }}
 `)
 	if err != nil {
@@ -363,7 +366,7 @@ type field struct {
 }
 
 // TODO: Convert PB OneOf to an Elm custom type struct
-// This will result in non-breaking changes to the generated code and will be implemented in a later refactor.
+//       Differences in decoders/encoders will be an issue
 type oneOf struct {
 	Name        string
 	DecoderName DecoderName
@@ -395,7 +398,7 @@ type message struct {
 	OneOfs      []oneOf
 
 	// TODO: The concept of nested messages can be dropped
-	// This will result in non-breaking changes to the generated code and will be implemented in a later refactor.
+	//       Rather, traverse the PB file and collect all nested pieces to the top.
 	NestedCustomTypes []elm.CustomType
 	NestedMessages    []message
 }
