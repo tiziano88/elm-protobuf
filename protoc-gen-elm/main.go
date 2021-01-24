@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"protoc-gen-elm/elm"
+	"protoc-gen-elm/stringextras"
 	"strings"
 	"text/template"
 
@@ -17,33 +18,10 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-var (
-	// Well Known Types.
-	excludedFiles = map[string]bool{
-		"google/protobuf/timestamp.proto": true,
-		"google/protobuf/wrappers.proto":  true,
-	}
-
-	// Avoid collisions with reserved keywords by appending a single underscore after the name.
-	// This does not guarantee that collisions are avoided, but makes them less likely to
-	// happen.
-	reservedKeywords = map[string]bool{
-		"module":   true,
-		"exposing": true,
-		"import":   true,
-		"type":     true,
-		"let":      true,
-		"in":       true,
-		"if":       true,
-		"then":     true,
-		"else":     true,
-		"where":    true,
-		"case":     true,
-		"of":       true,
-		"port":     true,
-		"as":       true,
-	}
-)
+var excludedFiles = map[string]bool{
+	"google/protobuf/timestamp.proto": true,
+	"google/protobuf/wrappers.proto":  true,
+}
 
 type parameters struct {
 	Debug            bool
@@ -309,7 +287,7 @@ func enumsToCustomTypes(preface []string, enumPbs []*descriptorpb.EnumDescriptor
 			Name:                   enumType,
 			Decoder:                elm.DecoderName(enumType),
 			Encoder:                elm.EncoderName(enumType),
-			DefaultVariantVariable: elm.EnumDefaultVariantVariableName(enumPb.GetName(), preface),
+			DefaultVariantVariable: elm.EnumDefaultVariantVariableName(enumType),
 			DefaultVariantValue:    values[0].Name,
 			Variants:               values,
 		})
@@ -451,13 +429,13 @@ func isRepeated(inField *descriptorpb.FieldDescriptorProto) bool {
 	return inField.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
 }
 
-func getNestedType(inField *descriptorpb.FieldDescriptorProto, inMessage *descriptorpb.DescriptorProto) *descriptorpb.DescriptorProto {
-
-	// TODO: Is there a better way?  Convert to a function with descriptive name.
-	fullyQualifiedTypeName := inField.GetTypeName()
+func getLocalType(fullyQualifiedTypeName string) string {
 	splitName := strings.Split(fullyQualifiedTypeName, ".")
-	localTypeName := splitName[len(splitName)-1]
+	return splitName[len(splitName)-1]
+}
 
+func getNestedType(inField *descriptorpb.FieldDescriptorProto, inMessage *descriptorpb.DescriptorProto) *descriptorpb.DescriptorProto {
+	localTypeName := getLocalType(inField.GetTypeName())
 	for _, nested := range inMessage.GetNestedType() {
 		if nested.GetName() == localTypeName && nested.GetOptions().GetMapEntry() {
 			return nested
@@ -471,7 +449,7 @@ func fileName(inFilePath string) string {
 	inFileDir, inFileName := filepath.Split(inFilePath)
 
 	trimmed := strings.TrimSuffix(inFileName, ".proto")
-	shortFileName := firstUpper(trimmed)
+	shortFileName := stringextras.FirstUpper(trimmed)
 
 	fullFileName := ""
 	for _, segment := range strings.Split(inFileDir, "/") {
@@ -479,7 +457,7 @@ func fileName(inFilePath string) string {
 			continue
 		}
 
-		fullFileName += firstUpper(segment) + "/"
+		fullFileName += stringextras.FirstUpper(segment) + "/"
 	}
 
 	return fullFileName + shortFileName + ".elm"
@@ -489,7 +467,7 @@ func moduleName(inFilePath string) string {
 	inFileDir, inFileName := filepath.Split(inFilePath)
 
 	trimmed := strings.TrimSuffix(inFileName, ".proto")
-	shortModuleName := firstUpper(trimmed)
+	shortModuleName := stringextras.FirstUpper(trimmed)
 
 	fullModuleName := ""
 	for _, segment := range strings.Split(inFileDir, "/") {
@@ -497,7 +475,7 @@ func moduleName(inFilePath string) string {
 			continue
 		}
 
-		fullModuleName += firstUpper(segment) + "."
+		fullModuleName += stringextras.FirstUpper(segment) + "."
 	}
 
 	return fullModuleName + shortModuleName
@@ -515,18 +493,10 @@ func getAdditionalImports(dependencies []string) []string {
 			if segment == "" {
 				continue
 			}
-			fullModuleName += firstUpper(segment) + "."
+			fullModuleName += stringextras.FirstUpper(segment) + "."
 		}
 
 		additions = append(additions, strings.TrimSuffix(fullModuleName, "."))
 	}
 	return additions
-}
-
-func firstUpper(in string) string {
-	if len(in) < 2 {
-		return strings.ToUpper(in)
-	}
-
-	return strings.ToUpper(string(in[0])) + string(in[1:])
 }

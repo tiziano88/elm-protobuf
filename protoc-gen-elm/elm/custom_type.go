@@ -2,6 +2,7 @@ package elm
 
 import (
 	"fmt"
+	"protoc-gen-elm/stringextras"
 	"strings"
 	"text/template"
 
@@ -52,22 +53,17 @@ type OneOfVariant struct {
 
 // NestedVariantName - Elm variant name for a possibly nested PB definition
 func NestedVariantName(name string, preface []string) VariantName {
-	fullName := camelCase(strings.ToLower(name))
+	fullName := stringextras.CamelCase(strings.ToLower(name))
 	for _, p := range preface {
-		fullName = fmt.Sprintf("%s_%s", camelCase(strings.ToLower(p)), fullName)
+		fullName = fmt.Sprintf("%s_%s", stringextras.CamelCase(strings.ToLower(p)), fullName)
 	}
 
 	return VariantName(fullName)
 }
 
 // EnumDefaultVariantVariableName - convenient identifier for a enum custom types default variant
-func EnumDefaultVariantVariableName(name string, preface []string) VariableName {
-	fullName := name
-	for _, p := range preface {
-		fullName = fmt.Sprintf("%s_%s", p, fullName)
-	}
-
-	return VariableName(firstLower(fmt.Sprintf("%sDefault", fullName)))
+func EnumDefaultVariantVariableName(t Type) VariableName {
+	return VariableName(stringextras.FirstLower(fmt.Sprintf("%sDefault", t)))
 }
 
 // EnumVariantJSONName - JSON identifier for variant decoder/encoding

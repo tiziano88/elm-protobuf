@@ -2,6 +2,7 @@ package elm
 
 import (
 	"fmt"
+	"protoc-gen-elm/stringextras"
 	"text/template"
 
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -122,7 +123,7 @@ func appendUnderscoreToReservedKeywords(in string) string {
 
 // FieldName - simple camelcase variable name with first letter lower
 func FieldName(in string) VariableName {
-	return VariableName(appendUnderscoreToReservedKeywords(firstLower(camelCase(in))))
+	return VariableName(appendUnderscoreToReservedKeywords(stringextras.FirstLower(stringextras.CamelCase(in))))
 }
 
 // FieldJSONName - JSON identifier for field decoder/encoding
@@ -151,7 +152,7 @@ func RequiredFieldDecoder(pb *descriptorpb.FieldDescriptorProto) FieldDecoder {
 
 func OneOfEncoder(pb *descriptorpb.OneofDescriptorProto) FieldEncoder {
 	return FieldEncoder(fmt.Sprintf("%s v.%s",
-		EncoderName(Type(camelCase(pb.GetName()))),
+		EncoderName(Type(stringextras.CamelCase(pb.GetName()))),
 		FieldName(pb.GetName()),
 	))
 }
@@ -159,7 +160,7 @@ func OneOfEncoder(pb *descriptorpb.OneofDescriptorProto) FieldEncoder {
 func OneOfDecoder(pb *descriptorpb.OneofDescriptorProto) FieldDecoder {
 	return FieldDecoder(fmt.Sprintf(
 		"field %s",
-		DecoderName(Type(camelCase(pb.GetName()))),
+		DecoderName(Type(stringextras.CamelCase(pb.GetName()))),
 	))
 }
 
@@ -244,7 +245,7 @@ func ListDecoder(pb *descriptorpb.FieldDescriptorProto) FieldDecoder {
 }
 
 func OneOfType(in string) Type {
-	return Type(appendUnderscoreToReservedKeywords(firstUpper(camelCase(in))))
+	return Type(appendUnderscoreToReservedKeywords(stringextras.FirstUpper(stringextras.CamelCase(in))))
 }
 
 // TypeAliasTemplate - defines templates for self contained type aliases

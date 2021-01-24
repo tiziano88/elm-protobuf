@@ -2,11 +2,11 @@ package elm
 
 import (
 	"fmt"
+	"protoc-gen-elm/stringextras"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -34,59 +34,37 @@ type ProtobufFieldNumber int32
 
 // DecoderName - decoder function name for Elm type
 func DecoderName(t Type) VariableName {
-	return VariableName(firstLower(fmt.Sprintf("%sDecoder", t)))
+	return VariableName(stringextras.FirstLower(fmt.Sprintf("%sDecoder", t)))
 }
 
 // EncoderName - encoder function name for Elm type
 func EncoderName(t Type) VariableName {
-	return VariableName(firstLower(fmt.Sprintf("%sEncoder", t)))
+	return VariableName(stringextras.FirstLower(fmt.Sprintf("%sEncoder", t)))
 }
 
 // NestedType - top level Elm type for a possibly nested PB definition
 func NestedType(name string, preface []string) Type {
-	fullName := camelCase(name)
+	fullName := stringextras.CamelCase(name)
 	for _, p := range preface {
 		fullName = fmt.Sprintf("%s_%s", p, fullName)
 	}
 
-	return Type(firstUpper(fullName))
+	return Type(stringextras.FirstUpper(fullName))
 }
 
-func camelCase(in string) string {
-	// Remove any additional underscores, e.g. convert `foo_1` into `foo1`.
-	return strings.Replace(generator.CamelCase(in), "_", "", -1)
-}
-
-// TODO: Move these functions to a string package
-func firstUpper(in string) string {
-	if len(in) < 2 {
-		return strings.ToUpper(in)
-	}
-
-	return strings.ToUpper(string(in[0])) + string(in[1:])
-}
-
-func firstLower(in string) string {
-	if len(in) < 2 {
-		return strings.ToLower(in)
-	}
-
-	return strings.ToLower(string(in[0])) + string(in[1:])
-}
-
-// TODO: Rename this function
-func convert(inType string) string {
-	outMessageSegments := []string{}
+// ExternalType - handles types defined in external files
+func ExternalType(inType string) Type {
+	messageSegments := []string{}
 	for _, s := range strings.Split(inType, ".") {
 		if s == "" {
 			continue
 		}
 
 		if r, _ := utf8.DecodeRuneInString(s); !unicode.IsLower(r) {
-			outMessageSegments = append(outMessageSegments, firstUpper(s))
+			messageSegments = append(messageSegments, stringextras.FirstUpper(s))
 		}
 	}
-	return strings.Join(outMessageSegments, "_")
+	return Type(strings.Join(messageSegments, "_"))
 }
 
 func BasicFieldEncoder(inField *descriptorpb.FieldDescriptorProto) VariableName {
@@ -116,7 +94,7 @@ func BasicFieldEncoder(inField *descriptorpb.FieldDescriptorProto) VariableName 
 			return n.Encoder
 		}
 
-		return EncoderName(Type(convert(inField.GetTypeName())))
+		return EncoderName(ExternalType(inField.GetTypeName()))
 	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
 		return "bytesFieldEncoder"
 	default:
@@ -152,7 +130,7 @@ func BasicFieldDecoder(inField *descriptorpb.FieldDescriptorProto) VariableName 
 			return n.Decoder
 		}
 
-		return DecoderName(Type(convert(inField.GetTypeName())))
+		return DecoderName(ExternalType(inField.GetTypeName()))
 	default:
 		panic(fmt.Errorf("error generating decoder for field %s", inField.GetType()))
 	}
@@ -185,7 +163,7 @@ func BasicFieldType(inField *descriptorpb.FieldDescriptorProto) Type {
 		if n, ok := WellKnownTypeMap[inField.GetTypeName()]; ok {
 			return n.Type
 		}
-		return Type(convert(inField.GetTypeName()))
+		return ExternalType(inField.GetTypeName())
 	default:
 		panic(fmt.Errorf("Error generating type for field %q %s", inField.GetName(), inField.GetType()))
 	}
@@ -217,17 +195,12 @@ func BasicFieldDefaultValue(inField *descriptorpb.FieldDescriptorProto) DefaultV
 		return "False"
 	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
 		return "\"\""
-	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
-
-		// TODO: What is this?
-		return "xxx"
 	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
 		return "[]"
 	case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
-		return DefaultValue(EnumDefaultVariantVariableName(
-			convert(inField.GetTypeName()),
-			[]string{},
-		))
+		return DefaultValue(EnumDefaultVariantVariableName(ExternalType(inField.GetTypeName())))
+	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
+		fallthrough
 	default:
 		panic(fmt.Errorf("error - no known default value for field %s", inField.GetType()))
 	}
