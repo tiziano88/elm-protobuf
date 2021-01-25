@@ -22,7 +22,6 @@ install:
   - set -e
   - ./install_protobuf
   - export PATH=$PATH:$PWD/protoc/bin
-  - $(cd ./protoc-gen-elm && go get -t -v .)
   - protoc --version
   - node --version
   - npm --version
