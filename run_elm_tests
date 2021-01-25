@@ -2,9 +2,9 @@
 
 set -ex
 
-pushd protoc-gen-elm
+cd protoc-gen-elm
 GO111MODULE=on go build .
-popd
+cd ..
 
 protoc \
     --proto_path=./tests/proto \
