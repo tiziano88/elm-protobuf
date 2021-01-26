@@ -123,7 +123,7 @@ func appendUnderscoreToReservedKeywords(in string) string {
 
 // FieldName - simple camelcase variable name with first letter lower
 func FieldName(in string) VariableName {
-	return VariableName(appendUnderscoreToReservedKeywords(stringextras.FirstLower(stringextras.CamelCase(in))))
+	return VariableName(appendUnderscoreToReservedKeywords(stringextras.LowerCamelCase(in)))
 }
 
 // FieldJSONName - JSON identifier for field decoder/encoding
@@ -245,7 +245,7 @@ func ListDecoder(pb *descriptorpb.FieldDescriptorProto) FieldDecoder {
 }
 
 func OneOfType(in string) Type {
-	return Type(appendUnderscoreToReservedKeywords(stringextras.FirstUpper(stringextras.CamelCase(in))))
+	return Type(appendUnderscoreToReservedKeywords(stringextras.UpperCamelCase(in)))
 }
 
 // TypeAliasTemplate - defines templates for self contained type aliases

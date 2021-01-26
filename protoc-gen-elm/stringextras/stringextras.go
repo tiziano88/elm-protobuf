@@ -6,6 +6,14 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 )
 
+func UpperCamelCase(in string) string {
+	return FirstUpper(CamelCase(in))
+}
+
+func LowerCamelCase(in string) string {
+	return FirstLower(CamelCase(in))
+}
+
 func CamelCase(in string) string {
 	// Remove any additional underscores, e.g. convert `foo_1` into `foo1`.
 	return strings.Replace(generator.CamelCase(in), "_", "", -1)
