@@ -1,11 +1,4 @@
-module Main exposing (
-    assertEncodeDecode, decode, emptyJson, encode, foo, fooDefault, 
-    fooJson, fuzz, genFuzz, json32numbers, json32strings, json64numbers, 
-    json64strings, map, mapJson, msg, msg32, msg64, msgDefault, msgEmpty,
-     msgExtraFieldJson, msgJson, nullJson, oo1Set, oo1SetJson, oo2Set, oo2SetJson, 
-     rec1, rec2, recDefault, recJson1, recJson2, suite, timestampFoo, timestampJson, 
-     wrappersEmpty, wrappersJsonEmpty, wrappersJsonNull, wrappersJsonSet, wrappersJsonZero, 
-     wrappersSet, wrappersZero, wrongTypeJson)
+module Main exposing (suite)
 
 import Expect exposing (..)
 import Fuzz exposing (..)

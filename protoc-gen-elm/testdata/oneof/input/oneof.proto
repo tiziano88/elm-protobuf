@@ -12,3 +12,12 @@ message Foo {
   }
 }
 
+message Foo2 {
+
+  // Unhandled duplicate nested declaration of OneOf message
+  // Fixing would result in a breaking change
+  oneof first_oneof {
+    string string_field = 1;
+    int32 int_field = 2;
+  }
+}

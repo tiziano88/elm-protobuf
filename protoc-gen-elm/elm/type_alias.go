@@ -105,12 +105,11 @@ type FieldEncoder string
 
 // TypeAliasField - type alias field definition
 type TypeAliasField struct {
-	Name     VariableName
-	JSONName VariantJSONName
-	Type     Type
-	Number   ProtobufFieldNumber
-	Decoder  FieldDecoder
-	Encoder  FieldEncoder
+	Name    VariableName
+	Type    Type
+	Number  ProtobufFieldNumber
+	Decoder FieldDecoder
+	Encoder FieldEncoder
 }
 
 func appendUnderscoreToReservedKeywords(in string) string {
