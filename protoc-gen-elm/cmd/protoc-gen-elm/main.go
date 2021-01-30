@@ -14,10 +14,10 @@ import (
 
 	"protoc-gen-elm/pkg/elm"
 
-	"github.com/golang/protobuf/proto"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 var excludedFiles = map[string]bool{
@@ -58,7 +58,7 @@ func main() {
 		log.Fatalf("Could not read request from STDIN: %v", err)
 	}
 
-	req := &plugin.CodeGeneratorRequest{}
+	req := &pluginpb.CodeGeneratorRequest{}
 
 	err = proto.Unmarshal(data, req)
 	if err != nil {
@@ -76,10 +76,15 @@ func main() {
 			inFile.SourceCodeInfo = nil
 		}
 
-		log.Printf("Input data: %v", proto.MarshalTextString(req))
+		result, err := proto.Marshal(req)
+		if err != nil {
+			log.Fatalf("Failed to marshal request: %v", err)
+		}
+
+		log.Printf("Input data: %s", result)
 	}
 
-	resp := &plugin.CodeGeneratorResponse{}
+	resp := &pluginpb.CodeGeneratorResponse{}
 
 	for _, inFile := range req.GetProtoFile() {
 		log.Printf("Processing file %s", inFile.GetName())
@@ -95,7 +100,7 @@ func main() {
 			log.Fatalf("Could not template file: %v", err)
 		}
 
-		resp.File = append(resp.File, &plugin.CodeGeneratorResponse_File{
+		resp.File = append(resp.File, &pluginpb.CodeGeneratorResponse_File{
 			Name:    &name,
 			Content: &content,
 		})
