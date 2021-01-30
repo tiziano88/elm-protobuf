@@ -1,0 +1,34 @@
+#!/bin/sh
+
+set -e
+
+readonly ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT/protoc-gen-elm"
+
+GO111MODULE=on go build -o ../bin ./cmd/protoc-gen-elm
+
+ELM_PLUGIN="${ROOT}/bin/protoc-gen-elm"
+TEST_ROOT="${ROOT}/test-diffs"
+
+for TEST in "${TEST_ROOT}"/*/; do
+    TEST="${TEST%*/}" # strip  trailing "/"
+
+    INPUT_DIR="${TEST}/input"
+    OUTPUT_DIR="${TEST}/actual_output"
+    EXPECTED_DIR="${TEST}/expected_output"
+
+    protoc \
+        --proto_path="${INPUT_DIR}" \
+        --plugin=protoc-gen-elm="${ELM_PLUGIN}" \
+        --elm_out="${OUTPUT_DIR}" \
+        --elm_opt=remove-deprecated \
+        "${INPUT_DIR}"/*.proto
+
+    if ! DIFF_OUTPUT=$(diff -y "${EXPECTED_DIR}" "${OUTPUT_DIR}") ; then
+        echo "${DIFF_OUTPUT}"
+        echo "Detected difference in ${INPUT_DIR}"
+        exit 1
+    fi
+done
+
+echo "All tests pass"

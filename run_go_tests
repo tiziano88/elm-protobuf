@@ -1,9 +1,0 @@
-#!/bin/sh
-
-set -ex
-
-readonly ROOT="$(dirname "$0")"
-cd "$ROOT/protoc-gen-elm"
-
-GO111MODULE=on go build .
-GO111MODULE=on go test -v ./...

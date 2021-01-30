@@ -3,13 +3,13 @@
 set -ex
 
 cd protoc-gen-elm
-GO111MODULE=on go build .
+GO111MODULE=on go build -o ../bin ./cmd/protoc-gen-elm
 cd ..
 
 protoc \
     --proto_path=./tests/proto \
     --elm_out=./tests \
-    --plugin=protoc-gen-elm=./protoc-gen-elm/protoc-gen-elm \
+    --plugin=protoc-gen-elm=./bin/protoc-gen-elm \
     ./tests/proto/*.proto
 
-elm-test
+elm-test 

@@ -33,4 +33,4 @@ install:
 script: 
   - set -e
   - ./run_elm_tests
-  - ./run_go_tests
+  - ./run_diff_tests
