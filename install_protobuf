@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-set -ex
+set -euo pipefail
 
 #git clone https://github.com/google/protobuf.git
 #cd protobuf && ./autogen.sh && ./configure && make && sudo make install

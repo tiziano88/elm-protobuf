@@ -1,33 +1,35 @@
 #!/bin/bash
 
+set -euo pipefail
 set -x
 
 readonly BIN=protoc-gen-elm
-
-# Disable cgo in order to ensure static binaries.
-export CGO_ENABLED=0
+readonly CMD_DIR=./cmd/protoc-gen-elm
 
 # Make sure the current commit is tagged, using the following command:
 # git tag -a v0.0.2 -m 'release'
 
 # Remove the leading "v" from the tag, if necessary.
-VERSION=$(git tag --contains | tr -d v)
+readonly VERSION=$(git tag --contains | tr -d v)
 
 # Exit if a tag does not exist for the current commit.
 [[ -z $VERSION ]] && exit
 
-OUT=elm-protobuf-${VERSION}-linux-x86_32
-GOOS=linux GOARCH=386 go build -o ./bin/${OUT}/${BIN} ./${BIN}
-tar -zcvf ./bin/${OUT}.tar.gz ./bin/${OUT}
+function build() {
+    OS="${1}"
+    ARCH="${2}"
+    OUT="${3}"
 
-OUT=elm-protobuf-${VERSION}-linux-x86_64
-GOOS=linux GOARCH=amd64 go build -o ./bin/${OUT}/${BIN} ./${BIN}
-tar -zcvf ./bin/${OUT}.tar.gz ./bin/${OUT}
+    GOOS="${OS}" GOARCH="${ARCH}" GO111MODULE=on go build -o "./bin/${OUT}/${BIN}" "${CMD_DIR}"
+    tar -zcvf "./bin/${OUT}.tar.gz" "./bin/${OUT}"
+}
 
-OUT=elm-protobuf-${VERSION}-osx-x86_32
-GOOS=darwin GOARCH=386 go build -o ./bin/${OUT}/${BIN} ./${BIN}
-tar -zcvf ./bin/${OUT}.tar.gz ./bin/${OUT}
+# Disable cgo in order to ensure static binaries.
+export CGO_ENABLED=0
 
-OUT=elm-protobuf-${VERSION}-osx-x86_64
-GOOS=darwin GOARCH=amd64 go build -o ./bin/${OUT}/${BIN} ./${BIN}
-tar -zcvf ./bin/${OUT}.tar.gz ./bin/${OUT}
+pushd protoc-gen-elm
+
+build linux 386 "elm-protobuf-${VERSION}-linux-x86_32"
+build linux amd64 "elm-protobuf-${VERSION}-linux-x86_64"
+# build darwin 386 "elm-protobuf-${VERSION}-osx-x86_32"
+build darwin amd64 "elm-protobuf-${VERSION}-osx-x86_64"

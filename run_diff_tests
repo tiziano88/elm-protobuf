@@ -1,14 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e
+set -euo pipefail
 
 readonly ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT/protoc-gen-elm"
 
-GO111MODULE=on go build -o ../bin ./cmd/protoc-gen-elm
+GO111MODULE=on go build -o ../elm-protobuf-test ./cmd/protoc-gen-elm
 
-ELM_PLUGIN="${ROOT}/bin/protoc-gen-elm"
-TEST_ROOT="${ROOT}/test-diffs"
+readonly ELM_PLUGIN="${ROOT}/elm-protobuf-test"
+readonly TEST_ROOT="${ROOT}/test-diffs"
 
 for TEST in "${TEST_ROOT}"/*/; do
     TEST="${TEST%*/}" # strip  trailing "/"

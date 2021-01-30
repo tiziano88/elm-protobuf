@@ -30,8 +30,8 @@ _testmain.go
 /protoc/
 /protoc*.zip
 /protoc-gen-elm/protoc-gen-elm
+/protoc-gen-elm/bin
 
-/bin/*
-!bin/.gitkeep 
+/elm-protobuf-test
 
 tests.js

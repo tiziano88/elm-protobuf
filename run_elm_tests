@@ -1,15 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 
-set -ex
+set -euo pipefail
 
 cd protoc-gen-elm
-GO111MODULE=on go build -o ../bin ./cmd/protoc-gen-elm
+GO111MODULE=on go build -o ../elm-protobuf-test ./cmd/protoc-gen-elm
 cd ..
 
 protoc \
     --proto_path=./tests/proto \
     --elm_out=./tests \
-    --plugin=protoc-gen-elm=./bin/protoc-gen-elm \
+    --plugin=protoc-gen-elm=./elm-protobuf-test \
     ./tests/proto/*.proto
 
 elm-test 

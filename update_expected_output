@@ -1,11 +1,11 @@
 #!/bin/bash
 
-set -ex
+set -euo pipefail
 
 readonly ROOT="$(dirname "$0")"
 
 cd "$ROOT"
 
 for directory in protoc-gen-elm/testdata/*; do
-  cp -r ${directory}/{actual_output/*,expected_output}
+  cp -r "${directory}"/{actual_output/*,expected_output}
 done
