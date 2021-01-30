@@ -17,8 +17,6 @@ _cgo_defun.c
 _cgo_gotypes.go
 _cgo_export.*
 
-_testmain.go
-
 *.exe
 *.test
 *.prof
@@ -27,11 +25,7 @@ _testmain.go
 
 **/elm-stuff/*
 
-/protoc/
-/protoc*.zip
 /protoc-gen-elm/protoc-gen-elm
 /protoc-gen-elm/bin
 
 /elm-protobuf-test
-
-tests.js

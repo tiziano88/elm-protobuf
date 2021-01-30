@@ -18,6 +18,8 @@ for TEST in "${TEST_ROOT}"/*/; do
     OUTPUT_DIR="${TEST}/actual_output"
     EXPECTED_DIR="${TEST}/expected_output"
 
+    mkdir -p "${OUTPUT_DIR}"
+
     protoc \
         --proto_path="${INPUT_DIR}" \
         --plugin=protoc-gen-elm="${ELM_PLUGIN}" \

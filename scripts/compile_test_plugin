@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
+set -x
 
 readonly ROOT="$(git rev-parse --show-toplevel)"
 readonly TEST_PLUGIN="${ROOT}/elm-protobuf-test"
