@@ -1,7 +1,10 @@
 #!/bin/bash
 
 set -euo pipefail
+set -x
 
-for directory in protoc-gen-elm/testdata/*; do
+readonly ROOT="$(git rev-parse --show-toplevel)"
+
+for directory in "${ROOT}"/test-diffs/*; do
   cp -r "${directory}"/{actual_output/*,expected_output}
 done

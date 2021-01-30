@@ -3,6 +3,8 @@
 set -euo pipefail
 set -x
 
-./compile_test_plugin
-./run_elm_tests
-./run_diff_tests
+readonly ROOT="$(git rev-parse --show-toplevel)"
+
+"${ROOT}/scripts/compile_test_plugin"
+"${ROOT}/scripts/run_elm_tests"
+"${ROOT}/scripts/run_diff_tests"
