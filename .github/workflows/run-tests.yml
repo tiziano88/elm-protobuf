@@ -10,9 +10,13 @@ on:
       - master
 
 jobs:
-  build:
+  test:
     name: Run tests
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ 1.13.x, 1.14.x, 1.15.x ]
+        platform: [ ubuntu-latest ]
+    runs-on: ${{ matrix.platform }}
     env: 
       LB_LIBRARY_PATH: ${HOME}/.local/include
     steps:
@@ -30,7 +34,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: "1.15"
+          go-version: ${{ matrix.go-version }}
 
       - name: Install Protoc
         run: ./scripts/install_protobuf
@@ -41,6 +45,7 @@ jobs:
           path: |
             ~/.elm
             ~/.elm-analyse
+            ~/.npm
           key: ${{ runner.os }}-elm-${{ hashFiles('**/elm.json') }}
           restore-keys: |
             ${{ runner.os }}-elm-
@@ -49,9 +54,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-${{ matrix.go-version }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-${{ matrix.go-version }}-go-
 
       - name: Protoc Cache
         uses: actions/cache@v2
@@ -70,7 +75,6 @@ jobs:
         run: |
           npm install -g elm@latest-0.19.1
           npm install -g elm-test
-          npm install -g elm-analyse
 
       - name: All Tests
         run: ./scripts/run_all_tests

@@ -1,6 +1,6 @@
 module protoc-gen-elm
 
-go 1.15
+go 1.9
 
 require (
 	github.com/gogo/protobuf v1.3.2
