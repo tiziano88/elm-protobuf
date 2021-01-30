@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -euo pipefail
+
+./complie_test_plugin
+./run_elm_tests
+./run_diff_tests

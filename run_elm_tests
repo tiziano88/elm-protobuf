@@ -2,14 +2,18 @@
 
 set -euo pipefail
 
-cd protoc-gen-elm
-GO111MODULE=on go build -o ../elm-protobuf-test ./cmd/protoc-gen-elm
-cd ..
+readonly ROOT="$(git rev-parse --show-toplevel)"
+readonly TEST_PLUGIN="${ROOT}/elm-protobuf-test"
+
+if [[ ! -f "${TEST_PLUGIN}" ]]; then
+    echo "compiled test plugin required"
+    exit 1
+fi
 
 protoc \
     --proto_path=./tests/proto \
     --elm_out=./tests \
-    --plugin=protoc-gen-elm=./elm-protobuf-test \
+    --plugin=protoc-gen-elm="${TEST_PLUGIN}" \
     ./tests/proto/*.proto
 
 elm-test 

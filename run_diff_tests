@@ -3,12 +3,13 @@
 set -euo pipefail
 
 readonly ROOT="$(git rev-parse --show-toplevel)"
-cd "$ROOT/protoc-gen-elm"
-
-GO111MODULE=on go build -o ../elm-protobuf-test ./cmd/protoc-gen-elm
-
-readonly ELM_PLUGIN="${ROOT}/elm-protobuf-test"
 readonly TEST_ROOT="${ROOT}/test-diffs"
+readonly ELM_PLUGIN="${ROOT}/elm-protobuf-test"
+
+if [[ ! -f "${ELM_PLUGIN}" ]]; then
+    echo "compiled test plugin required"
+    exit 1
+fi
 
 for TEST in "${TEST_ROOT}"/*/; do
     TEST="${TEST%*/}" # strip  trailing "/"

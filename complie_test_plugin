@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -euo pipefail
+
+readonly ROOT="$(git rev-parse --show-toplevel)"
+readonly TEST_PLUGIN="${ROOT}/elm-protobuf-test"
+
+cd "${ROOT}/protoc-gen-elm"
+GO111MODULE=on go build -o "${TEST_PLUGIN}" ./cmd/protoc-gen-elm
+cd ..

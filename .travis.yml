@@ -22,15 +22,12 @@ install:
   - set -e
   - ./install_protobuf
   - export PATH=$PATH:$PWD/protoc/bin
+  - npm install -g elm@$TRAVIS_ELM_VERSION
+  - npm install -g elm-test@$TRAVIS_ELM_TEST_VERSION
   - protoc --version
   - node --version
-  - npm --version
-  - npm install -g elm@$TRAVIS_ELM_VERSION
-  - elm --version
-  - npm install -g elm-test@$TRAVIS_ELM_TEST_VERSION
+  - npm --version  
+  - elm --version  
   - elm-test --version
 
-script: 
-  - set -e
-  - ./run_elm_tests
-  - ./run_diff_tests
+script: ./run_all_tests
