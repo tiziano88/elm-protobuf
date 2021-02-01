@@ -219,11 +219,6 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 		return "", err
 	}
 
-	messages, err := messages([]string{}, inFile.GetMessageType(), p)
-	if err != nil {
-		return "", err
-	}
-
 	buff := &bytes.Buffer{}
 	if err = t.Execute(buff, struct {
 		SourceFile        string
@@ -238,7 +233,7 @@ uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
 		ImportDict:        hasMapEntries(inFile),
 		AdditionalImports: getAdditionalImports(inFile.GetDependency()),
 		TopEnums:          enumsToCustomTypes([]string{}, inFile.GetEnumType(), p),
-		Messages:          messages,
+		Messages:          messages([]string{}, inFile.GetMessageType(), p),
 	}); err != nil {
 		return "", err
 	}
@@ -342,7 +337,7 @@ func oneOfsToCustomTypes(preface []string, messagePb *descriptorpb.DescriptorPro
 	return result
 }
 
-func messages(preface []string, messagePbs []*descriptorpb.DescriptorProto, p parameters) ([]pbMessage, error) {
+func messages(preface []string, messagePbs []*descriptorpb.DescriptorProto, p parameters) []pbMessage {
 	var result []pbMessage
 	for _, messagePb := range messagePbs {
 		if isDeprecated(messagePb.Options) && p.RemoveDeprecated {
@@ -405,11 +400,6 @@ func messages(preface []string, messagePbs []*descriptorpb.DescriptorProto, p pa
 		}
 
 		newPreface := append([]string{messagePb.GetName()}, preface...)
-		nestedMessages, err := messages(newPreface, messagePb.GetNestedType(), p)
-		if err != nil {
-			return nil, err
-		}
-
 		name := elm.NestedType(messagePb.GetName(), preface)
 		result = append(result, pbMessage{
 			TypeAlias: elm.TypeAlias{
@@ -420,11 +410,11 @@ func messages(preface []string, messagePbs []*descriptorpb.DescriptorProto, p pa
 			},
 			OneOfCustomTypes: oneOfsToCustomTypes([]string{}, messagePb, p),
 			EnumCustomTypes:  enumsToCustomTypes(newPreface, messagePb.GetEnumType(), p),
-			NestedMessages:   nestedMessages,
+			NestedMessages:   messages(newPreface, messagePb.GetNestedType(), p),
 		})
 	}
 
-	return result, nil
+	return result
 }
 
 func isOptional(inField *descriptorpb.FieldDescriptorProto) bool {
