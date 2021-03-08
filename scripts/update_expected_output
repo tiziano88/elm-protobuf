@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -euo pipefail
+set -x
+
+readonly ROOT="$(git rev-parse --show-toplevel)"
+
+for directory in "${ROOT}"/test-diffs/*; do
+  cp -r "${directory}"/{actual_output/*,expected_output}
+done

@@ -1,8 +1,0 @@
-#!/bin/sh
-
-set -ex
-
-readonly ROOT="$(dirname "$0")"
-cd "$ROOT"
-
-go test -v

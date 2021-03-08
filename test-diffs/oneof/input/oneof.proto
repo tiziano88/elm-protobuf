@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+message Foo {
+  oneof first_oneof {
+    string string_field = 1;
+    int32 int_field = 2;
+  }
+
+  oneof second_oneof {
+    bool bool_field = 3;
+    string other_string_field = 4;
+  }
+}
+
+message Foo2 {
+
+  // Unhandled duplicate nested declaration of OneOf message
+  // Fixing would result in a breaking change
+  oneof first_oneof {
+    string string_field = 1;
+    int32 int_field = 2;
+  }
+}

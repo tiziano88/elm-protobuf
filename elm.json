@@ -13,7 +13,7 @@
         "elm/html": "1.0.0 <= v < 2.0.0",
         "elm/json": "1.0.0 <= v < 2.0.0",
         "elm/time": "1.0.0 <= v < 2.0.0",
-        "jweir/elm-iso8601": "5.0.0 <= v < 6.0.0"
+        "jweir/elm-iso8601": "5.0.0 <= v < 8.0.0"
     },
     "test-dependencies": {
         "elm-explorations/test": "1.1.0 <= v < 2.0.0"

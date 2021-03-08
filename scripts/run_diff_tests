@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -euo pipefail
+
+readonly ROOT="$(git rev-parse --show-toplevel)"
+readonly TEST_ROOT="${ROOT}/test-diffs"
+readonly ELM_PLUGIN="${ROOT}/elm-protobuf-test"
+
+if [[ ! -f "${ELM_PLUGIN}" ]]; then
+    echo "compiled test plugin required"
+    exit 1
+fi
+
+for TEST in "${TEST_ROOT}"/*/; do
+    TEST="${TEST%*/}" # strip  trailing "/"
+
+    INPUT_DIR="${TEST}/input"
+    OUTPUT_DIR="${TEST}/actual_output"
+    EXPECTED_DIR="${TEST}/expected_output"
+
+    mkdir -p "${OUTPUT_DIR}"
+
+    protoc \
+        --proto_path="${INPUT_DIR}" \
+        --plugin=protoc-gen-elm="${ELM_PLUGIN}" \
+        --elm_out="${OUTPUT_DIR}" \
+        --elm_opt=remove-deprecated \
+        "${INPUT_DIR}"/*.proto
+
+    if ! DIFF_OUTPUT=$(diff -y "${EXPECTED_DIR}" "${OUTPUT_DIR}") ; then
+        echo "${DIFF_OUTPUT}"
+        echo "Detected difference in ${INPUT_DIR}"
+        exit 1
+    fi
+done
+
+echo "All tests pass"

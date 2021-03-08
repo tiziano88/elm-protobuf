@@ -1,0 +1,80 @@
+name: Run tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    name: Run tests
+    strategy:
+      matrix:
+        go-version: [ 1.13.x, 1.14.x, 1.15.x ]
+        platform: [ ubuntu-latest ]
+    runs-on: ${{ matrix.platform }}
+    env: 
+      LB_LIBRARY_PATH: ${HOME}/.local/include
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: CI Path
+        run: |
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12"
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install Protoc
+        run: ./scripts/install_protobuf
+
+      - name: Elm Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.elm
+            ~/.elm-analyse
+            ~/.npm
+          key: ${{ runner.os }}-elm-${{ hashFiles('**/elm.json') }}
+          restore-keys: |
+            ${{ runner.os }}-elm-
+
+      - name: Go Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-${{ matrix.go-version }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.go-version }}-go-
+
+      - name: Protoc Cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.HOME }}/.local
+          key: ${{ runner.os }}-protoc-${{ hashFiles('**/install_protobuf') }}
+          restore-keys: |
+            ${{ runner.os }}-protoc-
+
+      - name: Install Go Dependencies
+        run: |
+          pushd protoc-gen-elm
+          GO111MODULE=on go mod vendor
+
+      - name: Install Elm Dependencies
+        run: |
+          npm install -g elm@latest-0.19.1
+          npm install -g elm-test
+
+      - name: All Tests
+        run: ./scripts/run_all_tests

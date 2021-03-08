@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: "elm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "gomod"
+    directory: "/protoc-gen-elm"
+    schedule:
+      interval: "daily"

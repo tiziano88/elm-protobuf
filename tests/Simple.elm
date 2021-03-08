@@ -10,7 +10,9 @@ import Protobuf exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import Dir.Other_dir exposing (..)
+
 import Other exposing (..)
+
 
 
 uselessDeclarationToPreventErrorDueToEmptyOutputFile = 42
@@ -72,8 +74,7 @@ colourEncoder v =
 
 
 type alias Empty =
-    {
-    }
+    { }
 
 
 emptyDecoder : JD.Decoder Empty
@@ -84,8 +85,7 @@ emptyDecoder =
 emptyEncoder : Empty -> JE.Value
 emptyEncoder v =
     JE.object <| List.filterMap identity <|
-        [
-        ]
+        []
 
 
 type alias Simple =
@@ -122,32 +122,6 @@ type alias Foo =
     }
 
 
-type Oo
-    = OoUnspecified
-    | Oo1 Int
-    | Oo2 Bool
-
-
-ooDecoder : JD.Decoder Oo
-ooDecoder =
-    JD.lazy <| \_ -> JD.oneOf
-        [ JD.map Oo1 (JD.field "oo1" intDecoder)
-        , JD.map Oo2 (JD.field "oo2" JD.bool)
-        , JD.succeed OoUnspecified
-        ]
-
-
-ooEncoder : Oo -> Maybe ( String, JE.Value )
-ooEncoder v =
-    case v of
-        OoUnspecified ->
-            Nothing
-        Oo1 x ->
-            Just ( "oo1", JE.int x )
-        Oo2 x ->
-            Just ( "oo2", JE.bool x )
-
-
 fooDecoder : JD.Decoder Foo
 fooDecoder =
     JD.lazy <| \_ -> decode Foo
@@ -181,3 +155,31 @@ fooEncoder v =
         , (optionalEncoder "timestampField" timestampEncoder v.timestampField)
         , (ooEncoder v.oo)
         ]
+
+
+type Oo
+    = OoUnspecified
+    | Oo1 Int
+    | Oo2 Bool
+
+
+ooDecoder : JD.Decoder Oo
+ooDecoder =
+    JD.lazy <| \_ -> JD.oneOf
+        [ JD.map Oo1 (JD.field "oo1" intDecoder)
+        , JD.map Oo2 (JD.field "oo2" JD.bool)
+        , JD.succeed OoUnspecified
+        ]
+
+
+ooEncoder : Oo -> Maybe ( String, JE.Value )
+ooEncoder v =
+    case v of
+        OoUnspecified ->
+            Nothing
+
+        Oo1 x ->
+            Just ( "oo1", JE.int x )
+
+        Oo2 x ->
+            Just ( "oo2", JE.bool x )
