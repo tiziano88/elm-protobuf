@@ -2,8 +2,9 @@ package elm
 
 import (
 	"fmt"
-	"github/jalandis/elm-protobuf/protoc-gen-elm/pkg/stringextras"
 	"text/template"
+
+	"github.com/jalandis/elm-protobuf/protoc-gen-elm/pkg/stringextras"
 
 	"google.golang.org/protobuf/types/descriptorpb"
 )

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github/jalandis/elm-protobuf/protoc-gen-elm/pkg/stringextras"
+	"github.com/jalandis/elm-protobuf/protoc-gen-elm/pkg/stringextras"
 
-	"github/jalandis/elm-protobuf/protoc-gen-elm/pkg/elm"
+	"github.com/jalandis/elm-protobuf/protoc-gen-elm/pkg/elm"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
