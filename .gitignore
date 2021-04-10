@@ -25,8 +25,8 @@ _cgo_export.*
 
 **/elm-stuff/*
 
-/protoc-gen-elm/protoc-gen-elm
-/protoc-gen-elm/bin
+/protoc-gen-elm
+/bin
 
 /elm-protobuf-test
 

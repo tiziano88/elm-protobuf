@@ -1,4 +1,4 @@
-module github.com/jalandis/elm-protobuf/protoc-gen-elm
+module github.com/jalandis/elm-protobuf
 
 go 1.13
 
