@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euo pipefail
+set -x
+
+readonly ROOT="$(git rev-parse --show-toplevel)"
+readonly TEST_PLUGIN="${ROOT}/elm-protobuf-test"
+
+if [[ ! -f "${TEST_PLUGIN}" ]]; then
+    echo "compiled test plugin required"
+    exit 1
+fi
+
+protoc \
+    --proto_path="${ROOT}/tests/proto" \
+    --elm_out="${ROOT}/tests" \
+    --plugin=protoc-gen-elm="${TEST_PLUGIN}" \
+    "${ROOT}"/tests/proto/*.proto
+
+elm-test 
