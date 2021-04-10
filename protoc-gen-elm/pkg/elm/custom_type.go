@@ -2,7 +2,7 @@ package elm
 
 import (
 	"fmt"
-	"protoc-gen-elm/pkg/stringextras"
+	"github/jalandis/elm-protobuf/protoc-gen-elm/pkg/stringextras"
 	"strings"
 	"text/template"
 

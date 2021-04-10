@@ -1,6 +1,6 @@
-module protoc-gen-elm
+module github/jalandis/elm-protobuf/protoc-gen-elm
 
-go 1.9
+go 1.13
 
 require (
 	github.com/gogo/protobuf v1.3.2
