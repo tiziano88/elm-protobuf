@@ -17,4 +17,4 @@ protoc \
     --plugin=protoc-gen-elm="${TEST_PLUGIN}" \
     "${ROOT}"/tests/proto/*.proto
 
-elm-test 
+elm-test

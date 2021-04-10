@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -19,6 +20,9 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
+
+//go:embed Protobuf.elm
+var pbLibrary string
 
 var excludedFiles = map[string]bool{
 	"google/protobuf/timestamp.proto": true,
@@ -45,7 +49,7 @@ func parseParameters(input *string) (parameters, error) {
 		case "debug":
 			result.Debug = true
 		default:
-			err = fmt.Errorf("Unknown parameter: \"%s\"", i)
+			err = fmt.Errorf("unknown parameter: \"%s\"", i)
 		}
 	}
 
@@ -84,7 +88,13 @@ func main() {
 		log.Printf("Input data: %s", result)
 	}
 
-	resp := &pluginpb.CodeGeneratorResponse{}
+	libraryFile := "Protobuf.elm"
+	resp := &pluginpb.CodeGeneratorResponse{
+		File: []*pluginpb.CodeGeneratorResponse_File{{
+			Name:    &libraryFile,
+			Content: &pbLibrary,
+		}},
+	}
 
 	for _, inFile := range req.GetProtoFile() {
 		log.Printf("Processing file %s", inFile.GetName())
