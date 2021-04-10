@@ -7,3 +7,5 @@ require (
 	github.com/pkg/errors v0.9.1
 	google.golang.org/protobuf v1.25.0
 )
+
+replace github/jalandis/elm-protobuf/protoc-gen-elm => ../protoc-gen-elm
