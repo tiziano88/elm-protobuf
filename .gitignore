@@ -27,6 +27,7 @@ _cgo_export.*
 
 /protoc-gen-elm
 /bin
+/tests/Protobuf.elm
 
 /elm-protobuf-test
 
