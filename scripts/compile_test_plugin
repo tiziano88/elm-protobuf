@@ -4,8 +4,7 @@ set -euo pipefail
 set -x
 
 readonly ROOT="$(git rev-parse --show-toplevel)"
-readonly TEST_PLUGIN="${ROOT}/elm-protobuf-test"
+readonly TEST_PLUGIN="${ROOT}/elm-test-project/elm-protobuf-test"
 
-cd "${ROOT}/protoc-gen-elm"
+cd "${ROOT}"
 GO111MODULE=on go build -o "${TEST_PLUGIN}" ./cmd/protoc-gen-elm
-cd ..

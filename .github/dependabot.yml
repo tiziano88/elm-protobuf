@@ -6,6 +6,6 @@ updates:
       interval: "daily"
 
   - package-ecosystem: "gomod"
-    directory: "/protoc-gen-elm"
+    directory: "/"
     schedule:
       interval: "daily"

@@ -3,7 +3,6 @@
 set -euo pipefail
 set -x
 
-readonly BIN=protoc-gen-elm
 readonly CMD_DIR=./cmd/protoc-gen-elm
 
 # Make sure the current commit is tagged, using the following command:
@@ -18,10 +17,9 @@ readonly VERSION=$(git tag --contains | tr -d v)
 function build() {
     OS="${1}"
     ARCH="${2}"
-    OUT="${3}"
+    OUT="elm-protobuf-${VERSION}-${OS}-${ARCH}"
 
-    GOOS="${OS}" GOARCH="${ARCH}" GO111MODULE=on go build -o "./bin/${OUT}/${BIN}" "${CMD_DIR}"
-    tar -zcvf "./bin/${OUT}.tar.gz" "./bin/${OUT}"
+    GOOS="${OS}" GOARCH="${ARCH}" GO111MODULE=on go build -o "./bin/${OUT}" "${CMD_DIR}"
 }
 
 # Disable cgo in order to ensure static binaries.
@@ -29,7 +27,50 @@ export CGO_ENABLED=0
 
 pushd protoc-gen-elm
 
-build linux 386 "elm-protobuf-${VERSION}-linux-x86_32"
-build linux amd64 "elm-protobuf-${VERSION}-linux-x86_64"
-# build darwin 386 "elm-protobuf-${VERSION}-osx-x86_32"
-build darwin amd64 "elm-protobuf-${VERSION}-osx-x86_64"
+# List of all supported GO platforms from `go tool dist list`
+build aix ppc64
+# build android 386
+# build android amd64
+# build android arm
+build android arm64
+# build darwin amd64
+build darwin arm64
+build dragonfly amd64
+build freebsd 386
+build freebsd amd64
+build freebsd arm
+build freebsd arm64
+build illumos amd64
+# build ios amd64
+# build ios arm64
+build js wasm
+build linux 386
+build linux amd64
+build linux arm
+build linux arm64
+build linux mips
+build linux mips64
+build linux mips64le
+build linux mipsle
+build linux ppc64
+build linux ppc64le
+build linux riscv64
+build linux s390x
+build netbsd 386
+build netbsd amd64
+build netbsd arm
+build netbsd arm64
+build openbsd 386
+build openbsd amd64
+build openbsd arm
+build openbsd arm64
+build openbsd mips64
+build plan9 386
+build plan9 amd64
+build plan9 arm
+build solaris amd64
+build windows 386
+build windows amd64
+build windows arm
+
+find ./bin -maxdepth 1 -mindepth 1 ! -name '*.tar.gz' -exec tar -zcvf {}.tar.gz {}  \;

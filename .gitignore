@@ -25,7 +25,10 @@ _cgo_export.*
 
 **/elm-stuff/*
 
-/protoc-gen-elm/protoc-gen-elm
-/protoc-gen-elm/bin
+/protoc-gen-elm
+/bin
 
-/elm-protobuf-test
+/elm-test-project/src/Protobuf.elm
+/elm-test-project/elm-protobuf-test
+
+.DS_Store
