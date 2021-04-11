@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option deprecated = false;
+
+message Bar {
+    bool field = 1;
+    bool deprecatedField = 2 [deprecated=true];
+}
+  
+message Foo {
+    option deprecated = true;
+
+    bool field = 1;
+}
+
+enum EnumBar {
+    ENUMBAR_VALUE_DEFAULT = 0;
+    ENUMBAR_VALUE_1 = 1;
+    ENUMBAR_VALUE_2 = 2 [deprecated=true];
+}
+
+enum EnumFoo {
+    option deprecated = true;
+
+    ENUMFOO_VALUE_DEFAULT = 0;
+    ENUMFOO_VALUE_1 = 1;
+    ENUMFOO_VALUE_2 = 2;
+}

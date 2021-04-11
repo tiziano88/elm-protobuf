@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -euo pipefail
+set -x
+
+#git clone https://github.com/google/protobuf.git
+#cd protobuf && ./autogen.sh && ./configure && make && sudo make install
+
+readonly VERSION='3.14.0'
+
+readonly TEMP_DIR="$(mktemp)"
+readonly TEMP_UNZIP_DIR="${TEMP_DIR}/protoc"
+readonly TEMP_PROTOC_BIN="${TEMP_UNZIP_DIR}/bin/protoc"
+
+LOCAL=/usr/local
+if [[ "${CI}" == true ]]; then
+    LOCAL="${HOME}/.local"
+fi
+
+if protoc --version 2> /dev/null | grep -q "${VERSION}"; then
+    echo "protoc version ${VERSION} found"
+    exit
+fi
+
+wget -q -P "${TEMP_DIR}" https://github.com/google/protobuf/releases/download/v${VERSION}/protoc-${VERSION}-linux-x86_64.zip
+mkdir -p "${LOCAL}/bin"
+mkdir -p "${LOCAL}/include"
+unzip -o "${TEMP_DIR}/protoc-${VERSION}-linux-x86_64.zip" -d "${LOCAL}" bin/protoc
+unzip -o "${TEMP_DIR}/protoc-${VERSION}-linux-x86_64.zip" -d "${LOCAL}" include/*

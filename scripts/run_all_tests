@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -euo pipefail
+set -x
+
+readonly ROOT="$(git rev-parse --show-toplevel)"
+
+"${ROOT}/scripts/compile_test_plugin"
+"${ROOT}/scripts/run_elm_tests"
+"${ROOT}/scripts/run_diff_tests"
