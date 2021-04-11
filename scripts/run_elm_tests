@@ -18,5 +18,4 @@ protoc \
     "${ROOT}"/elm-test-project/tests/proto/*.proto
 
 cd "${ROOT}/elm-test-project"
-pwd
 elm-test

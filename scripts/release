@@ -3,29 +3,39 @@
 set -euo pipefail
 set -x
 
-readonly CMD_DIR=./cmd/protoc-gen-elm
+readonly ROOT="$(git rev-parse --show-toplevel)"
+readonly CMD_DIR="${ROOT}/cmd/protoc-gen-elm"
 
 # Make sure the current commit is tagged, using the following command:
 # git tag -a v0.0.2 -m 'release'
 
 # Remove the leading "v" from the tag, if necessary.
-readonly VERSION=$(git tag --contains | tr -d v)
+readonly NEW_VERSION=$(git tag --contains | tr -d v)
 
 # Exit if a tag does not exist for the current commit.
-[[ -z $VERSION ]] && exit
+if [[ -z $NEW_VERSION ]]; then
+  echo "Missing required version tag."
+  exit 1
+fi
+
+"${ROOT}/scripts/compile_test_plugin"
+
+readonly FOUND_VERSION="$("${ROOT}/elm-test-project/elm-protobuf-test" --version | cut -d' ' -f2)"
+if [[ "${FOUND_VERSION}" != "${NEW_VERSION}" ]]; then
+  echo "Versions do not match.  Be sure to update the version defined in main.go"
+  exit 1
+fi
 
 function build() {
     OS="${1}"
     ARCH="${2}"
-    OUT="elm-protobuf-${VERSION}-${OS}-${ARCH}"
+    OUT="elm-protobuf-${NEW_VERSION}-${OS}-${ARCH}"
 
-    GOOS="${OS}" GOARCH="${ARCH}" GO111MODULE=on go build -o "./bin/${OUT}" "${CMD_DIR}"
+    GOOS="${OS}" GOARCH="${ARCH}" GO111MODULE=on go build -o "${ROOT}/protoc-gen-elm/bin/${OUT}" "${CMD_DIR}"
 }
 
 # Disable cgo in order to ensure static binaries.
 export CGO_ENABLED=0
-
-pushd protoc-gen-elm
 
 # List of all supported GO platforms from `go tool dist list`
 build aix ppc64
@@ -73,4 +83,4 @@ build windows 386
 build windows amd64
 build windows arm
 
-find ./bin -maxdepth 1 -mindepth 1 ! -name '*.tar.gz' -exec tar -zcvf {}.tar.gz {}  \;
+find "${ROOT}/protoc-gen-elm//bin" -maxdepth 1 -mindepth 1 ! -name '*.tar.gz' -exec tar -zcvf {}.tar.gz {}  \;

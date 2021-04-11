@@ -21,6 +21,9 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
+const version = "0.0.2"
+const docUrl = "https://github.com/jalandis/elm-protobuf"
+
 //go:embed Protobuf.elm
 var pbLibrary string
 
@@ -30,6 +33,7 @@ var excludedFiles = map[string]bool{
 }
 
 type parameters struct {
+	Version          bool
 	Debug            bool
 	RemoveDeprecated bool
 }
@@ -57,6 +61,15 @@ func parseParameters(input *string) (parameters, error) {
 }
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "--version" {
+		fmt.Fprintf(os.Stdout, "%v %v\n", filepath.Base(os.Args[0]), version)
+		os.Exit(0)
+	}
+	if len(os.Args) == 2 && os.Args[1] == "--help" {
+		fmt.Fprintf(os.Stdout, "See "+docUrl+" for usage information.\n")
+		os.Exit(0)
+	}
+
 	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatalf("Could not read request from STDIN: %v", err)
