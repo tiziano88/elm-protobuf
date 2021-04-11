@@ -4,7 +4,7 @@ set -euo pipefail
 set -x
 
 readonly ROOT="$(git rev-parse --show-toplevel)"
-readonly TEST_PLUGIN="${ROOT}/elm-test-project/elm-protobuf-test"
+readonly TEST_PLUGIN="${ROOT}/elm-project/elm-protobuf-test"
 
 if [[ ! -f "${TEST_PLUGIN}" ]]; then
     echo "compiled test plugin required"
@@ -12,10 +12,10 @@ if [[ ! -f "${TEST_PLUGIN}" ]]; then
 fi
 
 protoc \
-    --proto_path="${ROOT}/elm-test-project/tests/proto" \
-    --elm_out="${ROOT}/elm-test-project/src" \
+    --proto_path="${ROOT}/elm-project/tests/proto" \
+    --elm_out="${ROOT}/elm-project/tests" \
     --plugin=protoc-gen-elm="${TEST_PLUGIN}" \
-    "${ROOT}"/elm-test-project/tests/proto/*.proto
+    "${ROOT}"/elm-project/tests/proto/*.proto
 
-cd "${ROOT}/elm-test-project"
+cd "${ROOT}/elm-project"
 elm-test

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	_ "embed"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -23,9 +22,6 @@ import (
 
 const version = "0.0.2"
 const docUrl = "https://github.com/jalandis/elm-protobuf"
-
-//go:embed Protobuf.elm
-var pbLibrary string
 
 var excludedFiles = map[string]bool{
 	"google/protobuf/timestamp.proto": true,
@@ -101,14 +97,7 @@ func main() {
 		log.Printf("Input data: %s", result)
 	}
 
-	libraryFile := "Protobuf.elm"
-	resp := &pluginpb.CodeGeneratorResponse{
-		File: []*pluginpb.CodeGeneratorResponse_File{{
-			Name:    &libraryFile,
-			Content: &pbLibrary,
-		}},
-	}
-
+	resp := &pluginpb.CodeGeneratorResponse{}
 	for _, inFile := range req.GetProtoFile() {
 		log.Printf("Processing file %s", inFile.GetName())
 		// Well Known Types.

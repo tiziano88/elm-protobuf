@@ -146,7 +146,7 @@ mapEntriesFieldEncoder name valueEncoder v =
         Nothing
     else
         let
-            items = Dict.toList v 
+            items = Dict.toList v
             encodedItems = List.map (\(key, val) -> (key, valueEncoder val)) items
         in
             Just ( name, JE.object encodedItems)

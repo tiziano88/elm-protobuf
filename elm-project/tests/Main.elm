@@ -17,6 +17,7 @@ import Test exposing (..)
 import Time
 import Wrappers as W
 import Dict
+import Empty exposing (..)
 
 
 suite : Test
@@ -475,7 +476,7 @@ wrappersSet =
 
 map : M.MessageWithMaps
 map =
-    { stringToMessages = Dict.fromList 
+    { stringToMessages = Dict.fromList
         [ ( "foo" ,  { field = True } ),
         ( "bar" ,  { field = False } )
         ],

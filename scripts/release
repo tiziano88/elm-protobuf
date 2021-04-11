@@ -14,13 +14,13 @@ readonly NEW_VERSION=$(git tag --contains | tr -d v)
 
 # Exit if a tag does not exist for the current commit.
 if [[ -z $NEW_VERSION ]]; then
-  echo "Missing required version tag."
+  echo "Missing required version tag. Suggestion: git tag -a 0.0.2 -m 'release'"
   exit 1
 fi
 
 "${ROOT}/scripts/compile_test_plugin"
 
-readonly FOUND_VERSION="$("${ROOT}/elm-test-project/elm-protobuf-test" --version | cut -d' ' -f2)"
+readonly FOUND_VERSION="$("${ROOT}/elm-project/elm-protobuf-test" --version | cut -d' ' -f2)"
 if [[ "${FOUND_VERSION}" != "${NEW_VERSION}" ]]; then
   echo "Versions do not match.  Be sure to update the version defined in main.go"
   exit 1

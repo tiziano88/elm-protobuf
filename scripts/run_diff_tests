@@ -4,7 +4,7 @@ set -euo pipefail
 
 readonly ROOT="$(git rev-parse --show-toplevel)"
 readonly TEST_ROOT="${ROOT}/test-diffs"
-readonly ELM_PLUGIN="${ROOT}/elm-test-project/elm-protobuf-test"
+readonly ELM_PLUGIN="${ROOT}/elm-project/elm-protobuf-test"
 
 if [[ ! -f "${ELM_PLUGIN}" ]]; then
     echo "compiled test plugin required"
@@ -27,7 +27,6 @@ for TEST in "${TEST_ROOT}"/*/; do
         --elm_opt=remove-deprecated \
         "${INPUT_DIR}"/*.proto
 
-    rm "${OUTPUT_DIR}/Protobuf.elm"
     if ! DIFF_OUTPUT=$(diff -y "${EXPECTED_DIR}" "${OUTPUT_DIR}") ; then
         echo "${DIFF_OUTPUT}"
         echo "Detected difference in ${INPUT_DIR}"
