@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/jalandis/elm-protobuf/pkg/stringextras"
+	"github.com/b-lab-org/elm-protobuf/pkg/stringextras"
 
 	"google.golang.org/protobuf/types/descriptorpb"
 )

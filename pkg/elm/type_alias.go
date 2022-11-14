@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/jalandis/elm-protobuf/pkg/stringextras"
+	"github.com/b-lab-org/elm-protobuf/pkg/stringextras"
 
 	"google.golang.org/protobuf/types/descriptorpb"
 )

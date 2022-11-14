@@ -1,4 +1,4 @@
-module github.com/jalandis/elm-protobuf
+module github.com/b-lab-org/elm-protobuf
 
 go 1.13
 

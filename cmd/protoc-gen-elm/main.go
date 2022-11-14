@@ -10,9 +10,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/jalandis/elm-protobuf/pkg/stringextras"
+	"github.com/b-lab-org/elm-protobuf/pkg/stringextras"
 
-	"github.com/jalandis/elm-protobuf/pkg/elm"
+	"github.com/b-lab-org/elm-protobuf/pkg/elm"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -21,7 +21,7 @@ import (
 )
 
 const version = "0.0.2"
-const docUrl = "https://github.com/jalandis/elm-protobuf"
+const docUrl = "https://github.com/b-lab-org/elm-protobuf"
 
 var excludedFiles = map[string]bool{
 	"google/protobuf/timestamp.proto": true,
